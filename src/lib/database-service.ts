@@ -102,6 +102,26 @@ export async function addQnaAnswer(post_id: string, author_id: string, text: str
   return data;
 }
 
+// ─── Clinic ───────────────────────────────────────────────────────────────────
+export async function getClinicQueue() {
+  const { data, error } = await supabase
+    .from('clinic_queue')
+    .select('*, profiles(full_name)')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function joinClinicQueue(student_id: string, topic: string) {
+  const { data, error } = await supabase
+    .from('clinic_queue')
+    .insert([{ student_id, topic, status: 'waiting' }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 // ─── Essay ────────────────────────────────────────────────────────────────────
 export async function getEssaySets() {
   const { data, error } = await supabase

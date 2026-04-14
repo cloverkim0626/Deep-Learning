@@ -9,7 +9,7 @@ import { useState } from "react";
 const INITIAL_NOTIFICATIONS: any[] = [];
 
 const STUDENT_PROFILE = {
-  name: "김가연", class: "고3 금토반",
+  name: "학생", class: "소속 반 전용",
   stats: [
     { label: "오늘의 학습", value: "0분" },
     { label: "어휘 성취도", value: "0%" },
