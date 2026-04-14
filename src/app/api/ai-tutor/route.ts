@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAITutorResponse } from '@/lib/ai-service';
+import { getTutorResponse } from '@/lib/ai-service';
 
 export async function POST(req: Request) {
   try {
@@ -9,7 +9,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing API Key" }, { status: 500 });
     }
 
-    const aiResponse = await getAITutorResponse(passage, message, history);
+    const aiResponse = await getTutorResponse(passage, message, history);
     
     // Parse the JSON output from AI if applicable
     let parsed;
