@@ -1,9 +1,9 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, User, Users, Lock, ChevronRight, LogIn } from "lucide-react";
 
 const CLASS_DATA = [
   { 
@@ -27,6 +27,7 @@ function LoginForm() {
     roleFromQuery === "admin" ? "admin" : "student"
   );
 
+  const [step, setStep] = useState(1); // 1: Class Selection, 2: Student Selection, 3: Password
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedStudent, setSelectedStudent] = useState("");
   const [id, setId] = useState("");
@@ -42,117 +43,126 @@ function LoginForm() {
         setError("아이디 또는 비밀번호가 일치하지 않습니다.");
       }
     } else {
-      if (!selectedClass || !selectedStudent) {
-        setError("반과 이름을 선택해주세요.");
-        return;
-      }
       if (password === "1234") {
         window.location.href = "/dashboard";
       } else {
-        setError("비밀번호가 일치하지 않습니다. (초기: 1234)");
+        setError("비밀번호가 틀렸습니다. (초기: 1234)");
       }
     }
   };
 
-  const studentsInClass = CLASS_DATA.find(c => c.name === selectedClass)?.students || [];
+  const currentClassObj = CLASS_DATA.find(c => c.name === selectedClass);
+  const studentsInClass = currentClassObj?.students || [];
 
   return (
-    <div className="w-full max-w-[440px] glass rounded-[2.5rem] p-10 md:p-14 relative z-10 border border-white/20 shadow-2xl">
-      <Link href="/" className="absolute top-10 left-10 text-accent hover:text-foreground transition-all duration-500">
-        <ArrowLeft strokeWidth={2} size={22} />
-      </Link>
+    <div className="w-full max-w-lg animate-in fade-in slide-in-from-bottom-8 duration-1000">
+      
+      {/* Back Button */}
+      {step > 1 && role === "student" ? (
+         <button onClick={() => setStep(step - 1)} className="mb-10 flex items-center gap-2 text-[12px] font-black tracking-[0.2em] text-accent hover:text-foreground transition-all uppercase">
+            <ArrowLeft size={16} strokeWidth={3} /> 뒤로가기
+         </button>
+      ) : (
+        <Link href="/" className="mb-10 flex items-center gap-2 text-[12px] font-black tracking-[0.2em] text-accent hover:text-foreground transition-all uppercase">
+            <ArrowLeft size={16} strokeWidth={3} /> 메인으로
+        </Link>
+      )}
 
-      <div className="mt-8 mb-12 text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-foreground/5 text-[10px] font-black text-accent uppercase tracking-widest mb-2">
-          <CheckCircle2 size={12} className="text-foreground" />
-          Official Platform
-        </div>
-        <h2 className="text-4xl text-foreground serif tracking-tighter font-bold">
-          {role === "student" ? "Deep Learning" : "Team Parallax"}
+      <div className="mb-14 space-y-4">
+        <h2 className="text-[42px] text-foreground serif font-black leading-tight tracking-tighter">
+          {role === "student" ? "학습자 로그인" : "교육자 로그인"}
         </h2>
-        <p className="text-accent text-[14px] font-medium leading-relaxed">
-          {role === "student" ? "자신의 반과 이름을 선택해주세요." : "관리자 계정으로 로그인하세요."}
-        </p>
+        <div className="flex items-center gap-3">
+            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${step >= 1 ? "bg-foreground" : "bg-foreground/5"}`} />
+            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${role === "admin" || step >= 2 ? "bg-foreground" : "bg-foreground/5"}`} />
+            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${role === "admin" || step >= 3 ? "bg-foreground" : "bg-foreground/5"}`} />
+        </div>
       </div>
 
-      <div className="flex bg-accent-light p-1.5 rounded-2xl mb-10 border border-foreground/5 shadow-inner">
-        <button onClick={() => { setRole("student"); setError(""); }} className={`flex-1 py-3 text-[13px] font-bold rounded-xl transition-all duration-500 ${role === "student" ? "bg-white shadow-md text-foreground" : "text-accent hover:text-foreground"}`}>학생</button>
-        <button onClick={() => { setRole("admin"); setError(""); }} className={`flex-1 py-3 text-[13px] font-bold rounded-xl transition-all duration-500 ${role === "admin" ? "bg-white shadow-md text-foreground" : "text-accent hover:text-foreground"}`}>강사</button>
-      </div>
-
-      <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
-        {role === "student" ? (
-          <>
-            <div className="relative">
-              <select 
-                value={selectedClass}
-                onChange={e => { setSelectedClass(e.target.value); setSelectedStudent(""); }}
-                className="w-full h-14 px-6 rounded-2xl bg-transparent border border-foreground/10 focus:outline-none focus:border-foreground/30 transition-all text-foreground font-bold text-[14px] appearance-none cursor-pointer"
-              >
-                <option value="" disabled>소속 반 선택</option>
-                {CLASS_DATA.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-              </select>
-              <ChevronDown size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
-            </div>
-            
-            <div className="relative">
-              <select 
-                value={selectedStudent}
-                onChange={e => setSelectedStudent(e.target.value)}
-                disabled={!selectedClass}
-                className="w-full h-14 px-6 rounded-2xl bg-transparent border border-foreground/10 focus:outline-none focus:border-foreground/30 transition-all text-foreground font-bold text-[14px] appearance-none cursor-pointer disabled:opacity-30"
-              >
-                <option value="" disabled>학생 이름 선택</option>
-                {studentsInClass.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <ChevronDown size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
-            </div>
-
-            <input 
-              type="password" 
-              placeholder="비밀번호 (초기: 1234)"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full h-14 px-6 rounded-2xl bg-transparent border border-foreground/10 focus:outline-none focus:border-foreground/30 transition-all placeholder:text-accent font-bold text-[14px]"
-            />
-          </>
+      <div className="space-y-8">
+        {role === "admin" ? (
+          <div className="space-y-4">
+               <div className="relative group">
+                    <input type="text" placeholder="아이디" value={id} onChange={e => setId(e.target.value)}
+                        className="w-full h-16 px-8 rounded-3xl bg-white border border-foreground/5 focus:ring-4 focus:ring-foreground/5 outline-none transition-all font-bold text-[15px] placeholder:text-accent/30 shadow-sm" />
+               </div>
+               <div className="relative group">
+                    <input type="password" placeholder="비밀번호" value={password} onChange={e => setPassword(e.target.value)}
+                        className="w-full h-16 px-8 rounded-3xl bg-white border border-foreground/5 focus:ring-4 focus:ring-foreground/5 outline-none transition-all font-bold text-[15px] placeholder:text-accent/30 shadow-sm" />
+               </div>
+               {error && <p className="text-error text-[12px] font-black text-center pt-2">{error}</p>}
+               <button onClick={handleLogin} className="w-full h-16 bg-foreground text-background rounded-3xl font-black tracking-[0.2em] text-[14px] shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+                   <LogIn size={20} strokeWidth={2.5} /> 접근하기
+               </button>
+          </div>
         ) : (
           <>
-            <input 
-              type="text" 
-              placeholder="아이디 (parallax)"
-              value={id}
-              onChange={e => setId(e.target.value)}
-              className="w-full h-14 px-6 rounded-2xl bg-transparent border border-foreground/10 focus:outline-none focus:border-foreground/30 transition-all placeholder:text-accent font-bold text-[14px]"
-            />
-            <input 
-              type="password" 
-              placeholder="비밀번호"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full h-14 px-6 rounded-2xl bg-transparent border border-foreground/10 focus:outline-none focus:border-foreground/30 transition-all placeholder:text-accent font-bold text-[14px]"
-            />
+            {step === 1 && (
+              <div className="grid gap-4 animate-in fade-in slide-in-from-right-4 duration-500">
+                <p className="text-[13px] font-black text-accent uppercase tracking-widest pl-2">소속 반 선택</p>
+                {CLASS_DATA.map(c => (
+                  <button key={c.name} onClick={() => { setSelectedClass(c.name); setStep(2); }}
+                    className="flex items-center justify-between w-full p-6 bg-white border border-foreground/5 rounded-[2rem] hover:border-foreground/20 hover:shadow-xl transition-all group text-left">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-accent-light flex items-center justify-center group-hover:bg-foreground group-hover:text-background transition-colors">
+                            <Users size={20} strokeWidth={2} />
+                        </div>
+                        <span className="text-[16px] font-black text-foreground">{c.name}</span>
+                    </div>
+                    <ChevronRight size={20} className="text-accent group-hover:text-foreground group-hover:translate-x-1 transition-all" />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-right-4 duration-500">
+                <p className="col-span-2 text-[13px] font-black text-accent uppercase tracking-widest pl-2 mb-2">학생 이름 선택</p>
+                {studentsInClass.map(s => (
+                  <button key={s} onClick={() => { setSelectedStudent(s); setStep(3); }}
+                    className="p-6 bg-white border border-foreground/5 rounded-[2rem] hover:border-foreground/20 hover:shadow-xl transition-all group text-center flex flex-col items-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-accent-light flex items-center justify-center text-[20px] font-black group-hover:bg-foreground group-hover:text-background transition-colors">
+                        {s[0]}
+                    </div>
+                    <span className="text-[15px] font-black text-foreground">{s.split(" - ")[0]}</span>
+                    {s.includes(" - ") && <span className="text-[10px] text-accent font-bold opacity-60 uppercase">{s.split(" - ")[1]}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                <div className="text-center space-y-2 mb-8">
+                    <p className="text-[14px] font-black text-foreground">{selectedClass}</p>
+                    <h3 className="text-[28px] font-black text-foreground serif">{selectedStudent.split(" - ")[0]} 학생</h3>
+                </div>
+                <div className="relative group">
+                    <input type="password" placeholder="비밀번호 (초기: 1234)" value={password} onChange={e => setPassword(e.target.value)}
+                        className="w-full h-18 px-10 rounded-[2.5rem] bg-white border border-foreground/10 focus:ring-8 focus:ring-foreground/5 outline-none transition-all font-black text-[18px] text-center placeholder:text-accent/20 shadow-inner" />
+                </div>
+                {error && <p className="text-error text-[12px] font-black text-center">{error}</p>}
+                <button onClick={handleLogin} className="w-full h-18 bg-foreground text-background rounded-[2.5rem] font-black tracking-[0.3em] text-[16px] shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4">
+                    LOGIN <LogIn size={22} strokeWidth={2.5} />
+                </button>
+              </div>
+            )}
           </>
         )}
+      </div>
 
-        {error && <p className="text-red-500 text-[12px] font-bold text-center mt-2 animate-in fade-in slide-in-from-top-1">{error}</p>}
-
-        <button 
-          type="submit"
-          className="w-full h-14 mt-8 bg-foreground text-background font-black tracking-widest text-[14px] rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-1 active:translate-y-0.5 transition-all duration-500"
-        >
-          LOG IN
-        </button>
-      </form>
+      <p className="mt-20 text-center text-[11px] font-black text-accent tracking-[0.4em] uppercase opacity-30 select-none">
+        Developed for Parallax English
+      </p>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <main className="flex justify-center items-center h-full p-6 bg-background relative overflow-hidden">
-      <div className="absolute top-1/4 -left-20 w-80 h-80 bg-foreground/5 rounded-full blur-[100px]" />
-      <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-foreground/5 rounded-full blur-[100px]" />
+    <main className="flex justify-center items-center min-h-screen p-6 bg-background relative overflow-hidden">
+      {/* Aesthetic Background Shapes */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-foreground/[0.02] rounded-full blur-[100px] pointer-events-none" />
       
       <Suspense fallback={<div className="text-foreground serif font-bold animate-pulse">Deep Learning...</div>}>
         <LoginForm />
