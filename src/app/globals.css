@@ -1,26 +1,77 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf9f6; /* Soft paper white */
+  --foreground: #2c2b29; /* Dark warm gray */
+  --accent: #5e6669; /* Muted steel */
+  --accent-light: rgba(94, 102, 105, 0.08); /* Subtle highlight */
+  --error: #8b5a5a; /* Muted deep rose */
+  --success: #6b7a66; /* Muted sage */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-error: var(--error);
+  --color-success: var(--success);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-noto-serif);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #111110; /* Very deep charcoal/void */
+    --foreground: #e6e6e2; /* Lyrical off-white */
+    --accent: #8b949e; 
+    --accent-light: rgba(139, 148, 158, 0.15);
+    --error: #b58383;
+    --success: #8c9e88;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
+  transition: background-color 0.6s cubic-bezier(0.16, 1, 0.3, 1), color 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: -0.01em;
+}
+
+h1, h2, h3, .serif {
+  font-family: var(--font-serif), serif;
+  letter-spacing: -0.03em;
+  font-weight: 300;
+}
+
+/* Framer-like sophisticated glass */
+.glass {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass {
+    background: rgba(20, 20, 20, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Framer micro-interactions */
+.framer-card {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.framer-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.06);
+}
+@media (prefers-color-scheme: dark) {
+  .framer-card:hover {
+    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+  }
 }
