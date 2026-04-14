@@ -28,11 +28,11 @@ const PASSAGES: Record<string, { short: string; full: string; sentences: Record<
 
 const OPENING: Message = {
   id: "open", sender: "ai",
-  text: "안녕! 오늘 공부는 좀 어때? 지금 지문에서 막히는 부분이 있다면 내가 도와줄게. 문장 구조가 어렵니, 아니면 전체적인 흐름이 궁금하니?",
+  text: "안녕하세요! 지문을 읽다가 해석이 어렵거나 구조가 궁금한 문장이 있다면 질문해 주세요. 문맥 파악이나 논리 구조에 대해서도 설명해 드릴 수 있습니다.",
   options: [
-    { text: "특정 문장 해석이 안 돼", followUpKey: "ask_specific" },
-    { text: "지문 전체 논리가 궁금해", followUpKey: "ask_logic" },
-    { text: "그냥 기초부터 천천히 알려줘", followUpKey: "start_basic" },
+    { text: "특정 문장 해석이 안 돼요", followUpKey: "ask_specific" },
+    { text: "지문 전체 논리가 궁금해요", followUpKey: "ask_logic" },
+    { text: "기초부터 천천히 알려주세요", followUpKey: "start_basic" },
   ]
 };
 
@@ -123,10 +123,10 @@ export default function AITeacherPage() {
             <div key={msg.id} className="animate-in fade-in slide-in-from-bottom-2 duration-500">
               <div className={`flex ${msg.sender === "ai" ? "justify-start" : "justify-end"}`}>
                 <div className="max-w-[88%] flex flex-col gap-2.5">
-                  <div className={`p-5 rounded-[2.2rem] text-[15px] leading-relaxed font-medium shadow-sm whitespace-pre-wrap ${
+                  <div className={`p-5 rounded-[2.2rem] text-[15px] shadow-md whitespace-pre-wrap ${
                     msg.sender === "ai"
-                      ? "bg-white border border-foreground/5 text-foreground rounded-tl-sm"
-                      : "bg-foreground text-background rounded-tr-sm shadow-xl"
+                      ? "bg-white border border-foreground/5 text-foreground rounded-tl-sm font-medium"
+                      : "bg-foreground text-background rounded-tr-sm shadow-xl font-bold"
                   }`}>
                     {msg.text}
                   </div>
@@ -156,12 +156,12 @@ export default function AITeacherPage() {
         <div ref={bottomRef} className="h-4" />
       </div>
 
-      {/* Fixed Input area, placed just above the bottom nav (88px) */}
-      <div className="fixed bottom-[88px] left-0 right-0 w-full max-w-md mx-auto px-6 z-20 pointer-events-none">
-        <form id="ai-form" onSubmit={handleSend} className="pointer-events-auto relative glass rounded-full p-2 border border-foreground/10 flex items-center shadow-2xl animate-in slide-in-from-bottom duration-500">
+      {/* Fixed Input area - MADE OPAQUE (bg-white) to prevent element overlap ghosting */}
+      <div className="fixed bottom-[88px] left-0 right-0 w-full max-w-md mx-auto px-6 z-20 pointer-events-none pb-4 bg-gradient-to-t from-background via-background to-transparent">
+        <form id="ai-form" onSubmit={handleSend} className="pointer-events-auto relative bg-white rounded-full p-2 border border-foreground/20 flex items-center shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-in slide-in-from-bottom duration-500">
           <input value={input} onChange={e => setInput(e.target.value)}
             disabled={isLoading}
-            placeholder="질문을 입력하세요..."
+            placeholder="궁금한 내용을 질문해 주세요..."
             className="flex-1 bg-transparent border-none outline-none px-6 py-4 text-[15px] font-medium placeholder:text-accent/60 text-foreground w-full"
           />
           <button type="submit" disabled={!input.trim() || isLoading}

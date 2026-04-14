@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, User, Users, Lock, ChevronRight, LogIn } from "lucide-react";
+import { ArrowLeft, CheckCircle2, User, Users, Lock, ChevronRight, LogIn, ChevronDown } from "lucide-react";
 
 const CLASS_DATA = [
   { 
@@ -27,7 +27,6 @@ function LoginForm() {
     roleFromQuery === "admin" ? "admin" : "student"
   );
 
-  const [step, setStep] = useState(1); // 1: Class Selection, 2: Student Selection, 3: Password
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedStudent, setSelectedStudent] = useState("");
   const [id, setId] = useState("");
@@ -57,26 +56,17 @@ function LoginForm() {
   return (
     <div className="w-full max-w-lg animate-in fade-in slide-in-from-bottom-8 duration-1000">
       
-      {/* Back Button */}
-      {step > 1 && role === "student" ? (
-         <button onClick={() => setStep(step - 1)} className="mb-10 flex items-center gap-2 text-[12px] font-black tracking-[0.2em] text-accent hover:text-foreground transition-all uppercase">
-            <ArrowLeft size={16} strokeWidth={3} /> 뒤로가기
-         </button>
-      ) : (
-        <Link href="/" className="mb-10 flex items-center gap-2 text-[12px] font-black tracking-[0.2em] text-accent hover:text-foreground transition-all uppercase">
-            <ArrowLeft size={16} strokeWidth={3} /> 메인으로
-        </Link>
-      )}
+      <Link href="/" className="mb-10 flex items-center gap-2 text-[12px] font-black tracking-[0.2em] text-accent hover:text-foreground transition-all uppercase">
+          <ArrowLeft size={16} strokeWidth={3} /> 메인으로
+      </Link>
 
       <div className="mb-14 space-y-4">
         <h2 className="text-[42px] text-foreground serif font-black leading-tight tracking-tighter">
-          {role === "student" ? "학습자 로그인" : "교육자 로그인"}
+          {role === "student" ? "학습자 로그인" : "선생님 로그인"}
         </h2>
-        <div className="flex items-center gap-3">
-            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${step >= 1 ? "bg-foreground" : "bg-foreground/5"}`} />
-            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${role === "admin" || step >= 2 ? "bg-foreground" : "bg-foreground/5"}`} />
-            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${role === "admin" || step >= 3 ? "bg-foreground" : "bg-foreground/5"}`} />
-        </div>
+        <p className="text-[14px] text-accent font-medium">
+            {role === "student" ? "자신의 반과 이름을 선택하여 로그인해 주세요." : "관리자 계정으로 접속해 주세요."}
+        </p>
       </div>
 
       <div className="space-y-8">
@@ -96,47 +86,38 @@ function LoginForm() {
                </button>
           </div>
         ) : (
-          <>
-            {step === 1 && (
-              <div className="grid gap-4 animate-in fade-in slide-in-from-right-4 duration-500">
-                <p className="text-[13px] font-black text-accent uppercase tracking-widest pl-2">소속 반 선택</p>
-                {CLASS_DATA.map(c => (
-                  <button key={c.name} onClick={() => { setSelectedClass(c.name); setStep(2); }}
-                    className="flex items-center justify-between w-full p-6 bg-white border border-foreground/5 rounded-[2rem] hover:border-foreground/20 hover:shadow-xl transition-all group text-left">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-accent-light flex items-center justify-center group-hover:bg-foreground group-hover:text-background transition-colors">
-                            <Users size={20} strokeWidth={2} />
-                        </div>
-                        <span className="text-[16px] font-black text-foreground">{c.name}</span>
-                    </div>
-                    <ChevronRight size={20} className="text-accent group-hover:text-foreground group-hover:translate-x-1 transition-all" />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-right-4 duration-500">
-                <p className="col-span-2 text-[13px] font-black text-accent uppercase tracking-widest pl-2 mb-2">학생 이름 선택</p>
-                {studentsInClass.map(s => (
-                  <button key={s} onClick={() => { setSelectedStudent(s); setStep(3); }}
-                    className="p-6 bg-white border border-foreground/5 rounded-[2rem] hover:border-foreground/20 hover:shadow-xl transition-all group text-center flex flex-col items-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-accent-light flex items-center justify-center text-[20px] font-black group-hover:bg-foreground group-hover:text-background transition-colors">
-                        {s[0]}
-                    </div>
-                    <span className="text-[15px] font-black text-foreground">{s.split(" - ")[0]}</span>
-                    {s.includes(" - ") && <span className="text-[10px] text-accent font-bold opacity-60 uppercase">{s.split(" - ")[1]}</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                <div className="text-center space-y-2 mb-8">
-                    <p className="text-[14px] font-black text-foreground">{selectedClass}</p>
-                    <h3 className="text-[28px] font-black text-foreground serif">{selectedStudent.split(" - ")[0]} 학생</h3>
+          <div className="space-y-6">
+            {/* Scrolling List Based UI (Reverted) */}
+            <div className="space-y-4">
+                <p className="text-[11px] font-black text-accent uppercase tracking-widest pl-2">반 선택</p>
+                <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto px-1 py-1 custom-scrollbar">
+                    {CLASS_DATA.map(c => (
+                        <button key={c.name} onClick={() => { setSelectedClass(c.name); setSelectedStudent(""); }}
+                            className={`flex items-center justify-between w-full p-5 rounded-2xl border transition-all text-left ${selectedClass === c.name ? "bg-foreground text-background border-foreground shadow-lg" : "bg-white text-foreground border-foreground/5 hover:border-foreground/20"}`}>
+                            <span className="text-[15px] font-black">{c.name}</span>
+                            {selectedClass === c.name && <CheckCircle2 size={18} />}
+                        </button>
+                    ))}
                 </div>
+            </div>
+
+            {selectedClass && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <p className="text-[11px] font-black text-accent uppercase tracking-widest pl-2">이름 선택</p>
+                    <div className="grid grid-cols-2 gap-3 max-h-[240px] overflow-y-auto px-1 py-1 custom-scrollbar">
+                        {studentsInClass.map(s => (
+                            <button key={s} onClick={() => setSelectedStudent(s)}
+                                className={`p-5 rounded-2xl border transition-all text-center flex flex-col items-center gap-2 ${selectedStudent === s ? "bg-foreground text-background border-foreground shadow-lg scale-[1.02]" : "bg-white text-foreground border-foreground/5 hover:border-foreground/20"}`}>
+                                <span className="text-[14px] font-black">{s.split(" - ")[0]}</span>
+                                <span className={`text-[10px] font-bold opacity-60 uppercase ${selectedStudent === s ? "text-background" : "text-accent"}`}>{s.split(" - ")[1] || "Student"}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {selectedStudent && (
+              <div className="space-y-6 pt-6 border-t border-foreground/5 animate-in fade-in zoom-in-95">
                 <div className="relative group">
                     <input type="password" placeholder="비밀번호 (초기: 1234)" value={password} onChange={e => setPassword(e.target.value)}
                         className="w-full h-18 px-10 rounded-[2.5rem] bg-white border border-foreground/10 focus:ring-8 focus:ring-foreground/5 outline-none transition-all font-black text-[18px] text-center placeholder:text-accent/20 shadow-inner" />
@@ -147,12 +128,12 @@ function LoginForm() {
                 </button>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
 
       <p className="mt-20 text-center text-[11px] font-black text-accent tracking-[0.4em] uppercase opacity-30 select-none">
-        Developed for Parallax English
+        Produced by Team Parallax
       </p>
     </div>
   );

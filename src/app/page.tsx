@@ -26,7 +26,7 @@ export default function Home() {
             </h1>
             <div className="flex items-center justify-center gap-2 text-accent mt-4">
               <div className="h-[1px] w-8 bg-foreground/10" />
-              <span className="text-[12px] font-black uppercase tracking-[0.3em] opacity-60">Team Parallax</span>
+              <span className="text-[12px] font-black uppercase tracking-[0.3em] opacity-60">Produced by Team Parallax</span>
               <div className="h-[1px] w-8 bg-foreground/10" />
             </div>
           </div>
@@ -44,7 +44,7 @@ export default function Home() {
               학습 공간으로 입장
             </div>
             <p className="text-[13px] text-background/60 font-medium relative z-10 max-w-[200px] leading-relaxed">
-              자신의 성취를 기록하고 AI 튜터를 통해 감각적으로 사고하세요.
+              자신의 성취를 기록하고 AI 튜터를 통해 효율적으로 학습하세요.
             </p>
             <div className="absolute bottom-8 right-8 w-12 h-12 rounded-full border border-white/20 flex items-center justify-center transition-all duration-500 group-hover:bg-white group-hover:text-foreground">
               <ArrowRight strokeWidth={2.5} size={20} className="group-hover:translate-x-0.5 transition-transform" />
@@ -60,8 +60,8 @@ export default function Home() {
                     <Briefcase strokeWidth={1.5} size={18} className="opacity-80" />
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-[14px] font-black tracking-tight">강사 전용관</span>
-                    <span className="text-[10px] text-accent font-bold uppercase tracking-widest opacity-60">Admin & Educator</span>
+                    <span className="text-[14px] font-black tracking-tight">선생님 페이지</span>
+                    <span className="text-[10px] text-accent font-bold uppercase tracking-widest opacity-60">Teacher Dashboard</span>
                 </div>
             </div>
             <ArrowRight strokeWidth={2} size={18} className="text-accent group-hover:text-foreground group-hover:translate-x-1 transition-all" />
@@ -72,7 +72,7 @@ export default function Home() {
         <div className="flex flex-col items-center gap-4 text-center pb-8 opacity-40 hover:opacity-100 transition-opacity duration-1000">
            <Sparkles size={16} className="text-accent animate-pulse" />
            <p className="text-[11px] font-bold tracking-[0.2em] uppercase max-w-[180px] leading-loose">
-            Beyond memorization,<br />to intuitive reasoning.
+            High Precision<br />Learning System
            </p>
         </div>
       </div>

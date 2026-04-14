@@ -27,7 +27,8 @@ type Post = {
   showAnswers: boolean;
 };
 
-const CURRENT_STUDENT_ID = "s1"; // 김가연
+// Using a valid UUID for the mock student to avoid Supabase 400 errors
+const CURRENT_STUDENT_ID = "00000000-0000-0000-0000-000000000001"; 
 
 const MOCK_DATA = {
   workbooks: ["수능특강 2026", "수능완성 2026", "자이스토리 고3"],
@@ -106,6 +107,7 @@ export default function QnAPage() {
       setShowModal(false);
       resetModal();
     } catch (err) {
+      console.error(err);
       alert("질문 등록에 실패했습니다.");
     }
   };
@@ -140,7 +142,7 @@ export default function QnAPage() {
       <div className="px-6 pt-10 pb-6 shrink-0 flex items-center justify-between">
         <div>
             <h1 className="text-3xl text-foreground serif font-black">Q&amp;A 게시판</h1>
-            <p className="text-[13px] text-accent mt-2 font-medium">모르는 건 부끄러운 게 아니야. 함께 고민하고 성장하자.</p>
+            <p className="text-[13px] text-accent mt-2 font-medium">학습 중 궁금한 점을 질문하고 함께 토론해 보세요.</p>
         </div>
         <button 
             onClick={() => setShowModal(true)}
@@ -206,7 +208,7 @@ export default function QnAPage() {
                     <input 
                         value={commentInput[post.id] || ""}
                         onChange={e => setCommentInput(prev => ({ ...prev, [post.id]: e.target.value }))}
-                        placeholder="이 질문에 대한 생각을 적어봐..."
+                        placeholder="답변이나 의견을 자유롭게 적어 주세요."
                         className="flex-1 h-14 px-6 rounded-2xl bg-white border border-foreground/5 focus:border-foreground/20 focus:outline-none text-[14px] font-medium shadow-inner"
                     />
                     <button 
@@ -252,7 +254,7 @@ export default function QnAPage() {
                                     {w} <ChevronRight size={18} className="text-accent" />
                                 </button>
                             ))}
-                            <button onClick={() => setStep(4)} className="w-full p-6 text-center text-accent font-bold text-[13px] border border-dashed border-foreground/10 rounded-[1.8rem]">선택하지 않고 바로 질문하기</button>
+                            <button onClick={() => setStep(4)} className="w-full p-6 text-center text-accent font-bold text-[13px] border border-dashed border-foreground/10 rounded-[1.8rem]">선택 없이 바로 질문하기</button>
                         </div>
                     )}
 
@@ -293,7 +295,7 @@ export default function QnAPage() {
                              <textarea 
                                 value={question}
                                 onChange={e => setQuestion(e.target.value)}
-                                placeholder="어느 부분이 이해가 안 되니? 구체적으로 적어주면 더 좋아."
+                                placeholder="어떤 부분이 이해가 안 되나요? 자유롭게 적어 주세요."
                                 className="w-full h-40 p-6 rounded-[2.2rem] bg-white border border-foreground/10 focus:border-foreground/30 focus:outline-none transition-all text-[16px] font-medium placeholder:text-accent/30 resize-none shadow-inner"
                              />
                              <button 
