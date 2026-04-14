@@ -3,22 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, PenTool, Bot, MessageCircle, CalendarPlus, Bell, X, ChevronRight, LogOut } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Initializing with empty or fresh states to avoid "weird old records"
 const INITIAL_NOTIFICATIONS: any[] = [];
-
-const STUDENT_PROFILE = {
-  name: "학생", class: "소속 반 전용",
-  stats: [
-    { label: "오늘의 학습", value: "0분" },
-    { label: "어휘 성취도", value: "0%" },
-    { label: "AI 튜터 대화", value: "0회" },
-    { label: "클리닉 접수", value: "0건" },
-  ],
-  recentErrors: [],
-  testHistory: []
-};
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
@@ -26,13 +14,42 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [notifs, setNotifs] = useState(INITIAL_NOTIFICATIONS);
+  
+  // Real session state
+  const [profile, setProfile] = useState({
+    name: "학생",
+    class: "소속 반 없음",
+    stats: [
+      { label: "오늘의 학습", value: "0분" },
+      { label: "어휘 성취도", value: "0%" },
+      { label: "AI 튜터 대화", value: "0회" },
+      { label: "클리닉 접수", value: "0건" },
+    ]
+  });
+
+  useEffect(() => {
+    // Read session from localStorage
+    const saved = localStorage.getItem("stu_session");
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        setProfile(prev => ({
+          ...prev,
+          name: data.name || "학생",
+          class: data.class || "소속 반 없음"
+        }));
+      } catch (e) {
+        console.error("Failed to parse session", e);
+      }
+    }
+  }, []);
 
   const unreadCount = notifs.filter(n => n.unread).length;
 
   const markAllRead = () => setNotifs(prev => prev.map(n => ({ ...n, unread: false })));
 
   const handleLogout = () => {
-    // Clear any potential session data if needed
+    localStorage.removeItem("stu_session");
     router.push("/");
   };
 
@@ -40,12 +57,14 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     <div className="flex flex-col h-screen w-full max-w-md mx-auto relative shadow-[0_0_50px_rgba(0,0,0,0.1)] bg-background overflow-hidden border-x border-foreground/5">
 
       {/* Top Header - Fixed/Sticky */}
-      <header className="h-16 flex items-center justify-between px-6 border-b border-foreground/5 bg-background/90 backdrop-blur-xl z-30 shrink-0 sticky top-0">
-        <Link href="/dashboard" className="font-bold text-[17px] tracking-tight text-foreground flex items-center gap-2.5 serif">
-          <div className="w-8 h-8 rounded-[0.8rem] bg-foreground text-background flex items-center justify-center shadow-lg">
-            <BookOpen size={16} strokeWidth={2.5} />
+      <header className="h-20 flex items-center justify-between px-6 border-b border-foreground/5 bg-background/90 backdrop-blur-xl z-30 shrink-0 sticky top-0">
+        <Link href="/dashboard" className="flex flex-col gap-0.5">
+          <span className="text-[12px] font-black text-accent tracking-widest uppercase opacity-60 leading-none">Deep Learning</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[18px] font-black text-foreground serif leading-none">{profile.name} 학생</span>
+            <div className="w-1 h-1 rounded-full bg-foreground/20" />
+            <span className="text-[11px] font-bold text-accent leading-none">{profile.class}</span>
           </div>
-          Deep Learning
         </Link>
         <div className="flex items-center gap-3">
           <button
@@ -59,18 +78,18 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           </button>
           <button
             onClick={() => { setShowProfile(!showProfile); setShowNotif(false); }}
-            className="w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center text-[14px] font-black shadow-lg hover:scale-105 active:scale-95 transition-all"
+            className="w-11 h-11 rounded-xl bg-foreground text-background flex items-center justify-center text-[15px] font-black shadow-lg hover:scale-105 active:scale-95 transition-all"
           >
-            {STUDENT_PROFILE.name[0]}
+             <LogOut size={18} strokeWidth={3} onClick={handleLogout} />
           </button>
         </div>
       </header>
 
       {/* Notification Dropdown */}
       {showNotif && (
-        <div className="absolute top-[70px] left-4 right-4 bg-background border border-foreground/10 rounded-[2rem] shadow-[0_24px_50px_rgba(0,0,0,0.15)] z-40 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="absolute top-[85px] left-4 right-4 bg-background border border-foreground/10 rounded-[2rem] shadow-[0_24px_50px_rgba(0,0,0,0.15)] z-40 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex items-center justify-between px-6 py-5 border-b border-foreground/5">
-            <span className="text-[14px] font-black text-foreground">알림</span>
+            <span className="text-[14px] font-black text-foreground">새로운 소식</span>
             {unreadCount > 0 ? (
               <button onClick={markAllRead} className="text-[11px] font-bold text-accent hover:text-foreground">모두 읽음</button>
             ) : null}
@@ -86,13 +105,13 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 </div>
               </Link>
             )) : (
-              <div className="px-6 py-12 text-center text-[13px] text-accent/50 font-medium">새로운 알림이 없습니다.</div>
+              <div className="px-6 py-12 text-center text-[13px] text-accent/50 font-medium italic">신규 알림이 없습니다.</div>
             )}
           </div>
         </div>
       )}
 
-      {/* Profile Panel */}
+      {/* Profile/Stats Panel (Simplified) */}
       {showProfile && (
         <div className="absolute inset-0 z-50 flex flex-col animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-foreground/30 backdrop-blur-md" onClick={() => setShowProfile(false)} />
@@ -101,23 +120,13 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               <div className="w-14 h-1.5 rounded-full bg-foreground/10" />
             </div>
             <div className="px-8 pb-12">
-              <div className="flex items-center justify-between mb-10 mt-6">
-                <div className="flex items-center gap-5">
-                  <div className="w-16 h-16 rounded-[1.8rem] bg-foreground text-background flex items-center justify-center text-2xl font-black shadow-2xl">
-                    {STUDENT_PROFILE.name[0]}
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-foreground serif">{STUDENT_PROFILE.name}</h2>
-                    <p className="text-[13px] text-accent font-bold mt-1 tracking-wider">{STUDENT_PROFILE.class}</p>
-                  </div>
-                </div>
-                <button onClick={handleLogout} className="w-12 h-12 rounded-[1.2rem] bg-error/10 text-error flex items-center justify-center hover:bg-error hover:text-white transition-all">
-                  <LogOut size={20} strokeWidth={2.5} />
-                </button>
+              <div className="text-center mb-10 mt-6">
+                  <h2 className="text-3xl font-black text-foreground serif mb-2">{profile.name} 학생</h2>
+                  <p className="text-[14px] text-accent font-bold tracking-widest">{profile.class}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-10">
-                {STUDENT_PROFILE.stats.map(s => (
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                {profile.stats.map(s => (
                   <div key={s.label} className="bg-white border border-foreground/5 rounded-[2rem] px-6 py-5 shadow-sm">
                     <p className="text-[10px] font-black text-accent uppercase tracking-[0.15em] mb-2">{s.label}</p>
                     <p className="text-[22px] font-black text-foreground">{s.value}</p>
@@ -125,12 +134,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 ))}
               </div>
 
-              <div className="p-6 rounded-[2.2rem] bg-foreground text-background shadow-2xl">
-                 <h3 className="text-[11px] font-black uppercase tracking-[0.2em] mb-4 opacity-50">AI 진단 요약</h3>
-                 <p className="text-[14px] font-medium leading-[1.6]">
-                    학습을 시작하면 AI가 강점과 약점을 분석하여 이곳에 요약해줄 거야.
-                 </p>
-              </div>
+              <button onClick={handleLogout} className="w-full h-16 rounded-[2rem] bg-error/10 text-error font-black text-[14px] flex items-center justify-center gap-2 hover:bg-error hover:text-white transition-all">
+                <LogOut size={18} strokeWidth={3} /> 로그아웃
+              </button>
             </div>
           </div>
         </div>

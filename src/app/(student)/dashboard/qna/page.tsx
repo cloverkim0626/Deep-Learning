@@ -27,26 +27,12 @@ type Post = {
   showAnswers: boolean;
 };
 
-// Using a valid UUID for the mock student to avoid Supabase 400 errors
-const CURRENT_STUDENT_ID = "00000000-0000-0000-0000-000000000001"; 
-
-const MOCK_DATA = {
-  workbooks: ["수능특강 2026", "수능완성 2026", "자이스토리 고3"],
-  chapters: {
-    "수능특강 2026": ["12강 (어휘)", "13강 (빈칸)", "14강 (무관)"],
-    "수능완성 2026": ["1강", "2강", "3강"],
-    "자이스토리 고3": ["Unit A", "Unit B"]
-  },
-  passages: {
-    "12강 (어휘)": ["1번 (Silence)", "2번 (Gut Instinct)", "3번 (Climate Change)"],
-    "1강": ["1번", "2번"]
-  }
-};
-
 export default function QnAPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [studentName, setStudentName] = useState("학생");
+  const [studentClass, setStudentClass] = useState("");
   
   // Modal Step State
   const [step, setStep] = useState(1);
@@ -58,13 +44,21 @@ export default function QnAPage() {
   const [commentInput, setCommentInput] = useState<{ [postId: string]: string }>({});
 
   useEffect(() => {
+    // Read session from localStorage
+    const saved = localStorage.getItem("stu_session");
+    if (saved) {
+      const data = JSON.parse(saved);
+      setStudentName(data.name || "학생");
+      setStudentClass(data.class || "");
+    }
+
     async function loadData() {
       try {
         const data = await getQnaPosts();
         if (data) {
           const formatted: Post[] = data.map((p: any) => ({
             id: p.id,
-            author: p.author_id === CURRENT_STUDENT_ID ? "나 (김가연)" : "익명",
+            author: p.profiles?.full_name || "익명",
             authorId: p.author_id,
             class: p.profiles?.class_name || "학생",
             passage: p.passage_id || "일반 질문",
@@ -74,7 +68,7 @@ export default function QnAPage() {
             status: p.status,
             answers: (p.qna_answers || []).map((a: any) => ({
               id: a.id,
-              author: a.is_teacher ? "선생님" : (a.author_id === CURRENT_STUDENT_ID ? "나 (김가연)" : "익명"),
+              author: a.is_teacher ? "선생님" : (a.profiles?.full_name || "익명"),
               authorId: a.author_id,
               isTeacher: a.is_teacher,
               text: a.text,
@@ -97,10 +91,16 @@ export default function QnAPage() {
     if (!question.trim()) return;
     try {
       const passageLabel = [selWorkbook, selChapter, selPassage].filter(Boolean).join(" > ");
-      const result = await createQnaPost(CURRENT_STUDENT_ID, passageLabel || "기타", question);
+      // TO PREVENT DB ERROR: Send null for author_id if we don't have a valid Supabase Auth UUID yet
+      // This will still allow the post to be created in the DB as an anonymous post.
+      const result = await createQnaPost(null as any, passageLabel || "기타", question);
+      
       const newPost: Post = {
-        id: result.id, author: "나 (김가연)", authorId: CURRENT_STUDENT_ID,
-        class: "고3 금토반", passage: passageLabel || "기타",
+        id: result?.id || Date.now().toString(), 
+        author: `나 (${studentName})`, 
+        authorId: "current",
+        class: studentClass || "학생", 
+        passage: passageLabel || "기타",
         question: question, likes: 0, liked: false, status: "pending", answers: [], showAnswers: false
       };
       setPosts(prev => [newPost, ...prev]);
@@ -108,7 +108,7 @@ export default function QnAPage() {
       resetModal();
     } catch (err) {
       console.error(err);
-      alert("질문 등록에 실패했습니다.");
+      alert("질문 등록에 실패했습니다. (DB 연결 확인 필요)");
     }
   };
 
@@ -117,11 +117,11 @@ export default function QnAPage() {
     if (!text?.trim()) return;
 
     try {
-      await addQnaAnswer(postId, CURRENT_STUDENT_ID, text, false);
+      await addQnaAnswer(postId, null as any, text, false);
       const newAns: Answer = {
         id: Date.now().toString(),
-        author: "나 (김가연)",
-        authorId: CURRENT_STUDENT_ID,
+        author: `나 (${studentName})`,
+        authorId: "current",
         isTeacher: false,
         text,
         time: "방금"
@@ -146,7 +146,7 @@ export default function QnAPage() {
         </div>
         <button 
             onClick={() => setShowModal(true)}
-            className="w-14 h-14 rounded-2xl bg-foreground text-background flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all"
+            className="w-14 h-14 rounded-2xl bg-foreground text-background flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all outline-none"
         >
             <Plus size={24} strokeWidth={3} />
         </button>
@@ -164,8 +164,8 @@ export default function QnAPage() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-[15px] font-black ${post.authorId === CURRENT_STUDENT_ID ? "text-foreground" : "text-accent"}`}>
-                        {post.author}
+                    <span className={`text-[15px] font-black ${post.authorId === "current" || post.author.includes(studentName) ? "text-foreground" : "text-accent"}`}>
+                        {post.author.includes(studentName) ? `나 (${studentName})` : "익명"}
                     </span>
                     <span className="text-[10px] font-bold text-accent px-2 py-0.5 bg-accent-light/50 rounded-md uppercase tracking-widest">{post.class}</span>
                   </div>
@@ -196,7 +196,7 @@ export default function QnAPage() {
                 {post.answers.map(ans => (
                   <div key={ans.id} className={`p-5 rounded-[1.8rem] flex flex-col gap-2 ${ans.isTeacher ? "bg-foreground text-background shadow-xl" : "bg-accent-light/50 text-foreground"}`}>
                     <div className="flex justify-between items-center opacity-70">
-                        <span className="text-[10px] font-black tracking-widest uppercase">{ans.author}</span>
+                        <span className="text-[10px] font-black tracking-widest uppercase">{ans.author.includes(studentName) ? `나 (${studentName})` : ans.author}</span>
                         <span className="text-[10px] font-bold">{ans.time}</span>
                     </div>
                     <p className="text-[14px] font-medium leading-relaxed">{ans.text}</p>
@@ -208,7 +208,7 @@ export default function QnAPage() {
                     <input 
                         value={commentInput[post.id] || ""}
                         onChange={e => setCommentInput(prev => ({ ...prev, [post.id]: e.target.value }))}
-                        placeholder="답변이나 의견을 자유롭게 적어 주세요."
+                        placeholder="이 질문에 대한 생각을 적어봐..."
                         className="flex-1 h-14 px-6 rounded-2xl bg-white border border-foreground/5 focus:border-foreground/20 focus:outline-none text-[14px] font-medium shadow-inner"
                     />
                     <button 
@@ -233,10 +233,9 @@ export default function QnAPage() {
                     <div className="w-14 h-1.5 rounded-full bg-foreground/10" />
                 </div>
 
-                <div className="mb-10 flex items-center justify-between">
+                <div className="mb-8 flex items-center justify-between">
                     <div>
                         <h3 className="text-[24px] font-black text-foreground serif">질문하기</h3>
-                        <p className="text-[12px] text-accent font-bold mt-1 uppercase tracking-widest">Post a Question</p>
                     </div>
                     <button onClick={() => setShowModal(false)} className="w-10 h-10 rounded-full bg-accent-light flex items-center justify-center text-accent">
                         <X size={20} />
@@ -244,58 +243,54 @@ export default function QnAPage() {
                 </div>
 
                 <div className="space-y-6">
-                    {/* Hierarchy Picker Steps */}
-                    {step === 1 && (
-                        <div className="space-y-4 animate-in fade-in">
-                            <label className="text-[11px] font-black text-accent uppercase tracking-widest pl-2">1. 교재 선택</label>
-                            {MOCK_DATA.workbooks.map(w => (
-                                <button key={w} onClick={() => { setSelWorkbook(w); setStep(2); }}
-                                    className="w-full p-6 text-left bg-white border border-foreground/5 rounded-[1.8rem] hover:border-foreground/20 transition-all flex items-center justify-between font-bold text-[15px]">
-                                    {w} <ChevronRight size={18} className="text-accent" />
-                                </button>
-                            ))}
-                            <button onClick={() => setStep(4)} className="w-full p-6 text-center text-accent font-bold text-[13px] border border-dashed border-foreground/10 rounded-[1.8rem]">선택 없이 바로 질문하기</button>
-                        </div>
-                    )}
-
-                    {step === 2 && (
-                        <div className="space-y-4 animate-in fade-in">
-                            <label className="text-[11px] font-black text-accent uppercase tracking-widest pl-2">2. 강 선택 ({selWorkbook})</label>
-                            {(MOCK_DATA.chapters as any)[selWorkbook]?.map((c: string) => (
-                                <button key={c} onClick={() => { setSelChapter(c); setStep(3); }}
-                                    className="w-full p-6 text-left bg-white border border-foreground/5 rounded-[1.8rem] hover:border-foreground/20 transition-all flex items-center justify-between font-bold text-[15px]">
-                                    {c} <ChevronRight size={18} className="text-accent" />
-                                </button>
-                            ))}
-                            <button onClick={() => setStep(4)} className="w-full p-4 text-center text-accent font-bold text-[13px]">건너뛰고 질문하기</button>
-                        </div>
-                    )}
-
-                    {step === 3 && (
-                        <div className="space-y-4 animate-in fade-in">
-                            <label className="text-[11px] font-black text-accent uppercase tracking-widest pl-2">3. 지문 선택 ({selChapter})</label>
-                            {(MOCK_DATA.passages as any)[selChapter]?.map((p: string) => (
-                                <button key={p} onClick={() => { setSelPassage(p); setStep(4); }}
-                                    className="w-full p-6 text-left bg-white border border-foreground/5 rounded-[1.8rem] hover:border-foreground/20 transition-all flex items-center justify-between font-bold text-[15px]">
-                                    {p} <ChevronRight size={18} className="text-accent" />
-                                </button>
-                            ))}
-                            <button onClick={() => setStep(4)} className="w-full p-4 text-center text-accent font-bold text-[13px]">건너뛰고 질문하기</button>
+                    {/* Hierarchy Picker Steps (Minimalized) */}
+                    {step < 4 && (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                {[1,2,3].map(i => (
+                                    <div key={i} className={`h-1.5 flex-1 rounded-full ${step >= i ? "bg-foreground" : "bg-foreground/5"}`} />
+                                ))}
+                            </div>
+                            <div className="max-h-[300px] overflow-y-auto px-1 py-1 custom-scrollbar space-y-2">
+                                {step === 1 ? (
+                                    ["수능특강 2026", "수능완성 2026", "자이스토리 고3", "기타/교제없음"].map(w => (
+                                        <button key={w} onClick={() => { setSelWorkbook(w); w === "기타/교제없음" ? setStep(4) : setStep(2); }}
+                                            className="w-full p-5 text-left bg-white border border-foreground/5 rounded-2xl hover:border-foreground/20 transition-all flex items-center justify-between font-bold text-[15px]">
+                                            {w} <ChevronRight size={16} className="text-accent" />
+                                        </button>
+                                    ))
+                                ) : step === 2 ? (
+                                    ["12강 (어휘)", "13강 (빈칸)", "14강 (무관)", "건너뛰기"].map(c => (
+                                        <button key={c} onClick={() => { setSelChapter(c === "건너뛰기" ? "" : c); setStep(3); }}
+                                            className="w-full p-5 text-left bg-white border border-foreground/5 rounded-2xl hover:border-foreground/20 transition-all flex items-center justify-between font-bold text-[15px]">
+                                            {c} <ChevronRight size={16} className="text-accent" />
+                                        </button>
+                                    ))
+                                ) : (
+                                    ["1번 지문", "2번 지문", "3번 지문", "건너뛰기"].map(p => (
+                                        <button key={p} onClick={() => { setSelPassage(p === "건너뛰기" ? "" : p); setStep(4); }}
+                                            className="w-full p-5 text-left bg-white border border-foreground/5 rounded-2xl hover:border-foreground/20 transition-all flex items-center justify-between font-bold text-[15px]">
+                                            {p} <ChevronRight size={16} className="text-accent" />
+                                        </button>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     )}
 
                     {step === 4 && (
                         <div className="space-y-6 animate-in fade-in zoom-in-95">
-                             <div className="bg-accent-light/50 p-4 rounded-2xl flex items-center gap-3">
-                                 <CheckCircle size={16} className="text-success" />
+                             <div className="bg-accent-light/50 p-4 rounded-xl flex items-center justify-between">
                                  <span className="text-[12px] font-bold text-foreground">
-                                    {[selWorkbook, selChapter, selPassage].filter(Boolean).join(" > ") || "직접 입력 모드"}
+                                    {[selWorkbook, selChapter, selPassage].filter(Boolean).join(" > ") || "직접 입력"}
                                  </span>
+                                 <button onClick={() => setStep(1)} className="text-[10px] font-black text-accent underline">수정</button>
                              </div>
                              <textarea 
                                 value={question}
                                 onChange={e => setQuestion(e.target.value)}
-                                placeholder="어떤 부분이 이해가 안 되나요? 자유롭게 적어 주세요."
+                                { ... (question.length === 0 ? {autoFocus: true} : {})}
+                                placeholder="질문 내용을 입력해 주세요..."
                                 className="w-full h-40 p-6 rounded-[2.2rem] bg-white border border-foreground/10 focus:border-foreground/30 focus:outline-none transition-all text-[16px] font-medium placeholder:text-accent/30 resize-none shadow-inner"
                              />
                              <button 

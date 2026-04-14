@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, Tag, ChevronDown, Loader2 } from "lucide-react";
+import { Send, Sparkles, Tag, ChevronDown, Loader2, MessageSquare, Info } from "lucide-react";
 
 type Option = { text: string; isCorrect?: boolean; followUpKey?: string };
 type Message = {
@@ -24,15 +24,19 @@ const PASSAGES: Record<string, { short: string; full: string; sentences: Record<
       S10: "Without testing and evidence, intuition is useful, but it is never the ultimate word."
     }
   },
+  none: {
+    short: "지문 없이 바로 질문하기",
+    full: "상관 없음 (자유 질문 모드)",
+    sentences: {}
+  }
 };
 
 const OPENING: Message = {
   id: "open", sender: "ai",
-  text: "안녕하세요! 지문을 읽다가 해석이 어렵거나 구조가 궁금한 문장이 있다면 질문해 주세요. 문맥 파악이나 논리 구조에 대해서도 설명해 드릴 수 있습니다.",
+  text: "안녕하세요! 지문을 읽다가 해석이 어렵거나 구조가 궁금한 점이 생겼나요? 아니면 영어 공부 전반에 대해 궁금한 점이 있나요? 편하게 물어보세요!",
   options: [
-    { text: "특정 문장 해석이 안 돼요", followUpKey: "ask_specific" },
-    { text: "지문 전체 논리가 궁금해요", followUpKey: "ask_logic" },
-    { text: "기초부터 천천히 알려주세요", followUpKey: "start_basic" },
+    { text: "선택한 지문에서 궁금한 게 있어요", followUpKey: "ask_passage" },
+    { text: "지문 없이 바로 질문할게요", followUpKey: "ask_free" },
   ]
 };
 
@@ -61,18 +65,23 @@ export default function AITeacherPage() {
 
     try {
       const history = messages.map(m => ({ role: m.sender === "ai" ? "assistant" : "user", content: m.text }));
-      const currentPassage = PASSAGES[passage]?.full || "";
+      const currentPassage = passage === "none" ? "None (General English Question)" : (PASSAGES[passage]?.full || "");
+      const sentences = passage !== "none" ? JSON.stringify(PASSAGES[passage]?.sentences || {}) : "{}";
 
       const res = await fetch("/api/ai-tutor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passage: currentPassage, message: text, history }),
+        body: JSON.stringify({ 
+          passage: `Context: ${currentPassage}. Sentence Data: ${sentences}`, 
+          message: text, 
+          history 
+        }),
       });
 
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      const aiResponseText = data.reply || data.text || data.answer || "미안해, 다시 한 번 설명해줄 수 있겠니? (응답 형식을 맞추지 못했어)";
+      const aiResponseText = data.reply || data.text || data.answer || "잠시만요, 다시 확인해 보고 답변 드릴게요!";
       
       const aiMsg: Message = { 
         id: (Date.now() + 1).toString(), 
@@ -83,7 +92,7 @@ export default function AITeacherPage() {
       };
       pushMessages(aiMsg);
     } catch (err: any) {
-      pushMessages({ id: Date.now().toString(), sender: "ai", text: `에러가 발생했어: ${err.message}. 잠시 후 다시 시도해줘.` });
+      pushMessages({ id: Date.now().toString(), sender: "ai", text: `오류가 발생했습니다: ${err.message}. 잠시 후 다시 시도해 주세요.` });
     } finally {
       setIsLoading(false);
     }
@@ -91,39 +100,49 @@ export default function AITeacherPage() {
 
   const handleOptionClick = (opt: Option) => {
     if (isLoading) return;
+    if (opt.followUpKey === "ask_free") {
+        setPassage("none");
+    }
     setInput(opt.text);
-    setTimeout(() => document.getElementById("ai-form")?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })), 10);
+    setTimeout(() => {
+        const form = document.getElementById("ai-form");
+        if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }, 10);
   };
 
   const lastAIMsg = [...messages].reverse().find(m => m.sender === "ai");
 
   return (
     <div className="flex flex-col h-full max-w-2xl mx-auto w-full relative bg-background">
+      {/* Header with Mode Selection */}
       <div className="flex items-center gap-4 px-6 pt-10 pb-6 shrink-0 z-20 bg-background/80 backdrop-blur-md sticky top-0">
-        <div className="w-12 h-12 rounded-[1.2rem] bg-foreground text-background flex items-center justify-center shadow-xl shrink-0 group hover:rotate-6 transition-transform">
+        <div className="w-12 h-12 rounded-[1.2rem] bg-foreground text-background flex items-center justify-center shadow-xl shrink-0">
           <Sparkles size={20} strokeWidth={2} />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-[17px] text-foreground serif font-black leading-none mb-2">AI 코어 튜터</h1>
+          <h1 className="text-[17px] text-foreground serif font-black mb-2 flex items-center gap-2">
+            AI 코어 튜터
+            {passage === "none" && <span className="text-[10px] font-bold text-accent px-2 py-0.5 bg-accent-light rounded-md border border-foreground/5">자유 질문 모드</span>}
+          </h1>
           <div className="relative group">
             <select value={passage} onChange={e => setPassage(e.target.value)}
               className="w-full bg-accent-light border border-foreground/5 text-accent text-[12px] font-bold rounded-xl px-4 py-2 appearance-none focus:outline-none cursor-pointer pr-10 hover:border-foreground/20 transition-all">
-              {Object.entries(PASSAGES).map(([k, v]) => <option key={k} value={k}>{v.full}</option>)}
+              {Object.entries(PASSAGES).map(([k, v]) => <option key={k} value={k}>{v.short}</option>)}
             </select>
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-accent pointer-events-none group-hover:text-foreground transition-colors" />
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
           </div>
         </div>
       </div>
 
-      {/* Messages with large bottom padding to avoid overlap with fixed input and fixed nav */}
-      <div className="flex-1 overflow-y-auto px-6 custom-scrollbar flex flex-col gap-8 pb-[200px] pt-4">
+      {/* Chat History */}
+      <div className="flex-1 overflow-y-auto px-6 custom-scrollbar flex flex-col gap-8 pb-[240px] pt-4">
         {messages.map((msg) => {
           const isLastAI = msg === lastAIMsg && msg.sender === "ai";
           return (
             <div key={msg.id} className="animate-in fade-in slide-in-from-bottom-2 duration-500">
               <div className={`flex ${msg.sender === "ai" ? "justify-start" : "justify-end"}`}>
                 <div className="max-w-[88%] flex flex-col gap-2.5">
-                  <div className={`p-5 rounded-[2.2rem] text-[15px] shadow-md whitespace-pre-wrap ${
+                  <div className={`p-6 rounded-[2.2rem] text-[15px] shadow-md whitespace-pre-wrap leading-[1.6] ${
                     msg.sender === "ai"
                       ? "bg-white border border-foreground/5 text-foreground rounded-tl-sm font-medium"
                       : "bg-foreground text-background rounded-tr-sm shadow-xl font-bold"
@@ -131,8 +150,8 @@ export default function AITeacherPage() {
                     {msg.text}
                   </div>
                   {msg.errorTag && (
-                    <div className="flex items-center gap-2 px-3 py-1 bg-red-50 rounded-full self-start">
-                      <Tag size={12} className="text-red-500" strokeWidth={2.5} />
+                    <div className="flex items-center gap-2 px-4 py-1.5 bg-red-50 rounded-full self-start border border-red-100 shadow-sm">
+                      <Tag size={13} className="text-red-500" strokeWidth={2.5} />
                       <span className="text-[11px] font-black text-red-500">
                         {msg.errorTag.label} ({msg.errorTag.code})
                       </span>
@@ -141,10 +160,10 @@ export default function AITeacherPage() {
                 </div>
               </div>
               {isLastAI && msg.options && (
-                <div className="flex flex-col gap-2.5 mt-5 pl-1 pr-6">
+                <div className="flex flex-col gap-1.5 mt-6 pl-1 pr-6 slide-in-from-left duration-700">
                   {msg.options.map((opt, idx) => (
                     <button key={idx} onClick={() => handleOptionClick(opt)}
-                      className="text-left text-[14px] font-bold text-foreground bg-white hover:bg-foreground hover:text-background border border-foreground/10 px-6 py-4 rounded-[1.5rem] transition-all active:scale-[0.98] leading-snug shadow-sm">
+                      className="text-left text-[13px] font-bold text-foreground bg-white hover:bg-foreground hover:text-background border border-foreground/10 px-6 py-3.5 rounded-[1.5rem] transition-all active:scale-[0.98] leading-snug shadow-sm">
                       {opt.text}
                     </button>
                   ))}
@@ -156,13 +175,16 @@ export default function AITeacherPage() {
         <div ref={bottomRef} className="h-4" />
       </div>
 
-      {/* Fixed Input area - MADE OPAQUE (bg-white) to prevent element overlap ghosting */}
-      <div className="fixed bottom-[88px] left-0 right-0 w-full max-w-md mx-auto px-6 z-20 pointer-events-none pb-4 bg-gradient-to-t from-background via-background to-transparent">
-        <form id="ai-form" onSubmit={handleSend} className="pointer-events-auto relative bg-white rounded-full p-2 border border-foreground/20 flex items-center shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-in slide-in-from-bottom duration-500">
+      {/* Fixed Opaque Input Container */}
+      <div className="fixed bottom-[88px] left-0 right-0 w-full max-w-md mx-auto px-6 z-20 pointer-events-none pb-6 bg-gradient-to-t from-background via-background to-transparent">
+        <form id="ai-form" onSubmit={handleSend} className="pointer-events-auto relative bg-white rounded-full p-1.5 border border-foreground/15 flex items-center shadow-[0_20px_50px_rgba(0,0,0,0.12)] animate-in slide-in-from-bottom duration-500 overflow-hidden">
+          <div className="pl-5 text-accent opacity-40 shrink-0">
+             <MessageSquare size={18} />
+          </div>
           <input value={input} onChange={e => setInput(e.target.value)}
             disabled={isLoading}
-            placeholder="궁금한 내용을 질문해 주세요..."
-            className="flex-1 bg-transparent border-none outline-none px-6 py-4 text-[15px] font-medium placeholder:text-accent/60 text-foreground w-full"
+            placeholder={passage === "none" ? "영어에 대해 무엇이든 물어보세요..." : "이 지문에 대해 궁금한 게 있나요?"}
+            className="flex-1 bg-transparent border-none outline-none px-4 py-4 text-[15px] font-medium placeholder:text-accent/60 text-foreground w-full shadow-none"
           />
           <button type="submit" disabled={!input.trim() || isLoading}
             className="w-12 h-12 shrink-0 rounded-full bg-foreground text-background flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-20 shadow-lg">
