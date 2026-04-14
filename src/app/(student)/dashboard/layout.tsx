@@ -58,12 +58,12 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
       {/* Top Header - Fixed/Sticky */}
       <header className="h-20 flex items-center justify-between px-6 border-b border-foreground/5 bg-background/90 backdrop-blur-xl z-30 shrink-0 sticky top-0">
-        <Link href="/dashboard" className="flex flex-col gap-0.5">
-          <span className="text-[12px] font-black text-accent tracking-widest uppercase opacity-60 leading-none">Deep Learning</span>
+        <Link href="/dashboard" className="flex flex-col gap-1">
+          <span className="text-[18px] text-foreground serif font-black leading-none tracking-tight">Deep Learning</span>
           <div className="flex items-center gap-1.5">
-            <span className="text-[18px] font-black text-foreground serif leading-none">{profile.name} 학생</span>
+            <span className="text-[13px] font-black text-accent leading-none">{profile.name}</span>
             <div className="w-1 h-1 rounded-full bg-foreground/20" />
-            <span className="text-[11px] font-bold text-accent leading-none">{profile.class}</span>
+            <span className="text-[10px] font-bold text-accent leading-none">{profile.class}</span>
           </div>
         </Link>
         <div className="flex items-center gap-3">
@@ -78,9 +78,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           </button>
           <button
             onClick={() => { setShowProfile(!showProfile); setShowNotif(false); }}
-            className="w-11 h-11 rounded-xl bg-foreground text-background flex items-center justify-center text-[15px] font-black shadow-lg hover:scale-105 active:scale-95 transition-all"
+            className="w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center text-[14px] font-black shadow-lg hover:scale-105 active:scale-95 transition-all"
           >
-             <LogOut size={18} strokeWidth={3} onClick={handleLogout} />
+             {profile.name.length > 2 ? profile.name.slice(1) : profile.name.charAt(0)}
           </button>
         </div>
       </header>
