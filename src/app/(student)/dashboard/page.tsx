@@ -225,7 +225,7 @@ export default function VocabDashboard() {
             </button>
 
             {showSetPicker && (
-              <div className="absolute top-20 left-0 w-full glass border border-foreground/10 rounded-[1.5rem] overflow-hidden shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 p-2">
+              <div className="absolute top-20 left-0 w-full bg-white border border-foreground/10 rounded-[1.5rem] overflow-hidden shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 p-2">
                 {wordSets.map((s, idx) => (
                   <button
                     key={s.id}
