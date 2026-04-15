@@ -323,6 +323,88 @@ function WordEditPanel({ set, onClose, onSaved }: { set: { id: string; label: st
   );
 }
 
+// ─── Folder Assign Modal ─────────────────────────────────────────────────────
+function FolderAssignModal({
+  folder, onClose
+}: {
+  folder: { id: string; name: string; folder_passages: { set_id: string; word_sets: { label: string; workbook: string; chapter: string } }[] };
+  onClose: () => void;
+}) {
+  const [selectedNames, setSelectedNames] = useState<string[]>([]);
+  const [filterClass, setFilterClass] = useState("전체");
+  const [isAssigning, setIsAssigning] = useState(false);
+  const classes = ["전체", "고3 금토반", "고2 아라고반", "고1 아라원당 연합반"];
+  const visibleStudents = filterClass === "전체" ? ALL_STUDENTS : ALL_STUDENTS.filter(s => s.class === filterClass);
+  const toggle = (name: string) => setSelectedNames(prev => prev.includes(name) ? prev.filter(x => x !== name) : [...prev, name]);
+  const selectAll = () => setSelectedNames(visibleStudents.map(s => s.name));
+  const passages = folder.folder_passages || [];
+
+  const handleAssign = async () => {
+    if (selectedNames.length === 0 || passages.length === 0) return;
+    setIsAssigning(true);
+    try {
+      const students = selectedNames.map(name => ({ name, class: ALL_STUDENTS.find(s => s.name === name)?.class || "" }));
+      // Assign each passage in the folder to all selected students
+      await Promise.all(passages.map(fp => assignSetToStudents(fp.set_id, students)));
+      alert(`"${folder.name}" 폴더 내 ${passages.length}개 지문이 ${selectedNames.length}명에게 배당되었습니다.`);
+      onClose();
+    } catch (err: unknown) {
+      alert("배당 실패: " + (err as Error).message);
+    } finally { setIsAssigning(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+      <div className="glass w-full max-w-lg rounded-[2.5rem] border border-foreground/10 overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+        <div className="p-8 border-b border-foreground/5 flex justify-between items-center bg-accent-light/30">
+          <div>
+            <h3 className="text-[18px] font-black text-foreground">폴더 일괄 배당</h3>
+            <p className="text-[12px] text-accent font-bold mt-0.5">📁 {folder.name} · {passages.length}개 지문 전체 배당</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-foreground/5 rounded-xl"><X size={20} /></button>
+        </div>
+        {/* Passage preview */}
+        <div className="px-6 py-3 bg-accent-light/20 border-b border-foreground/5 flex flex-wrap gap-2">
+          {passages.slice(0, 5).map(fp => (
+            <span key={fp.set_id} className="text-[10px] font-bold bg-white border border-foreground/10 px-2.5 py-1 rounded-lg text-foreground">
+              {fp.word_sets?.label}
+            </span>
+          ))}
+          {passages.length > 5 && <span className="text-[10px] font-bold text-accent px-2 py-1">+{passages.length - 5}개 더</span>}
+        </div>
+        <div className="px-6 pt-4 pb-3 flex gap-2 flex-wrap border-b border-foreground/5 bg-accent-light/10 items-center">
+          {classes.map(c => (
+            <button key={c} onClick={() => setFilterClass(c)} className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all ${filterClass === c ? 'bg-foreground text-background shadow-md' : 'bg-white/60 text-accent hover:bg-foreground/10'}`}>{c}</button>
+          ))}
+          <button onClick={selectAll} className="ml-auto text-[11px] font-black text-accent hover:text-foreground transition-colors px-2">전체 선택</button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-2">
+          <p className="text-[11px] font-black text-accent uppercase tracking-widest mb-3">{selectedNames.length > 0 ? `${selectedNames.length}명 선택됨` : '학생을 선택하세요'}</p>
+          {visibleStudents.map(student => (
+            <button key={student.name} onClick={() => toggle(student.name)}
+              className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${selectedNames.includes(student.name) ? 'bg-foreground border-foreground text-background shadow-lg' : 'bg-white border-foreground/5 text-foreground hover:border-foreground/20'}`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[12px] ${selectedNames.includes(student.name) ? 'bg-background text-foreground' : 'bg-accent-light text-accent'}`}>{student.name[0]}</div>
+                <div className="text-left">
+                  <div className="text-[14px] font-bold">{student.name}</div>
+                  <div className={`text-[10px] font-bold ${selectedNames.includes(student.name) ? 'opacity-60' : 'text-accent'}`}>{student.class}</div>
+                </div>
+              </div>
+              {selectedNames.includes(student.name) && <Check size={18} strokeWidth={3} />}
+            </button>
+          ))}
+        </div>
+        <div className="p-6 border-t border-foreground/5 bg-accent-light/10">
+          <button onClick={handleAssign} disabled={isAssigning || selectedNames.length === 0 || passages.length === 0}
+            className="w-full h-14 bg-foreground text-background rounded-2xl font-black tracking-widest text-[14px] shadow-xl hover:-translate-y-1 disabled:opacity-20 transition-all">
+            {isAssigning ? "배당 중..." : `${selectedNames.length}명에게 ${passages.length}개 지문 일괄 배당`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Folder Tab ────────────────────────────────────────────────────────────────
 function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbook: string; chapter: string }[] }) {
   const [folders, setFolders] = useState<{
@@ -336,6 +418,7 @@ function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbo
   const [expandedFolderId, setExpandedFolderId] = useState<string | null>(null);
   const [addingSetId, setAddingSetId] = useState<string>('');
   const [removingPassageKey, setRemovingPassageKey] = useState<string | null>(null);
+  const [folderAssignTarget, setFolderAssignTarget] = useState<typeof folders[0] | null>(null);
 
   const loadFolders = async () => {
     setLoading(true);
@@ -385,6 +468,7 @@ function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbo
   };
 
   return (
+    <>
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="glass rounded-[2.5rem] p-8 border border-foreground/5">
         <div className="flex items-center gap-3 mb-6">
@@ -440,6 +524,14 @@ function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbo
                     <div className="text-[11px] text-accent/50 font-bold mt-0.5">지문 {passages.length}개</div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {passages.length > 0 && (
+                      <button
+                        onClick={() => setFolderAssignTarget(folder)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-black bg-foreground text-background hover:opacity-90 transition-all shadow-sm"
+                      >
+                        <Users size={12} strokeWidth={3} /> 배당
+                      </button>
+                    )}
                     <button onClick={() => setExpandedFolderId(isExpanded ? null : folder.id)}
                       className="px-4 py-2 rounded-xl text-[12px] font-black border border-foreground/10 hover:bg-foreground/5 transition-all">
                       {isExpanded ? '접기' : '편집'}
@@ -497,8 +589,16 @@ function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbo
         </div>
       )}
     </div>
+    {folderAssignTarget && (
+      <FolderAssignModal
+        folder={folderAssignTarget}
+        onClose={() => setFolderAssignTarget(null)}
+      />
+    )}
+    </>
   );
 }
+
 
 // ─── Smart AI Ingest ───────────────────────────────────────────────────────────
 function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
