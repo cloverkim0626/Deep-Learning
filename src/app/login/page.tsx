@@ -20,7 +20,7 @@ const CLASS_DATA = [
   },
   {
     name: "[WOODOK] GUEST",
-    students: []
+    students: ["게스트"]
   }
 ];
 
@@ -48,8 +48,16 @@ function LoginForm() {
         setError("반과 이름을 모두 선택해 주세요.");
         return;
       }
+      // GUEST class — no password required
+      if (selectedClass === "[WOODOK] GUEST") {
+        localStorage.setItem("stu_session", JSON.stringify({
+          name: selectedStudent.split(" - ")[0],
+          class: selectedClass
+        }));
+        window.location.href = "/dashboard";
+        return;
+      }
       if (password === "1234") {
-        // Save session data to localStorage so it persists
         localStorage.setItem("stu_session", JSON.stringify({ 
           name: selectedStudent.split(" - ")[0], 
           class: selectedClass 
