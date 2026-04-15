@@ -1,85 +1,143 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowRight, BookOpen, User, Briefcase, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpen, Briefcase, Zap, Target, Brain } from "lucide-react";
+import { useEffect, useState } from "react";
+
+function getDday() {
+  const today = new Date();
+  const year = today.getFullYear();
+  // 수능: 11월 둘째주 목요일 (approx Nov 13)
+  const csat = new Date(year, 10, 13);
+  if (today > csat) csat.setFullYear(year + 1);
+  const diff = Math.ceil((csat.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  return diff;
+}
+
+const ROTATING_WORDS = ["어휘력", "독해력", "논리력", "사고력", "실전력"];
 
 export default function Home() {
+  const [dday, setDday] = useState<number | null>(null);
+  const [wordIdx, setWordIdx] = useState(0);
+
+  useEffect(() => {
+    setDday(getDday());
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setWordIdx(i => (i + 1) % ROTATING_WORDS.length);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 relative overflow-hidden bg-background">
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-foreground/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-foreground/5 rounded-full blur-[120px]" />
+      
+      {/* Background — subtle gradient orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] bg-foreground/[0.04] rounded-full blur-[130px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] bg-foreground/[0.04] rounded-full blur-[130px]" />
+        {/* Subtle grid texture */}
+        <div className="absolute inset-0 opacity-[0.015]"
+          style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
       </div>
 
-      <div className="z-10 w-full max-w-lg flex flex-col items-center gap-16 animate-in fade-in zoom-in-95 duration-1000">
-        
-        {/* Branding Area */}
-        <div className="flex flex-col items-center text-center gap-6">
-          <div className="relative group">
-            <div className="absolute -inset-4 bg-foreground/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-            <div className="w-20 h-20 rounded-[2rem] bg-foreground text-background flex items-center justify-center shadow-2xl relative z-10 hover:rotate-6 transition-transform duration-500">
-              <BookOpen strokeWidth={1.5} size={36} />
+      <div className="z-10 w-full max-w-sm mx-auto flex flex-col items-center gap-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+
+        {/* D-DAY Badge */}
+        {dday !== null && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-full text-[11px] font-black tracking-wider animate-in zoom-in duration-700 delay-300">
+            <Zap size={11} strokeWidth={3} />
+            수능까지 D-{dday}
+          </div>
+        )}
+
+        {/* Hero */}
+        <div className="text-center space-y-5">
+          <div className="relative inline-block">
+            <div className="w-16 h-16 rounded-[1.6rem] bg-foreground text-background flex items-center justify-center shadow-2xl mx-auto mb-6 hover:rotate-12 transition-transform duration-500 cursor-default">
+              <BookOpen strokeWidth={1.5} size={28} />
             </div>
           </div>
-          <div className="space-y-4">
-            <h1 className="text-[52px] md:text-[64px] text-foreground serif leading-[0.9] tracking-[-0.04em] font-black">
+
+          <div className="space-y-2">
+            <h1 className="text-[54px] md:text-[64px] text-foreground serif leading-[0.88] tracking-[-0.04em] font-black">
               Deep<br />Learning
             </h1>
-            <div className="flex items-center justify-center gap-2 text-accent mt-4">
-              <div className="h-[1px] w-8 bg-foreground/10" />
-              <span className="text-[12px] font-black uppercase tracking-[0.3em] opacity-60">Produced by Team Parallax</span>
-              <div className="h-[1px] w-8 bg-foreground/10" />
+            <p className="text-[12px] font-black uppercase tracking-[0.25em] text-accent/50">
+              Produced by Team Parallax
+            </p>
+          </div>
+
+          {/* Rotating value prop */}
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <div className="h-[1px] w-6 bg-foreground/15" />
+            <div className="text-[13px] font-bold text-foreground/60 min-w-[60px] text-center transition-all duration-500">
+              <span key={wordIdx} className="inline-block animate-in fade-in slide-in-from-bottom-2 duration-400">
+                {ROTATING_WORDS[wordIdx]}
+              </span>을 키워드립니다
             </div>
+            <div className="h-[1px] w-6 bg-foreground/15" />
           </div>
         </div>
 
-        {/* Sophisticated Arrangement of Entry Points */}
-        <div className="flex flex-col w-full gap-6 px-4">
+        {/* Stats Row — 현실감 */}
+        <div className="grid grid-cols-3 gap-3 w-full">
+          {[
+            { icon: <Target size={14} />, label: "어휘 DB", value: "10~20개" },
+            { icon: <Brain size={14} />, label: "AI 분석", value: "지문당" },
+            { icon: <Zap size={14} />, label: "수능·내신", value: "완전 대비" },
+          ].map((s, i) => (
+            <div key={i} className="bg-foreground/[0.03] border border-foreground/5 rounded-2xl p-3 text-center hover:bg-foreground/[0.06] transition-colors">
+              <div className="flex items-center justify-center text-accent/60 mb-1">{s.icon}</div>
+              <p className="text-[14px] font-black text-foreground leading-tight">{s.value}</p>
+              <p className="text-[9px] font-bold text-accent/50 uppercase tracking-wider mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA Buttons */}
+        <div className="flex flex-col w-full gap-4">
           <Link
             href="/login?role=student"
-            className="group relative flex flex-col items-start w-full p-8 bg-foreground rounded-[2.5rem] text-background shadow-2xl hover:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.3)] transition-all duration-700 overflow-hidden"
+            className="group relative flex flex-col items-start w-full p-7 bg-foreground rounded-[2rem] text-background shadow-2xl hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 transition-all duration-500 overflow-hidden"
           >
-            <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-1000" />
-            <div className="flex items-center gap-3 font-black text-[20px] mb-2 relative z-10 transition-transform duration-500 group-hover:translate-x-1">
-              <User strokeWidth={2.5} size={22} className="opacity-80" />
-              학습 공간으로 입장
+            {/* Glow orb */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/8 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-1000" />
+            
+            <div className="flex items-center gap-2 font-black text-[19px] mb-1.5 relative z-10">
+              학습 공간 입장하기
             </div>
-            <p className="text-[13px] text-background/60 font-medium relative z-10 max-w-[200px] leading-relaxed">
-              자신의 성취를 기록하고 AI 튜터를 통해 효율적으로 학습하세요.
+            <p className="text-[12px] text-background/55 font-medium relative z-10 leading-relaxed">
+              배당된 지문 · 어휘 카드 · AI 튜터 · 테스트
             </p>
-            <div className="absolute bottom-8 right-8 w-12 h-12 rounded-full border border-white/20 flex items-center justify-center transition-all duration-500 group-hover:bg-white group-hover:text-foreground">
-              <ArrowRight strokeWidth={2.5} size={20} className="group-hover:translate-x-0.5 transition-transform" />
+            <div className="absolute bottom-6 right-6 w-10 h-10 rounded-full border border-white/20 flex items-center justify-center group-hover:bg-white group-hover:text-foreground transition-all duration-400">
+              <ArrowRight strokeWidth={2.5} size={17} className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </Link>
 
           <Link
             href="/login?role=admin"
-            className="group relative flex items-center justify-between w-full h-20 px-8 bg-white/40 backdrop-blur-xl rounded-[2rem] text-foreground border border-foreground/5 shadow-sm hover:bg-white hover:shadow-xl hover:border-foreground/10 transition-all duration-500"
+            className="group flex items-center justify-between w-full h-[68px] px-6 bg-white/50 backdrop-blur-sm rounded-[1.8rem] text-foreground border border-foreground/8 shadow-sm hover:bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-400"
           >
-            <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-accent-light flex items-center justify-center group-hover:bg-foreground group-hover:text-background transition-colors duration-500">
-                    <Briefcase strokeWidth={1.5} size={18} className="opacity-80" />
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-[14px] font-black tracking-tight">선생님 페이지</span>
-                    <span className="text-[10px] text-accent font-bold uppercase tracking-widest opacity-60">Teacher Dashboard</span>
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-foreground/5 flex items-center justify-center group-hover:bg-foreground group-hover:text-background transition-colors duration-400">
+                <Briefcase strokeWidth={1.5} size={16} />
+              </div>
+              <div>
+                <span className="text-[14px] font-black block leading-tight">선생님 페이지</span>
+                <span className="text-[10px] text-accent/50 font-bold uppercase tracking-wider">Teacher Dashboard</span>
+              </div>
             </div>
-            <ArrowRight strokeWidth={2} size={18} className="text-accent group-hover:text-foreground group-hover:translate-x-1 transition-all" />
+            <ArrowRight strokeWidth={2} size={17} className="text-accent/50 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
           </Link>
         </div>
 
-        {/* Decorative Quote or Label */}
-        <div className="flex flex-col items-center gap-4 text-center pb-8 opacity-40 hover:opacity-100 transition-opacity duration-1000">
-           <Sparkles size={16} className="text-accent animate-pulse" />
-           <p className="text-[11px] font-bold tracking-[0.2em] uppercase max-w-[180px] leading-loose">
-            High Precision<br />Learning System
-           </p>
-        </div>
+        <p className="text-[10px] font-black tracking-[0.35em] text-foreground/20 uppercase select-none">
+          © 2026 Team Parallax
+        </p>
       </div>
-
-      <p className="absolute bottom-8 text-[10px] font-black tracking-[0.4em] text-foreground/20 uppercase z-10 select-none">
-        © 2026 Team Parallax
-      </p>
     </main>
   );
 }
