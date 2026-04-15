@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { CheckCircle, Clock, AlertTriangle, ChevronDown, ChevronUp, RefreshCw, Timer } from "lucide-react";
-import { getClinicQueue, updateClinicStatus } from "@/lib/database-service";
+import { CheckCircle, Clock, AlertTriangle, ChevronDown, ChevronUp, RefreshCw, Timer, Trash2 } from "lucide-react";
+import { getClinicQueue, updateClinicStatus, deleteClinicEntry } from "@/lib/database-service";
 
 type ClinicEntry = {
   id: string;
@@ -47,11 +47,21 @@ export default function AdminClinicPage() {
     setUpdatingId(id);
     try {
       await updateClinicStatus(id, newStatus);
-      await loadQueue(); // Reload to get updated timestamps
+      await loadQueue();
     } catch (err: unknown) {
       alert("상태 변경 실패: " + (err as Error).message);
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleDelete = async (id: string, studentName: string) => {
+    if (!confirm(`${studentName} 학생의 클리닉 접수를 삭제할까요?`)) return;
+    try {
+      await deleteClinicEntry(id);
+      await loadQueue();
+    } catch (err: unknown) {
+      alert("삭제 실패: " + (err as Error).message);
     }
   };
 
@@ -256,6 +266,13 @@ export default function AdminClinicPage() {
                           대기로 되돌리기
                         </button>
                       )}
+                      {/* Delete button — always visible */}
+                      <button
+                        onClick={() => handleDelete(item.id, item.student_name)}
+                        className="h-11 px-4 bg-error/8 text-error text-[12px] font-black rounded-xl border border-error/15 hover:bg-error hover:text-white transition-all flex items-center gap-1.5"
+                      >
+                        <Trash2 size={13} strokeWidth={2.5} /> 삭제
+                      </button>
                     </div>
                   </div>
                 )}

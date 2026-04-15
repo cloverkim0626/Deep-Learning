@@ -331,6 +331,14 @@ export async function updateClinicStatus(id: string, status: 'waiting' | 'in-pro
   if (error) throw error;
 }
 
+export async function deleteClinicEntry(id: string) {
+  const { error } = await supabase
+    .from('clinic_queue')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
 // ─── Q&A Delete ───────────────────────────────────────────────────────────────
 export async function deleteQnaPost(id: string) {
   const { error } = await supabase

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, PenTool, Bot, MessageCircle, CalendarPlus, Bell, LogOut, Volume2, Quote } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { getClinicQueue, getTestSessionsByStudent } from "@/lib/database-service";
+import { getClinicQueue, getTestSessionsByStudent, getQnaPosts } from "@/lib/database-service";
 import { getAssignmentsByStudent } from "@/lib/assignment-service";
 
 const INITIAL_NOTIFICATIONS: { id: string; text: string; sub: string; unread: boolean; link: string }[] = [];
@@ -73,7 +73,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const router = useRouter();
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [notifs] = useState(INITIAL_NOTIFICATIONS);
+  const [notifs, setNotifs] = useState<{ id: string; text: string; sub: string; unread: boolean; link: string }[]>([]);
 
   const [profile, setProfile] = useState({
     name: "학생",
@@ -106,6 +106,62 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       } catch { /* noop */ }
     }
   }, []);
+
+  // Load notifications: QnA answers + new assignments
+  const loadNotifs = useCallback(async () => {
+    const name = getStudentName();
+    const lastSeen = Number(localStorage.getItem('notif_last_seen') || '0');
+    const newNotifs: { id: string; text: string; sub: string; unread: boolean; link: string }[] = [];
+    try {
+      // QnA answered
+      const posts = await getQnaPosts().catch(() => []);
+      (posts as { id: string; author_name: string; question: string; status: string; qna_answers?: { created_at: string; is_teacher: boolean }[]; created_at: string }[])
+        .filter(p => p.author_name === name && p.status === 'answered')
+        .forEach(p => {
+          const latestTeacherAnswer = p.qna_answers?.filter(a => a.is_teacher)
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+          if (latestTeacherAnswer) {
+            const answerTime = new Date(latestTeacherAnswer.created_at).getTime();
+            newNotifs.push({
+              id: `qna-${p.id}`,
+              text: '선생님이 Q&A에 답변해주셨어요!',
+              sub: p.question.slice(0, 30) + (p.question.length > 30 ? '...' : ''),
+              unread: answerTime > lastSeen,
+              link: '/dashboard/qna',
+            });
+          }
+        });
+      // New assignments
+      const assignments = await getAssignmentsByStudent(name).catch(() => []);
+      (assignments as { id: string; label: string; created_at?: string }[])
+        .forEach(a => {
+          const assignTime = new Date(a.created_at || 0).getTime();
+          if (assignTime > lastSeen) {
+            newNotifs.push({
+              id: `assign-${a.id}`,
+              text: '새 지문이 배당되었어요!',
+              sub: a.label,
+              unread: true,
+              link: '/dashboard',
+            });
+          }
+        });
+    } catch { /* noop */ }
+    setNotifs(newNotifs);
+  }, [getStudentName]);
+
+  useEffect(() => { loadNotifs(); }, [loadNotifs]);
+
+  // Mark all read when dropdown opens
+  const handleOpenNotif = () => {
+    setShowNotif(!showNotif);
+    setShowProfile(false);
+    if (!showNotif) {
+      localStorage.setItem('notif_last_seen', Date.now().toString());
+      // Mark all as read visually after short delay
+      setTimeout(() => setNotifs(prev => prev.map(n => ({ ...n, unread: false }))), 800);
+    }
+  };
 
   const loadStats = useCallback(async () => {
     const name = getStudentName();
@@ -181,7 +237,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         </Link>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => { setShowNotif(!showNotif); setShowProfile(false); }}
+            onClick={handleOpenNotif}
             className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-accent-light/30 hover:bg-accent-light transition-colors"
           >
             <Bell className="text-foreground/60 w-5 h-5" />
@@ -205,7 +261,20 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             <span className="text-[14px] font-black text-foreground">새로운 소식</span>
           </div>
           <div className="max-h-[300px] overflow-y-auto py-2">
-            <div className="px-6 py-12 text-center text-[13px] text-accent/50 font-medium italic">신규 알림이 없습니다.</div>
+            {notifs.length === 0 ? (
+              <div className="px-6 py-12 text-center text-[13px] text-accent/50 font-medium italic">신규 알림이 없습니다.</div>
+            ) : notifs.map(n => (
+              <Link key={n.id} href={n.link}
+                onClick={() => setShowNotif(false)}
+                className={`flex items-start gap-3 px-6 py-4 hover:bg-foreground/3 transition-colors ${n.unread ? 'bg-accent-light/30' : ''}`}
+              >
+                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.unread ? 'bg-foreground' : 'bg-foreground/20'}`} />
+                <div>
+                  <p className={`text-[13px] font-bold ${n.unread ? 'text-foreground' : 'text-accent'}`}>{n.text}</p>
+                  <p className="text-[11px] text-accent/60 mt-0.5">{n.sub}</p>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       )}
