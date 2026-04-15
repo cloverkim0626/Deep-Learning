@@ -17,6 +17,10 @@ const CLASS_DATA = [
   { 
     name: "[WOODOK] 고1 아라원당 연합반", 
     students: ["송시후", "정준", "한상혁"] 
+  },
+  {
+    name: "[WOODOK] GUEST",
+    students: []
   }
 ];
 
