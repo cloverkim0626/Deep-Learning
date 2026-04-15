@@ -17,23 +17,32 @@ export default function ClinicPage() {
   const [isJoined, setIsJoined] = useState(false);
   const [queue, setQueue] = useState<WaitingStudent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [studentName, setStudentName] = useState("학생");
 
   useEffect(() => {
+    const saved = localStorage.getItem("stu_session");
+    if (saved) {
+      const data = JSON.parse(saved);
+      setStudentName(data.name || "학생");
+    }
+
     async function loadQueue() {
       try {
         const data = await getClinicQueue();
         if (data && data.length > 0) {
-          const formatted: WaitingStudent[] = data.map((q: any) => ({
-            id: q.id,
-            name: q.profiles?.full_name || "익명",
-            time: new Date(q.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            question: q.topic || "질문 없음",
-            status: q.status
-          }));
+          const formatted: WaitingStudent[] = data
+            .filter((q: any) => q.status !== 'completed')
+            .map((q: any) => ({
+              id: q.id,
+              name: q.student_name || "익명",
+              time: new Date(q.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              question: q.topic || "질문 없음",
+              status: q.status
+            }));
           setQueue(formatted);
         }
       } catch (err) {
-        console.warn("Using mock queue:", err);
+        console.warn("Queue load failed:", err);
       } finally {
         setIsLoading(false);
       }
@@ -44,12 +53,11 @@ export default function ClinicPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const mockStudentId = "s1";
-      await joinClinicQueue(mockStudentId, question || "질문 없음");
+      const result = await joinClinicQueue(studentName, question || "질문 없음");
       
       const newEntry: WaitingStudent = {
-        id: Date.now().toString(),
-        name: "김가연",
+        id: result?.id || Date.now().toString(),
+        name: studentName,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         question: question || "질문 없음",
         status: "waiting"
@@ -58,16 +66,8 @@ export default function ClinicPage() {
       setIsJoined(true);
       setQuestion("");
     } catch (err) {
-      // Manual fallback for demo if DB fails
-      const newEntry: WaitingStudent = {
-        id: Date.now().toString(),
-        name: "김가연",
-        time: "방금",
-        question: question || "질문 없음",
-        status: "waiting"
-      };
-      setQueue(prev => [newEntry, ...prev]);
-      setIsJoined(true);
+      console.error("Clinic submit error:", err);
+      alert("접수에 실패했습니다. 다시 시도해 주세요.");
     }
   };
 

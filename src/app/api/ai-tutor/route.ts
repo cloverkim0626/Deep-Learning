@@ -11,15 +11,8 @@ export async function POST(req: Request) {
 
     const aiResponse = await getTutorResponse(passage, message, history);
     
-    // Parse the JSON output from AI if applicable
-    let parsed;
-    try {
-      parsed = JSON.parse(aiResponse || "{}");
-    } catch (e) {
-      parsed = { text: aiResponse };
-    }
-
-    return NextResponse.json(parsed);
+    // getTutorResponse already returns a parsed JSON object (or fallback object).
+    return NextResponse.json(aiResponse);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
