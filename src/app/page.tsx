@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BookOpen, Briefcase, Zap, Target, Brain } from "lucide-react";
+import { ArrowRight, BookOpen, Briefcase, Zap, Brain } from "lucide-react";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 function getDday() {
   const today = new Date();
@@ -19,6 +20,12 @@ const ROTATING_WORDS = ["어휘력", "독해력", "논리력", "사고력", "실
 export default function Home() {
   const [dday, setDday] = useState<number | null>(null);
   const [wordIdx, setWordIdx] = useState(0);
+  const [passageCount, setPassageCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    supabase.from('word_sets').select('id', { count: 'exact', head: true })
+      .then(({ count }) => setPassageCount(count ?? 0));
+  }, []);
 
   useEffect(() => {
     setDday(getDday());
@@ -82,11 +89,11 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Stats Row — 현실감 */}
+        {/* Stats Row */}
         <div className="grid grid-cols-3 gap-3 w-full">
           {[
-            { icon: <Target size={14} />, label: "어휘 DB", value: "10~20개" },
-            { icon: <Brain size={14} />, label: "AI 분석", value: "지문당" },
+            { icon: <BookOpen size={14} />, label: "등록 지문", value: passageCount !== null ? `${passageCount}개` : '...' },
+            { icon: <Brain size={14} />, label: "AI 선생님", value: "친절한" },
             { icon: <Zap size={14} />, label: "수능·내신", value: "완전 대비" },
           ].map((s, i) => (
             <div key={i} className="bg-foreground/[0.03] border border-foreground/5 rounded-2xl p-3 text-center hover:bg-foreground/[0.06] transition-colors">
