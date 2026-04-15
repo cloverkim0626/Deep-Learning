@@ -252,9 +252,9 @@ export default function VocabDashboard() {
                 <div className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 p-8 flex flex-col items-center justify-center text-center shadow-xl transition-all duration-700 ${isFlipped ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 opacity-100"}`}>
                   {/* Speak button */}
                   <button
-                    onClick={handleSpeak}
-                    className={`absolute top-5 right-5 w-10 h-10 rounded-xl flex items-center justify-center transition-all z-10 ${isSpeaking ? "bg-foreground text-background scale-110" : "bg-accent-light/60 text-accent hover:bg-foreground/10"}`}
+                    className={`absolute top-5 right-5 w-10 h-10 rounded-xl flex items-center justify-center transition-all z-30 ${isSpeaking ? "bg-foreground text-background scale-110" : "bg-accent-light/60 text-accent hover:bg-foreground/10"}`}
                     title="발음 듣기"
+                    onClick={(e) => { e.stopPropagation(); handleSpeak(e); }}
                   >
                     <Volume2 size={16} strokeWidth={2} />
                   </button>
@@ -262,7 +262,7 @@ export default function VocabDashboard() {
                   <p className="text-[14px] text-accent font-black tracking-widest flex items-center gap-2">
                     <Sparkles size={13} className="opacity-50" /> {currentWord.posAbbr}
                   </p>
-                  <p className="text-[11px] text-accent/30 mt-3 font-medium">← 이전 · 중앙=뒤집기 · 다음 →</p>
+
                 </div>
 
                 {/* Back */}
@@ -298,49 +298,37 @@ export default function VocabDashboard() {
                   )}
                 </div>
 
-                {/* 3-Zone touch overlay — always on top */}
-                <div className="absolute inset-0 flex rounded-[2.5rem] overflow-hidden z-20">
-                  {/* Left: prev */}
+                {/* Card click area: full card = flip */}
+                <div
+                  className="absolute inset-0 z-20 cursor-pointer rounded-[2.5rem]"
+                  onClick={() => setIsFlipped(!isFlipped)}
+                />
+
+                {/* Precise arrow buttons — float over card edges */}
+                {wordIdx > 0 && (
                   <button
-                    onClick={prevWord}
-                    disabled={wordIdx === 0}
-                    className="w-[30%] h-full flex items-center justify-start pl-4 text-foreground/25 hover:text-foreground/60 disabled:opacity-0 transition-all active:bg-foreground/5 rounded-l-[2.5rem]"
+                    onClick={(e) => { e.stopPropagation(); prevWord(); }}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-background/70 backdrop-blur-sm border border-foreground/10 flex items-center justify-center text-foreground/40 hover:text-foreground/80 hover:bg-background transition-all active:scale-90 shadow-sm"
                     aria-label="이전 단어"
                   >
-                    <ChevronLeft size={30} strokeWidth={1.5} />
+                    <ChevronLeft size={18} strokeWidth={2} />
                   </button>
-                  {/* Center: flip */}
+                )}
+                {wordIdx < currentSet.words.length - 1 && (
                   <button
-                    onClick={() => setIsFlipped(!isFlipped)}
-                    className="flex-1 h-full"
-                    aria-label="카드 뒤집기"
-                  />
-                  {/* Right: next */}
-                  <button
-                    onClick={nextWord}
-                    disabled={wordIdx === currentSet.words.length - 1}
-                    className="w-[30%] h-full flex items-center justify-end pr-4 text-foreground/25 hover:text-foreground/60 disabled:opacity-0 transition-all active:bg-foreground/5 rounded-r-[2.5rem]"
+                    onClick={(e) => { e.stopPropagation(); nextWord(); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-background/70 backdrop-blur-sm border border-foreground/10 flex items-center justify-center text-foreground/40 hover:text-foreground/80 hover:bg-background transition-all active:scale-90 shadow-sm"
                     aria-label="다음 단어"
                   >
-                    <ChevronRight size={30} strokeWidth={1.5} />
+                    <ChevronRight size={18} strokeWidth={2} />
                   </button>
-                </div>
+                )}
               </div>
 
 
-              {/* Navigation — fixed height, always visible */}
+              {/* Bottom bar — counter + 오답 */}
               <div className="flex items-center justify-between gap-3 shrink-0 pb-1">
-                <div className="flex items-center gap-3">
-                  <button onClick={prevWord} disabled={wordIdx === 0}
-                    className="w-12 h-12 rounded-full border border-foreground/10 flex items-center justify-center text-foreground hover:bg-foreground/5 disabled:opacity-20 transition-all active:scale-95">
-                    <ChevronLeft size={20} />
-                  </button>
-                  <span className="text-[13px] font-black text-accent min-w-[50px] text-center">{wordIdx + 1} / {currentSet.words.length}</span>
-                  <button onClick={nextWord} disabled={wordIdx === currentSet.words.length - 1}
-                    className="w-12 h-12 rounded-full border border-foreground/10 flex items-center justify-center text-foreground hover:bg-foreground/5 disabled:opacity-20 transition-all active:scale-95">
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
+                <span className="text-[13px] font-black text-accent min-w-[50px]">{wordIdx + 1} / {currentSet.words.length}</span>
                 <button
                   onClick={handleLogWrong}
                   className="flex items-center gap-1.5 px-4 py-3 bg-red-50 text-red-600 rounded-2xl text-[12px] font-bold border border-red-100 hover:bg-red-100 transition-all active:scale-95"

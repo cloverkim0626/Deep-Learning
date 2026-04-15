@@ -29,6 +29,10 @@ export async function updateWordSet(id: string, data: { label?: string; full_tex
 }
 
 export async function deleteWordSet(id: string) {
+  // Remove from folders and assignments first (FK cascade safety)
+  await supabase.from('folder_passages').delete().eq('set_id', id);
+  await supabase.from('set_assignments').delete().eq('set_id', id);
+  await supabase.from('words').delete().eq('set_id', id);
   const { error } = await supabase
     .from('word_sets')
     .delete()

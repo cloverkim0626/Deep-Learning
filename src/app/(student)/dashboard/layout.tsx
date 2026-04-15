@@ -2,12 +2,54 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, PenTool, Bot, MessageCircle, CalendarPlus, Bell, LogOut, Volume2 } from "lucide-react";
+import { BookOpen, PenTool, Bot, MessageCircle, CalendarPlus, Bell, LogOut, Volume2, Quote } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { getClinicQueue, getTestSessionsByStudent } from "@/lib/database-service";
 import { getAssignmentsByStudent } from "@/lib/assignment-service";
 
 const INITIAL_NOTIFICATIONS: { id: string; text: string; sub: string; unread: boolean; link: string }[] = [];
+
+// Daily English quotes — picked by day of year
+const DAILY_QUOTES = [
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
+  { text: "Our greatest glory is not in never falling, but in rising every time we fall.", author: "Confucius" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { text: "In the middle of every difficulty lies opportunity.", author: "Albert Einstein" },
+  { text: "Life is what happens when you're busy making other plans.", author: "John Lennon" },
+  { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+  { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
+  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
+  { text: "An investment in knowledge pays the best interest.", author: "Benjamin Franklin" },
+  { text: "Education is the most powerful weapon which you can use to change the world.", author: "Nelson Mandela" },
+  { text: "The mind is not a vessel to be filled, but a fire to be kindled.", author: "Plutarch" },
+  { text: "Tell me and I forget. Teach me and I remember. Involve me and I learn.", author: "Benjamin Franklin" },
+  { text: "Learning is not attained by chance; it must be sought for with ardor and attended to with diligence.", author: "Abigail Adams" },
+  { text: "The beautiful thing about learning is that no one can take it away from you.", author: "B.B. King" },
+  { text: "Try to learn something about everything and everything about something.", author: "Thomas Huxley" },
+  { text: "Develop a passion for learning. If you do, you will never cease to grow.", author: "Anthony J. D'Angelo" },
+  { text: "Education is not preparation for life; education is life itself.", author: "John Dewey" },
+  { text: "The roots of education are bitter, but the fruit is sweet.", author: "Aristotle" },
+  { text: "Knowledge is power.", author: "Francis Bacon" },
+  { text: "A mind that is stretched by a new experience can never go back to its old dimensions.", author: "Oliver Wendell Holmes" },
+  { text: "Change is the end result of all true learning.", author: "Leo Buscaglia" },
+  { text: "Wisdom is not a product of schooling but of the lifelong attempt to acquire it.", author: "Albert Einstein" },
+  { text: "One child, one teacher, one book, one pen can change the world.", author: "Malala Yousafzai" },
+  { text: "The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice.", author: "Brian Herbert" },
+  { text: "Education breeds confidence. Confidence breeds hope. Hope breeds peace.", author: "Confucius" },
+  { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+  { text: "You are never too old to set another goal or to dream a new dream.", author: "C.S. Lewis" },
+  { text: "The expert in anything was once a beginner.", author: "Helen Hayes" },
+];
+
+function getDailyQuote() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
+  return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
+}
 
 // AI 격려 멘트 생성 (통계 기반)
 function generateAdvice(name: string, clinicCount: number, remainingTests: number, wrongCount: number): string {
@@ -202,19 +244,34 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 ))}
               </div>
 
-              {/* TTS demo */}
-              <button
-                onClick={() => {
-                  if (typeof window !== "undefined" && window.speechSynthesis) {
-                    const u = new SpeechSynthesisUtterance("Keep up the great work!");
-                    u.lang = "en-US"; u.rate = 0.85;
-                    window.speechSynthesis.speak(u);
-                  }
-                }}
-                className="w-full h-12 rounded-2xl border border-foreground/10 flex items-center justify-center gap-2 text-[13px] font-bold text-accent hover:bg-foreground/5 transition-all mb-4"
-              >
-                <Volume2 size={16} /> 영어 발음 듣기 테스트
-              </button>
+              {/* 오늘의 명문 */}
+              {(() => {
+                const q = getDailyQuote();
+                return (
+                  <div className="mb-4 px-5 py-5 glass border border-foreground/5 rounded-[1.5rem]">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Quote size={12} className="text-accent" />
+                      <span className="text-[9px] font-black text-accent tracking-widest uppercase">Today's Quote</span>
+                      <span className="ml-auto text-[9px] font-bold text-accent/40">{new Date().toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</span>
+                    </div>
+                    <p className="text-[14px] font-bold text-foreground leading-relaxed serif italic mb-2">"{q.text}"</p>
+                    <p className="text-[11px] text-accent font-black">— {q.author}</p>
+                    <button
+                      onClick={() => {
+                        if (typeof window !== 'undefined' && window.speechSynthesis) {
+                          window.speechSynthesis.cancel();
+                          const u = new SpeechSynthesisUtterance(q.text);
+                          u.lang = 'en-US'; u.rate = 0.82;
+                          window.speechSynthesis.speak(u);
+                        }
+                      }}
+                      className="mt-3 flex items-center gap-1.5 text-[11px] font-black text-accent hover:text-foreground transition-colors"
+                    >
+                      <Volume2 size={13} /> 발음 듣기
+                    </button>
+                  </div>
+                );
+              })()}
 
               <button onClick={handleLogout} className="w-full h-14 rounded-[2rem] bg-error/10 text-error font-black text-[14px] flex items-center justify-center gap-2 hover:bg-error hover:text-white transition-all">
                 <LogOut size={18} strokeWidth={3} /> 로그아웃

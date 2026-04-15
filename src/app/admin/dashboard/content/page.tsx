@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import {
   saveIngestedPassage, getWordSets, updateWordSet, updateWord, deleteWordSet,
-  getFolders, createFolder, deleteFolder, addPassageToFolder, removePassageFromFolder
+  getFolders, createFolder, deleteFolder, addPassageToFolder, removePassageFromFolder,
+  getStudents
 } from "@/lib/database-service";
 import { assignSetToStudents, getAllAssignments, removeAssignment } from "@/lib/assignment-service";
 
@@ -16,15 +17,6 @@ import { assignSetToStudents, getAllAssignments, removeAssignment } from "@/lib/
 const WORKBOOKS = ["수능특강", "수능완성", "교과서 (고난도)", "기타 모의고사"];
 const CHAPTERS = Array.from({ length: 30 }, (_, i) => `${i + 1}강`);
 
-const ALL_STUDENTS = [
-  { name: "김가연", class: "고3 금토반" }, { name: "장서현", class: "고3 금토반" },
-  { name: "박시연", class: "고3 금토반" }, { name: "이예윤", class: "고3 금토반" },
-  { name: "이은서", class: "고3 금토반" }, { name: "김슬기", class: "고3 금토반" },
-  { name: "김가빈", class: "고3 금토반" }, { name: "이동기", class: "고2 아라고반" },
-  { name: "임다은", class: "고2 아라고반" }, { name: "민채이", class: "고2 아라고반" },
-  { name: "송시후", class: "고1 아라원당 연합반" }, { name: "정준", class: "고1 아라원당 연합반" },
-  { name: "한상혁", class: "고1 아라원당 연합반" },
-];
 
 // ─── Assignment View Tab ───────────────────────────────────────────────────────
 type AssignmentRow = {
@@ -145,12 +137,18 @@ function AssignmentTab() {
 }
 
 // ─── Assign Modal ──────────────────────────────────────────────────────────────
-function AssignModal({ set, onClose }: { set: { id: string; workbook: string; chapter: string; label: string }, onClose: () => void }) {
+function AssignModal({
+  set, onClose, students
+}: {
+  set: { id: string; workbook: string; chapter: string; label: string };
+  onClose: () => void;
+  students: { name: string; class: string }[];
+}) {
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
   const [filterClass, setFilterClass] = useState<string>("전체");
-  const classes = ["전체", "고3 금토반", "고2 아라고반", "고1 아라원당 연합반"];
-  const visibleStudents = filterClass === "전체" ? ALL_STUDENTS : ALL_STUDENTS.filter(s => s.class === filterClass);
+  const uniqueClasses = ["전체", ...Array.from(new Set(students.map(s => s.class)))];
+  const visibleStudents = filterClass === "전체" ? students : students.filter(s => s.class === filterClass);
   const toggle = (name: string) => setSelectedNames(prev => prev.includes(name) ? prev.filter(x => x !== name) : [...prev, name]);
   const selectAll = () => setSelectedNames(visibleStudents.map(s => s.name));
 
@@ -158,7 +156,7 @@ function AssignModal({ set, onClose }: { set: { id: string; workbook: string; ch
     if (selectedNames.length === 0) return;
     setIsAssigning(true);
     try {
-      await assignSetToStudents(set.id, selectedNames.map(name => ({ name, class: ALL_STUDENTS.find(s => s.name === name)?.class || "" })));
+      await assignSetToStudents(set.id, selectedNames.map(name => ({ name, class: students.find(s => s.name === name)?.class || "" })));
       alert(`${selectedNames.length}명의 학생에게 배당되었습니다.`);
       onClose();
     } catch (err: unknown) {
@@ -177,7 +175,7 @@ function AssignModal({ set, onClose }: { set: { id: string; workbook: string; ch
           <button onClick={onClose} className="p-2 hover:bg-foreground/5 rounded-xl"><X size={20} /></button>
         </div>
         <div className="px-6 pt-4 pb-3 flex gap-2 flex-wrap border-b border-foreground/5 bg-accent-light/20 items-center">
-          {classes.map(c => (
+          {uniqueClasses.map(c => (
             <button key={c} onClick={() => setFilterClass(c)} className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all ${filterClass === c ? 'bg-foreground text-background shadow-md' : 'bg-white/60 text-accent hover:bg-foreground/10'}`}>{c}</button>
           ))}
           <button onClick={selectAll} className="ml-auto text-[11px] font-black text-accent hover:text-foreground transition-colors px-2">전체 선택</button>
@@ -325,16 +323,17 @@ function WordEditPanel({ set, onClose, onSaved }: { set: { id: string; label: st
 
 // ─── Folder Assign Modal ─────────────────────────────────────────────────────
 function FolderAssignModal({
-  folder, onClose
+  folder, onClose, students
 }: {
   folder: { id: string; name: string; folder_passages: { set_id: string; word_sets: { label: string; workbook: string; chapter: string } }[] };
   onClose: () => void;
+  students: { name: string; class: string }[];
 }) {
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [filterClass, setFilterClass] = useState("전체");
   const [isAssigning, setIsAssigning] = useState(false);
-  const classes = ["전체", "고3 금토반", "고2 아라고반", "고1 아라원당 연합반"];
-  const visibleStudents = filterClass === "전체" ? ALL_STUDENTS : ALL_STUDENTS.filter(s => s.class === filterClass);
+  const uniqueClasses = ["전체", ...Array.from(new Set(students.map(s => s.class)))];
+  const visibleStudents = filterClass === "전체" ? students : students.filter(s => s.class === filterClass);
   const toggle = (name: string) => setSelectedNames(prev => prev.includes(name) ? prev.filter(x => x !== name) : [...prev, name]);
   const selectAll = () => setSelectedNames(visibleStudents.map(s => s.name));
   const passages = folder.folder_passages || [];
@@ -343,9 +342,8 @@ function FolderAssignModal({
     if (selectedNames.length === 0 || passages.length === 0) return;
     setIsAssigning(true);
     try {
-      const students = selectedNames.map(name => ({ name, class: ALL_STUDENTS.find(s => s.name === name)?.class || "" }));
-      // Assign each passage in the folder to all selected students
-      await Promise.all(passages.map(fp => assignSetToStudents(fp.set_id, students)));
+      const studentList = selectedNames.map(name => ({ name, class: students.find(s => s.name === name)?.class || "" }));
+      await Promise.all(passages.map(fp => assignSetToStudents(fp.set_id, studentList)));
       alert(`"${folder.name}" 폴더 내 ${passages.length}개 지문이 ${selectedNames.length}명에게 배당되었습니다.`);
       onClose();
     } catch (err: unknown) {
@@ -373,7 +371,7 @@ function FolderAssignModal({
           {passages.length > 5 && <span className="text-[10px] font-bold text-accent px-2 py-1">+{passages.length - 5}개 더</span>}
         </div>
         <div className="px-6 pt-4 pb-3 flex gap-2 flex-wrap border-b border-foreground/5 bg-accent-light/10 items-center">
-          {classes.map(c => (
+          {uniqueClasses.map(c => (
             <button key={c} onClick={() => setFilterClass(c)} className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all ${filterClass === c ? 'bg-foreground text-background shadow-md' : 'bg-white/60 text-accent hover:bg-foreground/10'}`}>{c}</button>
           ))}
           <button onClick={selectAll} className="ml-auto text-[11px] font-black text-accent hover:text-foreground transition-colors px-2">전체 선택</button>
@@ -406,7 +404,10 @@ function FolderAssignModal({
 }
 
 // ─── Folder Tab ────────────────────────────────────────────────────────────────
-function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbook: string; chapter: string }[] }) {
+function FolderTab({ wordSets, students }: {
+  wordSets: { id: string; label: string; workbook: string; chapter: string }[];
+  students: { name: string; class: string }[];
+}) {
   const [folders, setFolders] = useState<{
     id: string; name: string; description: string;
     folder_passages: { set_id: string; word_sets: { id: string; label: string; workbook: string; chapter: string } }[]
@@ -593,6 +594,7 @@ function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbo
       <FolderAssignModal
         folder={folderAssignTarget}
         onClose={() => setFolderAssignTarget(null)}
+        students={students}
       />
     )}
     </>
@@ -701,12 +703,16 @@ export default function AdminContentPage() {
     id: string; label: string; workbook: string; chapter: string; full_text?: string;
     words: { id: string; word: string; pos_abbr: string; korean: string; context: string; synonyms: string; antonyms: string; grammar_tip: string }[]
   }[]>([]);
+  const [students, setStudents] = useState<{ name: string; class: string }[]>([]);
   const [assignTarget, setAssignTarget] = useState<{ id: string; workbook: string; chapter: string; label: string } | null>(null);
   const [editTarget, setEditTarget] = useState<typeof wordSets[0] | null>(null);
 
   const loadData = useCallback(async () => {
-    try { setWordSets((await getWordSets()) || []); }
-    catch (err) { console.error(err); }
+    try {
+      const [sets, studs] = await Promise.all([getWordSets(), getStudents()]);
+      setWordSets(sets || []);
+      setStudents((studs || []).map((s: { name: string; class_name: string }) => ({ name: s.name, class: s.class_name })));
+    } catch (err) { console.error(err); }
   }, []);
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -743,7 +749,7 @@ export default function AdminContentPage() {
 
       <div className="space-y-8">
         {activeTab === "ingest" && <SmartAIIngest onComplete={() => { setActiveTab("explorer"); loadData(); }} />}
-        {activeTab === "folders" && <FolderTab wordSets={wordSets} />}
+        {activeTab === "folders" && <FolderTab wordSets={wordSets} students={students} />}
         {activeTab === "assignments" && <AssignmentTab />}
 
         {activeTab === "explorer" && (
@@ -800,7 +806,7 @@ export default function AdminContentPage() {
         )}
       </div>
 
-      {assignTarget && <AssignModal set={assignTarget} onClose={() => setAssignTarget(null)} />}
+      {assignTarget && <AssignModal set={assignTarget} onClose={() => setAssignTarget(null)} students={students} />}
       {editTarget && <WordEditPanel set={editTarget} onClose={() => setEditTarget(null)} onSaved={loadData} />}
 
       <div className="mt-20 pt-10 border-t border-foreground/5 text-center">
