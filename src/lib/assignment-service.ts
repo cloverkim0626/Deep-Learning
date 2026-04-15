@@ -99,3 +99,27 @@ export async function getWrongAnswers(studentName: string, timeFilter: TimeFilte
   if (error) throw error;
   return data;
 }
+
+/**
+ * Get all assignments grouped by student (for admin view)
+ */
+export async function getAllAssignments() {
+  const { data, error } = await supabase
+    .from('set_assignments')
+    .select('id, student_name, student_class, set_id, created_at, word_sets(id, label, workbook, chapter)')
+    .order('student_name');
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Remove a single assignment (does NOT delete the word set)
+ */
+export async function removeAssignment(assignmentId: string) {
+  const { error } = await supabase
+    .from('set_assignments')
+    .delete()
+    .eq('id', assignmentId);
+  if (error) throw error;
+}
+

@@ -4,15 +4,15 @@ import { useState, useEffect, useCallback } from "react";
 import {
   FileText, Plus, X, Check, Upload, Sparkles, Filter,
   Users, ChevronRight, Edit2, FolderOpen, FolderPlus,
-  Trash2, Save, ChevronLeft, BookOpen
+  Trash2, Save, ChevronLeft, BookOpen, BarChart2, RefreshCw
 } from "lucide-react";
 import {
   saveIngestedPassage, getWordSets, updateWordSet, updateWord, deleteWordSet,
   getFolders, createFolder, deleteFolder, addPassageToFolder, removePassageFromFolder
 } from "@/lib/database-service";
-import { assignSetToStudents } from "@/lib/assignment-service";
+import { assignSetToStudents, getAllAssignments, removeAssignment } from "@/lib/assignment-service";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants ─────────────────────────────────────────────────────────────────
 const WORKBOOKS = ["수능특강", "수능완성", "교과서 (고난도)", "기타 모의고사"];
 const CHAPTERS = Array.from({ length: 30 }, (_, i) => `${i + 1}강`);
 
@@ -26,7 +26,125 @@ const ALL_STUDENTS = [
   { name: "한상혁", class: "고1 아라원당 연합반" },
 ];
 
-// ─── Assign Modal ─────────────────────────────────────────────────────────────
+// ─── Assignment View Tab ───────────────────────────────────────────────────────
+type AssignmentRow = {
+  id: string;
+  student_name: string;
+  student_class: string;
+  set_id: string;
+  created_at: string;
+  word_sets: { id: string; label: string; workbook: string; chapter: string } | null;
+};
+
+function AssignmentTab() {
+  const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterStudent, setFilterStudent] = useState("전체");
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getAllAssignments();
+      setAssignments((data || []) as unknown as AssignmentRow[]);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleRemove = async (id: string, studentName: string, setLabel: string) => {
+    if (!confirm(`"${studentName}"의 "${setLabel}" 배당을 삭제하시겠습니까?\n라이브러리에서는 삭제되지 않습니다.`)) return;
+    setRemovingId(id);
+    try {
+      await removeAssignment(id);
+      setAssignments(prev => prev.filter(a => a.id !== id));
+    } catch (err: unknown) { alert((err as Error).message); }
+    finally { setRemovingId(null); }
+  };
+
+  // Group by student
+  const studentNames = ["전체", ...Array.from(new Set(assignments.map(a => a.student_name)))];
+  const filtered = filterStudent === "전체" ? assignments : assignments.filter(a => a.student_name === filterStudent);
+
+  // Group filtered assignments by student
+  const grouped: Record<string, AssignmentRow[]> = {};
+  filtered.forEach(a => {
+    if (!grouped[a.student_name]) grouped[a.student_name] = [];
+    grouped[a.student_name].push(a);
+  });
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="glass rounded-[2.5rem] p-6 border border-foreground/5 flex flex-wrap items-center gap-3">
+        <BarChart2 size={16} className="text-accent" />
+        <span className="text-[13px] font-black text-foreground">학생별 배당 현황</span>
+        <span className="text-[11px] text-accent bg-accent-light px-3 py-1 rounded-xl font-bold ml-1">총 {assignments.length}건</span>
+        <div className="ml-auto flex items-center gap-2">
+          <select
+            value={filterStudent}
+            onChange={e => setFilterStudent(e.target.value)}
+            className="h-9 px-3 rounded-xl border border-foreground/10 bg-white text-[12px] font-bold outline-none"
+          >
+            {studentNames.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <button onClick={load} className="h-9 px-3 rounded-xl border border-foreground/10 text-accent hover:text-foreground hover:bg-foreground/5 transition-all">
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="py-16 text-center text-accent animate-pulse font-bold">배당 현황을 불러오는 중...</div>
+      ) : Object.keys(grouped).length === 0 ? (
+        <div className="py-16 text-center glass rounded-[2.5rem] border border-foreground/5">
+          <Users size={32} className="text-accent mx-auto mb-3 opacity-30" />
+          <p className="text-accent font-bold opacity-50">배당된 세트가 없습니다.</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {Object.entries(grouped).map(([studentName, rows]) => (
+            <div key={studentName} className="glass rounded-[2rem] border border-foreground/5 overflow-hidden">
+              <div className="flex items-center gap-4 px-6 py-4 bg-accent-light/30 border-b border-foreground/5">
+                <div className="w-9 h-9 rounded-xl bg-foreground text-background flex items-center justify-center font-black text-[13px]">
+                  {studentName[0]}
+                </div>
+                <div>
+                  <div className="text-[15px] font-black text-foreground">{studentName}</div>
+                  <div className="text-[11px] text-accent font-medium">{rows[0]?.student_class} · {rows.length}개 세트 배당됨</div>
+                </div>
+              </div>
+              <div className="divide-y divide-foreground/5">
+                {rows.map(row => (
+                  <div key={row.id} className="flex items-center gap-4 px-6 py-4 hover:bg-accent-light/20 transition-colors">
+                    <BookOpen size={14} className="text-accent shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-bold text-foreground truncate">{row.word_sets?.label || "알 수 없는 세트"}</div>
+                      <div className="text-[11px] text-accent">{row.word_sets?.workbook} · {row.word_sets?.chapter}</div>
+                    </div>
+                    <span className="text-[10px] text-accent/50 font-bold shrink-0">
+                      {new Date(row.created_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
+                    </span>
+                    <button
+                      onClick={() => handleRemove(row.id, studentName, row.word_sets?.label || "")}
+                      disabled={removingId === row.id}
+                      className="p-2 text-red-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all disabled:opacity-30 shrink-0"
+                      title="배당 삭제 (라이브러리는 유지됨)"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Assign Modal ──────────────────────────────────────────────────────────────
 function AssignModal({ set, onClose }: { set: { id: string; workbook: string; chapter: string; label: string }, onClose: () => void }) {
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -90,7 +208,7 @@ function AssignModal({ set, onClose }: { set: { id: string; workbook: string; ch
   );
 }
 
-// ─── Word Edit Panel (HITL Slide-in) ─────────────────────────────────────────
+// ─── Word Edit Panel ───────────────────────────────────────────────────────────
 function WordEditPanel({ set, onClose, onSaved }: { set: { id: string; label: string; full_text?: string; words: { id: string; word: string; pos_abbr: string; korean: string; context: string; synonyms: string; antonyms: string; grammar_tip: string }[] }, onClose: () => void, onSaved: () => void }) {
   const [fullText, setFullText] = useState(set.full_text || '');
   const [words, setWords] = useState(set.words.map(w => ({ ...w })));
@@ -135,11 +253,8 @@ function WordEditPanel({ set, onClose, onSaved }: { set: { id: string; label: st
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      {/* Backdrop */}
       <div className="flex-1 bg-foreground/20 backdrop-blur-sm" onClick={onClose} />
-      {/* Panel */}
       <div className="w-full max-w-2xl bg-background border-l border-foreground/10 shadow-2xl flex flex-col h-full overflow-hidden animate-in slide-in-from-right duration-500">
-        {/* Header */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-foreground/5 bg-accent-light/20 shrink-0">
           <div className="flex items-center gap-3">
             <button onClick={onClose} className="p-2 hover:bg-foreground/5 rounded-xl transition-colors text-accent hover:text-foreground">
@@ -155,49 +270,32 @@ function WordEditPanel({ set, onClose, onSaved }: { set: { id: string; label: st
             <span className="text-[10px] font-black text-amber-700 uppercase tracking-wider">편집 중</span>
           </div>
         </div>
-
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {/* Full Text Edit */}
           <div className="p-8 border-b border-foreground/5">
             <h3 className="text-[12px] font-black text-accent uppercase tracking-widest mb-3">지문 원문</h3>
-            <textarea
-              value={fullText}
-              onChange={e => setFullText(e.target.value)}
-              rows={5}
-              className="w-full p-5 rounded-2xl border border-foreground/10 bg-accent-light/30 text-[13px] leading-relaxed font-serif outline-none focus:border-foreground/30 transition-colors resize-none"
-            />
-            <button
-              onClick={handleSaveSet}
-              disabled={savingSet}
-              className="mt-3 flex items-center gap-2 px-5 py-2.5 bg-foreground text-background rounded-xl text-[12px] font-black disabled:opacity-40 hover:-translate-y-0.5 transition-all"
-            >
+            <textarea value={fullText} onChange={e => setFullText(e.target.value)} rows={5}
+              className="w-full p-5 rounded-2xl border border-foreground/10 bg-accent-light/30 text-[13px] leading-relaxed font-serif outline-none focus:border-foreground/30 transition-colors resize-none" />
+            <button onClick={handleSaveSet} disabled={savingSet}
+              className="mt-3 flex items-center gap-2 px-5 py-2.5 bg-foreground text-background rounded-xl text-[12px] font-black disabled:opacity-40 hover:-translate-y-0.5 transition-all">
               <Save size={13} strokeWidth={2.5} />
               {savingSet ? '저장 중...' : '지문 텍스트 저장'}
             </button>
           </div>
-
-          {/* Words */}
           <div className="p-8 space-y-6">
             <h3 className="text-[12px] font-black text-accent uppercase tracking-widest">단어 목록 편집</h3>
             {words.map((w, idx) => (
               <div key={w.id} className="glass rounded-[2rem] border border-foreground/5 p-6 space-y-3">
-                {/* Word header */}
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-3">
                     <span className="w-6 h-6 rounded-lg bg-foreground text-background flex items-center justify-center text-[10px] font-black">{idx + 1}</span>
                     <span className="text-[20px] font-black text-foreground serif">{w.word}</span>
                     <span className="text-[11px] text-accent font-black bg-accent-light px-2 py-0.5 rounded-lg">{w.pos_abbr}</span>
                   </div>
-                  <button
-                    onClick={() => handleDeleteWord(w.id)}
-                    disabled={deletingWordId === w.id}
-                    className="p-2 text-red-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                  >
+                  <button onClick={() => handleDeleteWord(w.id)} disabled={deletingWordId === w.id}
+                    className="p-2 text-red-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
                     <Trash2 size={14} />
                   </button>
                 </div>
-
-                {/* Fields */}
                 {[
                   { key: 'korean', label: '한글 의미' },
                   { key: 'synonyms', label: '유의어 (콤마 구분)' },
@@ -207,19 +305,12 @@ function WordEditPanel({ set, onClose, onSaved }: { set: { id: string; label: st
                 ].map(field => (
                   <div key={field.key}>
                     <label className="text-[9px] font-black text-accent uppercase tracking-widest mb-1 block">{field.label}</label>
-                    <input
-                      value={(w as Record<string, string>)[field.key] || ''}
-                      onChange={e => setWordField(w.id, field.key, e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl border border-foreground/8 bg-transparent text-[13px] font-medium outline-none focus:border-foreground/30 transition-colors"
-                    />
+                    <input value={(w as Record<string, string>)[field.key] || ''} onChange={e => setWordField(w.id, field.key, e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl border border-foreground/8 bg-transparent text-[13px] font-medium outline-none focus:border-foreground/30 transition-colors" />
                   </div>
                 ))}
-
-                <button
-                  onClick={() => handleSaveWord(w)}
-                  disabled={savingWordId === w.id}
-                  className="w-full h-10 bg-foreground/5 hover:bg-foreground hover:text-background rounded-xl text-[12px] font-black transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                >
+                <button onClick={() => handleSaveWord(w)} disabled={savingWordId === w.id}
+                  className="w-full h-10 bg-foreground/5 hover:bg-foreground hover:text-background rounded-xl text-[12px] font-black transition-all disabled:opacity-40 flex items-center justify-center gap-2">
                   <Save size={12} strokeWidth={2.5} />
                   {savingWordId === w.id ? '저장 중...' : '이 단어 저장'}
                 </button>
@@ -232,15 +323,19 @@ function WordEditPanel({ set, onClose, onSaved }: { set: { id: string; label: st
   );
 }
 
-// ─── Folder Tab ───────────────────────────────────────────────────────────────
+// ─── Folder Tab ────────────────────────────────────────────────────────────────
 function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbook: string; chapter: string }[] }) {
-  const [folders, setFolders] = useState<{ id: string; name: string; description: string; folder_passages: { set_id: string; word_sets: { id: string; label: string; workbook: string; chapter: string } }[] }[]>([]);
+  const [folders, setFolders] = useState<{
+    id: string; name: string; description: string;
+    folder_passages: { set_id: string; word_sets: { id: string; label: string; workbook: string; chapter: string } }[]
+  }[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [creating, setCreating] = useState(false);
   const [expandedFolderId, setExpandedFolderId] = useState<string | null>(null);
   const [addingSetId, setAddingSetId] = useState<string>('');
+  const [removingPassageKey, setRemovingPassageKey] = useState<string | null>(null);
 
   const loadFolders = async () => {
     setLoading(true);
@@ -264,7 +359,7 @@ function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbo
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`폴더 "${name}"을 삭제하시겠습니까?`)) return;
+    if (!confirm(`폴더 "${name}"을 삭제하시겠습니까?\n폴더만 삭제되고, 지문은 라이브러리에 유지됩니다.`)) return;
     try { await deleteFolder(id); await loadFolders(); }
     catch (err: unknown) { alert((err as Error).message); }
   };
@@ -278,14 +373,19 @@ function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbo
     } catch (err: unknown) { alert((err as Error).message); }
   };
 
-  const handleRemovePassage = async (folderId: string, setId: string) => {
-    try { await removePassageFromFolder(folderId, setId); await loadFolders(); }
-    catch (err: unknown) { alert((err as Error).message); }
+  const handleRemovePassage = async (folderId: string, setId: string, label: string) => {
+    if (!confirm(`"${label}" 지문을 이 폴더에서 제거하시겠습니까?\n라이브러리에는 유지됩니다.`)) return;
+    const key = `${folderId}_${setId}`;
+    setRemovingPassageKey(key);
+    try {
+      await removePassageFromFolder(folderId, setId);
+      await loadFolders();
+    } catch (err: unknown) { alert((err as Error).message); }
+    finally { setRemovingPassageKey(null); }
   };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Create Folder */}
       <div className="glass rounded-[2.5rem] p-8 border border-foreground/5">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-2xl bg-foreground text-background flex items-center justify-center">
@@ -316,7 +416,6 @@ function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbo
         </button>
       </div>
 
-      {/* Folder List */}
       {loading ? (
         <div className="py-12 text-center text-accent animate-pulse font-bold">폴더 목록을 불러오는 중...</div>
       ) : folders.length === 0 ? (
@@ -337,7 +436,7 @@ function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbo
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[16px] font-black text-foreground">{folder.name}</div>
-                    {folder.description && <div className="text-[12px] text-accent mt-0">{folder.description}</div>}
+                    {folder.description && <div className="text-[12px] text-accent">{folder.description}</div>}
                     <div className="text-[11px] text-accent/50 font-bold mt-0.5">지문 {passages.length}개</div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -354,23 +453,29 @@ function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbo
 
                 {isExpanded && (
                   <div className="border-t border-foreground/5 p-6 bg-accent-light/20 space-y-4">
-                    {/* Current passages */}
                     {passages.length > 0 && (
                       <div className="space-y-2">
-                        {passages.map(fp => (
-                          <div key={fp.set_id} className="flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-foreground/5">
-                            <BookOpen size={14} className="text-accent shrink-0" />
-                            <span className="text-[13px] font-bold text-foreground flex-1">{fp.word_sets?.label || '알 수 없음'}</span>
-                            <span className="text-[10px] text-accent">{fp.word_sets?.workbook} · {fp.word_sets?.chapter}</span>
-                            <button onClick={() => handleRemovePassage(folder.id, fp.set_id)}
-                              className="p-1.5 text-red-300 hover:text-red-600 rounded-lg transition-colors">
-                              <X size={13} />
-                            </button>
-                          </div>
-                        ))}
+                        {passages.map(fp => {
+                          const key = `${folder.id}_${fp.set_id}`;
+                          return (
+                            <div key={fp.set_id} className="flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-foreground/5">
+                              <BookOpen size={14} className="text-accent shrink-0" />
+                              <span className="text-[13px] font-bold text-foreground flex-1">{fp.word_sets?.label || '알 수 없음'}</span>
+                              <span className="text-[10px] text-accent">{fp.word_sets?.workbook} · {fp.word_sets?.chapter}</span>
+                              <button
+                                onClick={() => handleRemovePassage(folder.id, fp.set_id, fp.word_sets?.label || '')}
+                                disabled={removingPassageKey === key}
+                                className="p-1.5 text-red-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 flex items-center gap-1"
+                                title="이 폴더에서 지문 제거 (라이브러리 유지)"
+                              >
+                                <Trash2 size={13} />
+                                <span className="text-[10px] font-black">제거</span>
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
-                    {/* Add passage */}
                     <div className="flex gap-3">
                       <select value={addingSetId} onChange={e => setAddingSetId(e.target.value)}
                         className="flex-1 h-11 px-3 rounded-xl border border-foreground/10 bg-white text-[13px] font-medium outline-none">
@@ -395,7 +500,7 @@ function FolderTab({ wordSets }: { wordSets: { id: string; label: string; workbo
   );
 }
 
-// ─── Smart AI Ingest Component ────────────────────────────────────────────────
+// ─── Smart AI Ingest ───────────────────────────────────────────────────────────
 function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
   const [rawText, setRawText] = useState("");
   const [workbook, setWorkbook] = useState(WORKBOOKS[0]);
@@ -426,7 +531,8 @@ function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
     try {
       await saveIngestedPassage({
         workbook: preview.workbook, chapter: preview.chapter, label: preview.label,
-        full_text: rawText, sentences: preview.sentences, words: preview.words as { word: string; pos_abbr: string; korean: string; context: string; synonyms: string; antonyms: string; grammar_tip: string }[]
+        full_text: rawText, sentences: preview.sentences,
+        words: preview.words as { word: string; pos_abbr: string; korean: string; context: string; synonyms: string; antonyms: string; grammar_tip: string }[]
       });
       alert("성공적으로 저장! 탐색기에서 배당하거나 편집하세요.");
       setPreview(null); setRawText(""); setLabel("");
@@ -459,18 +565,20 @@ function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
           </div>
           <div>
             <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block px-1">지문 번호/라벨</label>
-            <input value={label} onChange={e => setLabel(e.target.value)} placeholder="예: 3번 지문" className="w-full h-11 px-4 rounded-xl border border-foreground/10 bg-transparent text-[13px] font-medium outline-none" />
+            <input value={label} onChange={e => setLabel(e.target.value)} placeholder="예: 3번 지문"
+              className="w-full h-11 px-4 rounded-xl border border-foreground/10 bg-transparent text-[13px] font-medium outline-none" />
           </div>
         </div>
         <div className="mb-6">
-          <textarea value={rawText} onChange={e => setRawText(e.target.value)} placeholder="지문 원문을 이곳에 붙여넣으세요..." className="w-full min-h-[200px] p-6 rounded-2xl border border-foreground/10 bg-transparent text-[14px] leading-relaxed font-serif outline-none" />
+          <textarea value={rawText} onChange={e => setRawText(e.target.value)} placeholder="지문 원문을 이곳에 붙여넣으세요..."
+            className="w-full min-h-[200px] p-6 rounded-2xl border border-foreground/10 bg-transparent text-[14px] leading-relaxed font-serif outline-none" />
         </div>
-        <button onClick={handleScan} disabled={isScanning || !rawText.trim() || !label.trim()} className="w-full h-14 bg-foreground text-background rounded-2xl flex items-center justify-center gap-3 font-bold shadow-xl hover:-translate-y-0.5 disabled:opacity-20 transition-all">
+        <button onClick={handleScan} disabled={isScanning || !rawText.trim() || !label.trim()}
+          className="w-full h-14 bg-foreground text-background rounded-2xl flex items-center justify-center gap-3 font-bold shadow-xl hover:-translate-y-0.5 disabled:opacity-20 transition-all">
           {isScanning ? "AI가 지문을 분석 중입니다..." : "지문 분석 및 데이터 추출 시작"}
           <Sparkles size={18} strokeWidth={2.5} />
         </button>
       </div>
-
       {preview && (
         <div className="glass rounded-[2rem] p-8 border border-success/20 bg-success/5 animate-in slide-in-from-bottom-5 duration-700">
           <h4 className="text-[15px] font-bold text-success mb-4 flex items-center gap-2">
@@ -485,11 +593,14 @@ function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-// ─── Main Admin Page ──────────────────────────────────────────────────────────
+// ─── Main Admin Page ───────────────────────────────────────────────────────────
 export default function AdminContentPage() {
-  const [activeTab, setActiveTab] = useState<"explorer" | "ingest" | "folders">("explorer");
+  const [activeTab, setActiveTab] = useState<"explorer" | "ingest" | "folders" | "assignments">("explorer");
   const [filterWorkbook, setFilterWorkbook] = useState("전체");
-  const [wordSets, setWordSets] = useState<{ id: string; label: string; workbook: string; chapter: string; full_text?: string; words: { id: string; word: string; pos_abbr: string; korean: string; context: string; synonyms: string; antonyms: string; grammar_tip: string }[] }[]>([]);
+  const [wordSets, setWordSets] = useState<{
+    id: string; label: string; workbook: string; chapter: string; full_text?: string;
+    words: { id: string; word: string; pos_abbr: string; korean: string; context: string; synonyms: string; antonyms: string; grammar_tip: string }[]
+  }[]>([]);
   const [assignTarget, setAssignTarget] = useState<{ id: string; workbook: string; chapter: string; label: string } | null>(null);
   const [editTarget, setEditTarget] = useState<typeof wordSets[0] | null>(null);
 
@@ -500,7 +611,7 @@ export default function AdminContentPage() {
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleDeleteSet = async (setId: string, label: string) => {
-    if (!confirm(`지문 "${label}"을 삭제하시겠습니까?`)) return;
+    if (!confirm(`지문 "${label}"을 라이브러리에서 완전 삭제하시겠습니까?\n이 지문의 배당 기록도 함께 제거됩니다.`)) return;
     try { await deleteWordSet(setId); await loadData(); }
     catch (err: unknown) { alert((err as Error).message); }
   };
@@ -510,6 +621,7 @@ export default function AdminContentPage() {
     { key: "explorer", label: "탐색기" },
     { key: "ingest", label: "AI 인제스트" },
     { key: "folders", label: "폴더 관리" },
+    { key: "assignments", label: "배당 현황" },
   ] as const;
 
   return (
@@ -519,10 +631,10 @@ export default function AdminContentPage() {
           <h1 className="text-4xl text-foreground serif font-black tracking-tight">콘텐츠 라이브러리</h1>
           <p className="text-[15px] text-accent mt-2 font-medium">학습 세트 관리 · 배당 · 편집 · 폴더 시스템</p>
         </div>
-        <div className="flex gap-1 bg-accent-light p-1.5 rounded-[1.2rem] border border-foreground/5 shadow-inner">
+        <div className="flex gap-1 bg-accent-light p-1.5 rounded-[1.2rem] border border-foreground/5 shadow-inner flex-wrap">
           {tabs.map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              className={`px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all ${activeTab === tab.key ? 'bg-white shadow-md text-foreground' : 'text-accent hover:text-foreground'}`}>
+              className={`px-4 py-2.5 rounded-xl text-[12px] font-bold transition-all ${activeTab === tab.key ? 'bg-white shadow-md text-foreground' : 'text-accent hover:text-foreground'}`}>
               {tab.label}
             </button>
           ))}
@@ -531,8 +643,8 @@ export default function AdminContentPage() {
 
       <div className="space-y-8">
         {activeTab === "ingest" && <SmartAIIngest onComplete={() => { setActiveTab("explorer"); loadData(); }} />}
-
         {activeTab === "folders" && <FolderTab wordSets={wordSets} />}
+        {activeTab === "assignments" && <AssignmentTab />}
 
         {activeTab === "explorer" && (
           <div className="animate-in fade-in duration-700">
@@ -540,7 +652,8 @@ export default function AdminContentPage() {
               <div className="flex items-center gap-2 px-4 py-2 bg-foreground/5 rounded-xl text-[12px] font-black text-accent uppercase tracking-widest border border-foreground/5">
                 <Filter size={14} /> 교재 필터
               </div>
-              <select value={filterWorkbook} onChange={e => setFilterWorkbook(e.target.value)} className="h-10 px-4 rounded-xl border border-foreground/5 bg-white text-[13px] font-bold outline-none shadow-sm min-w-[150px]">
+              <select value={filterWorkbook} onChange={e => setFilterWorkbook(e.target.value)}
+                className="h-10 px-4 rounded-xl border border-foreground/5 bg-white text-[13px] font-bold outline-none shadow-sm min-w-[150px]">
                 <option value="전체">전체 교재</option>
                 {WORKBOOKS.map(w => <option key={w} value={w}>{w}</option>)}
               </select>
@@ -569,8 +682,9 @@ export default function AdminContentPage() {
                   </p>
                   <div className="flex items-center justify-between pt-5 border-t border-foreground/5">
                     <span className="text-[11px] font-bold text-accent">단어 {set.words?.length || 0}개</span>
-                    <button onClick={() => handleDeleteSet(set.id, set.label)} className="text-[10px] font-black text-red-300 hover:text-red-600 transition-colors flex items-center gap-1">
-                      <Trash2 size={11} /> 삭제
+                    <button onClick={() => handleDeleteSet(set.id, set.label)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black text-red-400 hover:text-red-600 hover:bg-red-50 border border-red-100 rounded-xl transition-all">
+                      <Trash2 size={12} /> 완전 삭제
                     </button>
                   </div>
                 </div>

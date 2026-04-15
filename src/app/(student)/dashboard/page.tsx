@@ -243,18 +243,17 @@ export default function VocabDashboard() {
 
           {currentWord ? (
             <div className="flex flex-col flex-1 min-h-0 gap-3">
-              {/* Flashcard — flex-1 so it takes remaining space */}
+              {/* Flashcard — 3-zone touch */}
               <div
-                className="flex-1 min-h-0 relative preserve-3d cursor-pointer"
+                className="flex-1 min-h-0 relative preserve-3d"
                 style={{ minHeight: '200px' }}
-                onClick={() => setIsFlipped(!isFlipped)}
               >
                 {/* Front */}
                 <div className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 p-8 flex flex-col items-center justify-center text-center shadow-xl transition-all duration-700 ${isFlipped ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 opacity-100"}`}>
                   {/* Speak button */}
                   <button
                     onClick={handleSpeak}
-                    className={`absolute top-5 right-5 w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isSpeaking ? "bg-foreground text-background scale-110" : "bg-accent-light/60 text-accent hover:bg-foreground/10"}`}
+                    className={`absolute top-5 right-5 w-10 h-10 rounded-xl flex items-center justify-center transition-all z-10 ${isSpeaking ? "bg-foreground text-background scale-110" : "bg-accent-light/60 text-accent hover:bg-foreground/10"}`}
                     title="발음 듣기"
                   >
                     <Volume2 size={16} strokeWidth={2} />
@@ -263,7 +262,7 @@ export default function VocabDashboard() {
                   <p className="text-[14px] text-accent font-black tracking-widest flex items-center gap-2">
                     <Sparkles size={13} className="opacity-50" /> {currentWord.posAbbr}
                   </p>
-                  <p className="text-[11px] text-accent/40 mt-3 font-medium">탭하면 뒤집혀</p>
+                  <p className="text-[11px] text-accent/30 mt-3 font-medium">← 이전 · 중앙=뒤집기 · 다음 →</p>
                 </div>
 
                 {/* Back */}
@@ -298,7 +297,36 @@ export default function VocabDashboard() {
                     </div>
                   )}
                 </div>
+
+                {/* 3-Zone touch overlay — always on top */}
+                <div className="absolute inset-0 flex rounded-[2.5rem] overflow-hidden z-20">
+                  {/* Left: prev */}
+                  <button
+                    onClick={prevWord}
+                    disabled={wordIdx === 0}
+                    className="w-[30%] h-full flex items-center justify-start pl-4 text-foreground/25 hover:text-foreground/60 disabled:opacity-0 transition-all active:bg-foreground/5 rounded-l-[2.5rem]"
+                    aria-label="이전 단어"
+                  >
+                    <ChevronLeft size={30} strokeWidth={1.5} />
+                  </button>
+                  {/* Center: flip */}
+                  <button
+                    onClick={() => setIsFlipped(!isFlipped)}
+                    className="flex-1 h-full"
+                    aria-label="카드 뒤집기"
+                  />
+                  {/* Right: next */}
+                  <button
+                    onClick={nextWord}
+                    disabled={wordIdx === currentSet.words.length - 1}
+                    className="w-[30%] h-full flex items-center justify-end pr-4 text-foreground/25 hover:text-foreground/60 disabled:opacity-0 transition-all active:bg-foreground/5 rounded-r-[2.5rem]"
+                    aria-label="다음 단어"
+                  >
+                    <ChevronRight size={30} strokeWidth={1.5} />
+                  </button>
+                </div>
               </div>
+
 
               {/* Navigation — fixed height, always visible */}
               <div className="flex items-center justify-between gap-3 shrink-0 pb-1">
