@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { MessageSquare, ChevronDown, ChevronUp, Send, CheckCircle, RefreshCw, Clock, Search } from "lucide-react";
-import { getQnaPosts, addQnaAnswer } from "@/lib/database-service";
+import { MessageSquare, ChevronDown, ChevronUp, Send, CheckCircle, RefreshCw, Search, Trash2, AlertCircle } from "lucide-react";
+import { getQnaPosts, addQnaAnswer, deleteQnaPost } from "@/lib/database-service";
 
 type Answer = { id: string; author: string; isTeacher: boolean; text: string; time: string };
 type Question = {
@@ -18,6 +18,7 @@ export default function AdminQnAPage() {
   const [filter, setFilter] = useState<"all" | "pending" | "answered">("all");
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
   const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const loadData = useCallback(async () => {
@@ -61,11 +62,25 @@ export default function AdminQnAPage() {
     try {
       await addQnaAnswer(qId, "선생님", text, true);
       setReplyInputs(prev => ({ ...prev, [qId]: "" }));
-      await loadData(); // Reload to get updated data
+      await loadData();
     } catch (err: unknown) {
       alert("답변 등록 실패: " + (err as Error).message);
     } finally {
       setSubmittingId(null);
+    }
+  };
+
+  const handleDelete = async (qId: string, authorName: string) => {
+    if (!confirm(`"${authorName}"의 질문을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+    setDeletingId(qId);
+    try {
+      await deleteQnaPost(qId);
+      setQuestions(prev => prev.filter(q => q.id !== qId));
+      if (expandedId === qId) setExpandedId(null);
+    } catch (err: unknown) {
+      alert("삭제 실패: " + (err as Error).message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -88,6 +103,7 @@ export default function AdminQnAPage() {
         <div className="flex items-center gap-3">
           {unansweredCount > 0 && (
             <div className="flex items-center gap-2 text-[13px] font-bold text-error bg-error/5 border border-error/10 px-4 py-2 rounded-xl">
+              <AlertCircle size={15} strokeWidth={2.5} />
               미답변 {unansweredCount}건
             </div>
           )}
@@ -137,29 +153,40 @@ export default function AdminQnAPage() {
               className={`glass rounded-[1.5rem] border transition-all ${
                 q.status === "answered" ? "border-foreground/5 opacity-80" : "border-error/15 shadow-[0_4px_24px_rgba(214,59,47,0.06)]"
               }`}>
-              <button className="w-full flex items-start justify-between p-5 text-left gap-4"
-                onClick={() => setExpandedId(expandedId === q.id ? null : q.id)}>
-                <div className="flex items-start gap-4 flex-1 min-w-0">
-                  <div className={`w-10 h-10 rounded-[0.9rem] flex items-center justify-center text-[13px] font-black shrink-0 ${
-                    q.status === "answered" ? "bg-success/10 text-success" : "bg-error/10 text-error"
-                  }`}>
-                    {q.status === "answered" ? <CheckCircle size={18} strokeWidth={2} /> : <MessageSquare size={18} strokeWidth={2} />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="font-black text-foreground text-[14px]">{q.author}</span>
-                      <span className="text-[10px] text-accent bg-accent-light px-2 py-0.5 rounded-lg">{q.passage}</span>
+              <div className="flex items-start gap-0">
+                <button className="flex-1 flex items-start justify-between p-5 text-left gap-4 min-w-0"
+                  onClick={() => setExpandedId(expandedId === q.id ? null : q.id)}>
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    <div className={`w-10 h-10 rounded-[0.9rem] flex items-center justify-center text-[13px] font-black shrink-0 ${
+                      q.status === "answered" ? "bg-success/10 text-success" : "bg-error/10 text-error"
+                    }`}>
+                      {q.status === "answered" ? <CheckCircle size={18} strokeWidth={2} /> : <MessageSquare size={18} strokeWidth={2} />}
                     </div>
-                    <p className="text-[13px] text-foreground/80 font-medium leading-snug truncate pr-4">{q.question}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="font-black text-foreground text-[14px]">{q.author}</span>
+                        <span className="text-[10px] text-accent bg-accent-light px-2 py-0.5 rounded-lg">{q.passage}</span>
+                      </div>
+                      <p className="text-[13px] text-foreground/80 font-medium leading-snug truncate pr-4">{q.question}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11px] text-accent">
-                    {new Date(q.createdAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                  {expandedId === q.id ? <ChevronUp size={15} className="text-accent" /> : <ChevronDown size={15} className="text-accent" />}
-                </div>
-              </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[11px] text-accent">
+                      {new Date(q.createdAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                    {expandedId === q.id ? <ChevronUp size={15} className="text-accent" /> : <ChevronDown size={15} className="text-accent" />}
+                  </div>
+                </button>
+                {/* Delete button */}
+                <button
+                  onClick={() => handleDelete(q.id, q.author)}
+                  disabled={deletingId === q.id}
+                  className="p-5 text-accent hover:text-error hover:bg-error/5 transition-all rounded-tr-[1.5rem] shrink-0 disabled:opacity-30"
+                  title="질문 삭제"
+                >
+                  <Trash2 size={16} strokeWidth={2} />
+                </button>
+              </div>
 
               {expandedId === q.id && (
                 <div className="px-5 pb-5 border-t border-foreground/5 pt-4 space-y-4">

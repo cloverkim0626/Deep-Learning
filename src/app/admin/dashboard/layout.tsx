@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Users, BookOpen, MessageSquare, LogOut, BarChart2, MessageCircle } from "lucide-react";
 
 export default function AdminDashboardLayout({
@@ -6,6 +9,13 @@ export default function AdminDashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.removeItem("admin_session");
+    router.push("/");
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Admin Sidebar */}
@@ -34,7 +44,10 @@ export default function AdminDashboardLayout({
            </Link>
         </nav>
         <div className="p-6 border-t border-foreground/5 shrink-0">
-           <button className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-[14px] font-semibold text-error/80 hover:text-error hover:bg-error/5 transition-all">
+           <button
+             onClick={handleLogout}
+             className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-[14px] font-semibold text-error/80 hover:text-error hover:bg-error/5 transition-all"
+           >
              <LogOut size={18} strokeWidth={1.5} /> 로그아웃
            </button>
            <p className="text-[9px] font-bold tracking-[0.2em] text-foreground/20 uppercase mt-4 px-1 select-none">
@@ -47,7 +60,9 @@ export default function AdminDashboardLayout({
         {/* Mobile Header */}
         <div className="md:hidden h-16 border-b border-foreground/10 flex items-center px-6 justify-between shrink-0 glass z-10">
           <span className="font-serif text-lg font-bold text-foreground">Deep Learning</span>
-          <span className="text-[10px] font-bold tracking-widest text-accent uppercase">Admin</span>
+          <button onClick={handleLogout} className="text-error p-2">
+            <LogOut size={18} />
+          </button>
         </div>
         <div className="flex-1 overflow-auto relative">
           {children}

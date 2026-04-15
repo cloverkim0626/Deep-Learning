@@ -315,9 +315,23 @@ export async function joinClinicQueue(student_name: string, topic: string) {
 }
 
 export async function updateClinicStatus(id: string, status: 'waiting' | 'in-progress' | 'completed') {
+  const now = new Date().toISOString();
+  const extra: Record<string, string> = {};
+  if (status === 'in-progress') extra.started_at = now;
+  if (status === 'completed') extra.completed_at = now;
+
   const { error } = await supabase
     .from('clinic_queue')
-    .update({ status })
+    .update({ status, ...extra })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+// ─── Q&A Delete ───────────────────────────────────────────────────────────────
+export async function deleteQnaPost(id: string) {
+  const { error } = await supabase
+    .from('qna_posts')
+    .delete()
     .eq('id', id);
   if (error) throw error;
 }

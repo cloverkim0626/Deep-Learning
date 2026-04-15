@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   ChevronRight, CheckCircle, XCircle, Trophy, RotateCcw,
-  BookOpen, Sparkles, AlertCircle
+  BookOpen, Sparkles, AlertCircle, LogOut
 } from "lucide-react";
 import { getAssignmentsByStudent, logWrongAnswer } from "@/lib/assignment-service";
 import {
   createTestSession, completeTestSession, saveTestResult
 } from "@/lib/database-service";
+import { useRouter } from "next/navigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type TestWord = {
@@ -16,8 +17,11 @@ type TestWord = {
   word: string;
   posAbbr: string;
   korean: string;
+  context?: string;
+  contextKorean?: string;
   synonyms: string[];
   antonyms: string[];
+  isKey?: boolean;
 };
 
 type QuestionMode = "synonym" | "antonym";
@@ -40,34 +44,54 @@ function parseList(val: string | string[] | null | undefined): string[] {
   return val.split(',').map(s => s.trim()).filter(Boolean);
 }
 
+/**
+ * Build questions:
+ * - 목표 문제수 = 단어 수 * 1.5 (반올림)
+ * - is_key 단어: 유의어 + 반의어 모두 출제
+ * - 일반 단어: 유의어/반의어 중 pool이 더 풍부한 것 하나만 출제
+ * - 랜덤 샘플링으로 목표 수에 맞춤
+ */
 function buildQuestions(words: TestWord[]): Question[] {
-  const questions: Question[] = [];
   const allSynonyms = words.flatMap(w => w.synonyms);
   const allAntonyms = words.flatMap(w => w.antonyms);
+  const target = Math.round(words.length * 1.5);
+
+  const pool: Question[] = [];
 
   words.forEach(word => {
-    (["synonym", "antonym"] as QuestionMode[]).forEach(mode => {
-      const pool = mode === "synonym" ? word.synonyms : word.antonyms;
-      if (pool.length === 0) return;
+    const modes: QuestionMode[] = word.isKey ? ["synonym", "antonym"] : (
+      word.synonyms.length >= word.antonyms.length ? ["synonym"] : ["antonym"]
+    );
 
-      pool.forEach(correct => {
-        const allPool = mode === "synonym" ? allSynonyms : allAntonyms;
-        const distractors = allPool.filter(w => !pool.includes(w) && w !== correct);
-        if (distractors.length < 3) return; // skip if not enough distractors
-        const choices = shuffle([correct, ...shuffle(distractors).slice(0, 3)]);
-        questions.push({ word, mode, correct, choices });
-      });
+    modes.forEach(mode => {
+      const wordPool = mode === "synonym" ? word.synonyms : word.antonyms;
+      if (wordPool.length === 0) return;
+
+      const correct = wordPool[0]; // use first as correct answer
+      const allPool = mode === "synonym" ? allSynonyms : allAntonyms;
+      const distractors = allPool.filter(w => !wordPool.includes(w) && w !== correct);
+      if (distractors.length < 3) return;
+      const choices = shuffle([correct, ...shuffle(distractors).slice(0, 3)]);
+      pool.push({ word, mode, correct, choices });
     });
   });
 
-  return shuffle(questions);
+  if (pool.length === 0) return [];
+
+  // If we have enough questions, sample to target; otherwise use all
+  const shuffled = shuffle(pool);
+  return shuffled.slice(0, Math.min(target, shuffled.length));
 }
 
 // ─── Intro Screen ─────────────────────────────────────────────────────────────
-function IntroScreen({ sets, onStart }: { sets: { id: string; label: string; workbook: string; chapter: string; words: TestWord[] }[], onStart: (selectedSetId: string | null) => void }) {
+function IntroScreen({ sets, onStart }: {
+  sets: { id: string; label: string; workbook: string; chapter: string; words: TestWord[] }[];
+  onStart: (selectedSetId: string | null) => void
+}) {
   const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
   const selected = sets.find(s => s.id === selectedSetId);
   const wordCount = selected ? selected.words.length : sets.reduce((a, s) => a + s.words.length, 0);
+  const estQCount = Math.round(wordCount * 1.5);
 
   return (
     <div className="flex flex-col items-center justify-center h-full px-8 text-center gap-6 pb-20">
@@ -77,11 +101,10 @@ function IntroScreen({ sets, onStart }: { sets: { id: string; label: string; wor
       <div>
         <h1 className="text-2xl text-foreground serif mb-2">유반의어 테스트</h1>
         <p className="text-[13px] text-accent font-medium leading-relaxed">
-          각 단어의 유의어 또는 반의어를 골라봐.<br />자동 채점 · DB 기록 · 오답 자동 저장
+          각 단어의 유의어 또는 반의어를 골라봐.<br />단어 수의 1.5배 문제 · 핵심 단어는 유+반 모두 출제
         </p>
       </div>
 
-      {/* Set selector */}
       <div className="w-full max-w-xs space-y-2">
         <p className="text-[11px] font-black text-accent uppercase tracking-widest mb-3">시험 범위 선택</p>
         <button
@@ -90,7 +113,7 @@ function IntroScreen({ sets, onStart }: { sets: { id: string; label: string; wor
         >
           <div className="flex items-center gap-2">
             <Sparkles size={14} className={selectedSetId === null ? 'text-background' : 'text-accent'} />
-            전체 배당 세트 ({sets.reduce((a, s) => a + s.words.length, 0)}단어)
+            전체 배당 세트 ({sets.reduce((a, s) => a + s.words.length, 0)}단어 · 약 {Math.round(sets.reduce((a, s) => a + s.words.length, 0) * 1.5)}문제)
           </div>
         </button>
         {sets.map(s => (
@@ -101,7 +124,7 @@ function IntroScreen({ sets, onStart }: { sets: { id: string; label: string; wor
               <span className="truncate">{s.label}</span>
             </div>
             <div className={`text-[10px] mt-0.5 ${selectedSetId === s.id ? 'opacity-60' : 'text-accent'}`}>
-              {s.workbook} · {s.chapter} · {s.words.length}단어
+              {s.workbook} · {s.chapter} · {s.words.length}단어 · 약 {Math.round(s.words.length * 1.5)}문제
             </div>
           </button>
         ))}
@@ -112,12 +135,15 @@ function IntroScreen({ sets, onStart }: { sets: { id: string; label: string; wor
           <AlertCircle size={15} /> 배당된 세트에 유반의어 정보가 없습니다.
         </div>
       ) : (
-        <button
-          onClick={() => onStart(selectedSetId)}
-          className="h-14 px-10 bg-foreground text-background font-medium rounded-2xl flex items-center gap-2 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all"
-        >
-          테스트 시작 <ChevronRight size={18} strokeWidth={1.5} />
-        </button>
+        <div className="text-center">
+          <p className="text-[12px] text-accent font-bold mb-3">예상 문제 수: <span className="text-foreground font-black">{estQCount}문제</span></p>
+          <button
+            onClick={() => onStart(selectedSetId)}
+            className="h-14 px-10 bg-foreground text-background font-bold rounded-2xl flex items-center gap-2 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all"
+          >
+            테스트 시작 <ChevronRight size={18} strokeWidth={1.5} />
+          </button>
+        </div>
       )}
     </div>
   );
@@ -125,6 +151,7 @@ function IntroScreen({ sets, onStart }: { sets: { id: string; label: string; wor
 
 // ─── Result Screen ─────────────────────────────────────────────────────────────
 function ResultScreen({ results, onRestart }: { results: ResultEntry[], onRestart: () => void }) {
+  const router = useRouter();
   const score = results.filter(r => r.correct).length;
   const pct = Math.round((score / results.length) * 100);
   const wrong = results.filter(r => !r.correct);
@@ -157,6 +184,12 @@ function ResultScreen({ results, onRestart }: { results: ResultEntry[], onRestar
                   <span className="mx-2 text-accent">→</span>
                   <span className="text-success font-bold">정답: {r.question.correct}</span>
                 </div>
+                {r.question.word.context && (
+                  <div className="mt-2 pl-5 text-[11px] text-accent/70 italic border-l-2 border-foreground/10 pl-3">
+                    {r.question.word.context}
+                    {r.question.word.contextKorean && <div className="text-accent mt-0.5">{r.question.word.contextKorean}</div>}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -179,15 +212,21 @@ function ResultScreen({ results, onRestart }: { results: ResultEntry[], onRestar
         </div>
       )}
 
-      <button onClick={onRestart} className="w-full h-[52px] bg-foreground text-background font-bold rounded-2xl flex items-center justify-center gap-2 hover:-translate-y-0.5 active:scale-95 transition-all shadow">
-        <RotateCcw size={16} strokeWidth={2} /> 다시 풀기
-      </button>
+      <div className="flex gap-3">
+        <button onClick={onRestart} className="flex-1 h-[52px] bg-foreground text-background font-bold rounded-2xl flex items-center justify-center gap-2 hover:-translate-y-0.5 active:scale-95 transition-all shadow">
+          <RotateCcw size={16} strokeWidth={2} /> 다시 풀기
+        </button>
+        <button onClick={() => router.push('/dashboard')} className="h-[52px] px-5 bg-accent-light text-foreground font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-foreground/10 transition-all">
+          <LogOut size={16} strokeWidth={2} /> 나가기
+        </button>
+      </div>
     </div>
   );
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function WordTestPage() {
+  const router = useRouter();
   const [phase, setPhase] = useState<"loading" | "intro" | "test" | "result">("loading");
   const [allSets, setAllSets] = useState<{ id: string; label: string; workbook: string; chapter: string; words: TestWord[] }[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -197,7 +236,6 @@ export default function WordTestPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
 
-  // Get student name from localStorage
   const getStudentName = () => {
     try {
       const saved = localStorage.getItem('stu_session');
@@ -212,7 +250,15 @@ export default function WordTestPage() {
       const assignments = await getAssignmentsByStudent(name);
       const sets = (assignments || [])
         .filter(Boolean)
-        .map((s: { id: string; workbook?: string; chapter?: string; label: string; words?: { id: string; word: string; pos_abbr: string; korean: string; synonyms: string | string[]; antonyms: string | string[] }[] }) => ({
+        .map((s: {
+          id: string; workbook?: string; chapter?: string; label: string;
+          words?: {
+            id: string; word: string; pos_abbr: string; korean: string;
+            context?: string; context_korean?: string;
+            synonyms: string | string[]; antonyms: string | string[];
+            is_key?: boolean;
+          }[]
+        }) => ({
           id: s.id,
           workbook: s.workbook || '배당 교재',
           chapter: s.chapter || '',
@@ -222,8 +268,11 @@ export default function WordTestPage() {
             word: w.word,
             posAbbr: w.pos_abbr,
             korean: w.korean,
+            context: w.context,
+            contextKorean: w.context_korean,
             synonyms: parseList(w.synonyms),
             antonyms: parseList(w.antonyms),
+            isKey: !!w.is_key,
           }))
         }));
       setAllSets(sets);
@@ -252,7 +301,6 @@ export default function WordTestPage() {
     setSelected(null);
     setResults([]);
 
-    // Create session in DB
     const name = getStudentName();
     try {
       const session = await createTestSession({
@@ -277,7 +325,6 @@ export default function WordTestPage() {
 
     const newResult: ResultEntry = { question: q, selected: choice, correct: isCorrect };
 
-    // Save result to DB
     if (sessionId) {
       try {
         await saveTestResult({
@@ -291,22 +338,16 @@ export default function WordTestPage() {
       } catch (err) { console.error(err); }
     }
 
-    // Log wrong answer
     if (!isCorrect) {
       const name = getStudentName();
-      try {
-        await logWrongAnswer(name, q.word.id, q.mode);
-      } catch (err) { console.error(err); }
+      try { await logWrongAnswer(name, q.word.id, q.mode); } catch (err) { console.error(err); }
     }
 
     setTimeout(async () => {
       const newResults = [...results, newResult];
       if (currentIdx + 1 >= questions.length) {
-        // Complete session
         if (sessionId) {
-          try {
-            await completeTestSession(sessionId, newResults.filter(r => r.correct).length);
-          } catch (err) { console.error(err); }
+          try { await completeTestSession(sessionId, newResults.filter(r => r.correct).length); } catch (err) { console.error(err); }
         }
         setResults(newResults);
         setPhase("result");
@@ -318,6 +359,11 @@ export default function WordTestPage() {
     }, 900);
   };
 
+  const handleQuit = () => {
+    if (!confirm("시험을 중단하고 나가시겠습니까?\n현재까지의 답변은 저장되지 않습니다.")) return;
+    router.push('/dashboard');
+  };
+
   const handleRestart = () => {
     setPhase("intro");
     setSelectedSetId(null);
@@ -327,50 +373,58 @@ export default function WordTestPage() {
     setSelected(null);
   };
 
-  if (phase === "loading") {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-2xl bg-foreground/5 flex items-center justify-center mx-auto mb-3 animate-pulse">
-            <Sparkles size={20} className="text-accent" />
-          </div>
-          <p className="text-[13px] text-accent font-bold">세트 불러오는 중...</p>
+  if (phase === "loading") return (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <div className="w-12 h-12 rounded-2xl bg-foreground/5 flex items-center justify-center mx-auto mb-3 animate-pulse">
+          <Sparkles size={20} className="text-accent" />
         </div>
+        <p className="text-[13px] text-accent font-bold">세트 불러오는 중...</p>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (phase === "intro") {
-    return <IntroScreen sets={allSets} onStart={handleStart} />;
-  }
-
-  if (phase === "result") {
-    return <ResultScreen results={results} onRestart={handleRestart} />;
-  }
+  if (phase === "intro") return <IntroScreen sets={allSets} onStart={handleStart} />;
+  if (phase === "result") return <ResultScreen results={results} onRestart={handleRestart} />;
 
   // ─── Test Phase ──────────────────────────────────────────────────────────────
   const q = questions[currentIdx];
   return (
     <div className="flex flex-col h-full px-6 py-8 pb-24">
-      {/* Progress */}
+      {/* Header: progress + quit */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-[12px] font-bold text-accent">{currentIdx + 1} / {questions.length}</span>
-        <span className="text-[12px] font-bold text-success">{results.filter(r => r.correct).length}정답</span>
+        <div className="flex items-center gap-3">
+          <span className="text-[12px] font-bold text-success">{results.filter(r => r.correct).length}정답</span>
+          <button
+            onClick={handleQuit}
+            className="flex items-center gap-1.5 text-[11px] font-black text-accent hover:text-error hover:bg-error/5 px-3 py-1.5 rounded-xl border border-foreground/10 transition-all"
+          >
+            <LogOut size={12} /> 나가기
+          </button>
+        </div>
       </div>
       <div className="h-[3px] bg-accent-light rounded-full mb-8 overflow-hidden">
-        <div
-          className="h-full bg-foreground transition-all duration-500"
-          style={{ width: `${(currentIdx / questions.length) * 100}%` }}
-        />
+        <div className="h-full bg-foreground transition-all duration-500" style={{ width: `${(currentIdx / questions.length) * 100}%` }} />
       </div>
 
       {/* Question Card */}
-      <div className="glass rounded-[2rem] border border-foreground/5 p-8 mb-6 text-center">
+      <div className="glass rounded-[2rem] border border-foreground/5 p-8 mb-4 text-center">
         <p className="text-[11px] font-bold text-accent uppercase tracking-widest mb-3">
           {q.mode === "synonym" ? "유의어를 골라봐" : "반의어를 골라봐"}
+          {q.word.isKey && <span className="ml-2 text-amber-500">⭐ 핵심 단어</span>}
         </p>
         <h2 className="text-4xl text-foreground serif mb-1">{q.word.word}</h2>
         <p className="text-[13px] text-accent font-medium">{q.word.posAbbr}  {q.word.korean}</p>
+        {/* Context sentence */}
+        {q.word.context && (
+          <div className="mt-4 px-4 py-3 bg-accent-light/60 rounded-2xl text-left">
+            <p className="text-[11px] text-foreground/70 font-medium italic leading-relaxed">{q.word.context}</p>
+            {q.word.contextKorean && (
+              <p className="text-[11px] text-accent mt-1 font-medium">{q.word.contextKorean}</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Choices */}
