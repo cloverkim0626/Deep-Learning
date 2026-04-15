@@ -29,10 +29,10 @@ export async function POST(req: Request) {
       ### EXTRACTION REQUIREMENTS:
       1. **Sentences**: Map the full passage to S01, S02, ... S[N].
 
-      2. **Vocab (5–15 items)**:
-         - Extract a MINIMUM of 5 and MAXIMUM of 15 vocabulary items.
+      2. **Vocab (10–20 items)**:
+         - Extract a MINIMUM of 10 and MAXIMUM of 20 vocabulary items.
          - Prioritize: content words with high CSAT/내신 relevance (nouns, verbs, adjectives, adverbs appearing in exam contexts).
-         - If the passage is lexically rich, extract up to 15. If sparse, at least 5.
+         - If the passage is lexically rich, extract up to 20. If sparse, at least 10.
          - For each word provide ALL of the following fields:
            * word        — the vocabulary item as used in the passage
            * pos_abbr    — part of speech abbreviation (n, v, adj, adv, prep, etc.)
