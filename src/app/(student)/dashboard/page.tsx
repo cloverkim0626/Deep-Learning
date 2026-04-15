@@ -243,16 +243,19 @@ export default function VocabDashboard() {
 
           {currentWord ? (
             <div className="flex flex-col flex-1 min-h-0 gap-3">
-              {/* Flashcard — 3-zone touch */}
+              {/* Flashcard */}
               <div
                 className="flex-1 min-h-0 relative preserve-3d"
                 style={{ minHeight: '200px' }}
               >
-                {/* Front */}
-                <div className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 p-8 flex flex-col items-center justify-center text-center shadow-xl transition-all duration-700 ${isFlipped ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 opacity-100"}`}>
-                  {/* Speak button */}
+                {/* Front — click = flip */}
+                <div
+                  onClick={() => setIsFlipped(!isFlipped)}
+                  className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 p-8 flex flex-col items-center justify-center text-center shadow-xl transition-all duration-700 cursor-pointer select-none ${isFlipped ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 opacity-100"}`}
+                >
+                  {/* Speaker — centered above word, inside front face (won't be covered by overlay) */}
                   <button
-                    className={`absolute top-5 right-5 w-10 h-10 rounded-xl flex items-center justify-center transition-all z-30 ${isSpeaking ? "bg-foreground text-background scale-110" : "bg-accent-light/60 text-accent hover:bg-foreground/10"}`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all mb-4 ${isSpeaking ? "bg-foreground text-background scale-110" : "bg-accent-light/60 text-accent hover:bg-foreground/10"}`}
                     title="발음 듣기"
                     onClick={(e) => { e.stopPropagation(); handleSpeak(e); }}
                   >
@@ -262,11 +265,13 @@ export default function VocabDashboard() {
                   <p className="text-[14px] text-accent font-black tracking-widest flex items-center gap-2">
                     <Sparkles size={13} className="opacity-50" /> {currentWord.posAbbr}
                   </p>
-
                 </div>
 
-                {/* Back */}
-                <div className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 p-7 flex flex-col justify-center shadow-xl transition-all duration-700 overflow-y-auto ${isFlipped ? "rotate-y-0 opacity-100" : "rotate-y-180 opacity-0 pointer-events-none"}`}>
+                {/* Back — click = flip */}
+                <div
+                  onClick={() => setIsFlipped(!isFlipped)}
+                  className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 p-7 flex flex-col justify-center shadow-xl transition-all duration-700 overflow-y-auto cursor-pointer select-none ${isFlipped ? "rotate-y-0 opacity-100" : "rotate-y-180 opacity-0 pointer-events-none"}`}
+                >
                   <p className="text-[20px] font-bold text-foreground mb-3">{currentWord.korean}</p>
                   {currentWord.context && (
                     <div className="mb-4 border-l-2 border-foreground/10 pl-4">
@@ -298,32 +303,27 @@ export default function VocabDashboard() {
                   )}
                 </div>
 
-                {/* Card click area: full card = flip */}
-                <div
-                  className="absolute inset-0 z-20 cursor-pointer rounded-[2.5rem]"
-                  onClick={() => setIsFlipped(!isFlipped)}
-                />
-
-                {/* Precise arrow buttons — float over card edges */}
+                {/* Arrow buttons — positioned at vertical center, outside the content area */}
                 {wordIdx > 0 && (
                   <button
                     onClick={(e) => { e.stopPropagation(); prevWord(); }}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-background/70 backdrop-blur-sm border border-foreground/10 flex items-center justify-center text-foreground/40 hover:text-foreground/80 hover:bg-background transition-all active:scale-90 shadow-sm"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-foreground/8 backdrop-blur-sm flex items-center justify-center text-foreground/30 hover:text-foreground/70 hover:bg-foreground/15 transition-all active:scale-90"
                     aria-label="이전 단어"
                   >
-                    <ChevronLeft size={18} strokeWidth={2} />
+                    <ChevronLeft size={16} strokeWidth={2.5} />
                   </button>
                 )}
                 {wordIdx < currentSet.words.length - 1 && (
                   <button
                     onClick={(e) => { e.stopPropagation(); nextWord(); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-background/70 backdrop-blur-sm border border-foreground/10 flex items-center justify-center text-foreground/40 hover:text-foreground/80 hover:bg-background transition-all active:scale-90 shadow-sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-foreground/8 backdrop-blur-sm flex items-center justify-center text-foreground/30 hover:text-foreground/70 hover:bg-foreground/15 transition-all active:scale-90"
                     aria-label="다음 단어"
                   >
-                    <ChevronRight size={18} strokeWidth={2} />
+                    <ChevronRight size={16} strokeWidth={2.5} />
                   </button>
                 )}
               </div>
+
 
 
               {/* Bottom bar — counter + 오답 */}
