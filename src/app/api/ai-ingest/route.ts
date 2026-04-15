@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(req: Request) {
   try {
     const { rawText, workbook, chapter, passageLabel } = await req.json();
@@ -12,6 +8,10 @@ export async function POST(req: Request) {
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({ error: "Missing API Key" }, { status: 500 });
     }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     const prompt = `
       You are the 'Parallax Adaptive Engine' - a world-class English education AI specializing in Korean CSAT (수능) and high-tier 내신 (Internal Exam) preparation.
