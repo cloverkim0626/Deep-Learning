@@ -127,8 +127,10 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         .reduce((a, s) => a + (s.correct_count || 0), 0);
       const mastery = totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : 0;
 
-      // Remaining tests = sets not yet tested
-      const testedSetIds = new Set((sessions as { set_id?: string }[]).map(s => s.set_id).filter(Boolean));
+      // Only COMPLETED sessions count (completed_at not null)
+      const testedSetIds = new Set((sessions as { set_id?: string; completed_at?: string | null }[])
+        .filter(s => s.completed_at)
+        .map(s => s.set_id).filter(Boolean));
       const remaining = (assignments as { id: string }[]).filter(a => !testedSetIds.has(a.id)).length;
 
       setStats({

@@ -36,7 +36,24 @@ function speakWord(word: string) {
   window.speechSynthesis.speak(utt);
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
+// ─── Bold Headword in Context ────────────────────────────────────────────────
+function BoldWord({ text, word }: { text: string; word: string }) {
+  if (!text || !word) return <>{text}</>;
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escaped}\\w*)`, 'gi');
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part)
+          ? <strong key={i} className="font-black text-foreground not-italic">{part}</strong>
+          : part
+      )}
+    </>
+  );
+}
+
+
 export default function VocabDashboard() {
   const [activeTab, setActiveTab] = useState<"library" | "wrong">("library");
   const [wordSets, setWordSets] = useState<WordSet[]>([]);
@@ -93,8 +110,13 @@ export default function VocabDashboard() {
         setWordSets(formatted);
       }
 
-      // Track which sets have been tested
-      const doneIds = new Set<string>((sessions as { set_id?: string }[]).map(s => s.set_id).filter(Boolean) as string[]);
+      // Only COMPLETED sessions count as tested (completed_at not null)
+      const doneIds = new Set<string>(
+        (sessions as { set_id?: string; completed_at?: string | null }[])
+          .filter(s => s.completed_at)
+          .map(s => s.set_id)
+          .filter(Boolean) as string[]
+      );
       setCompletedSetIds(doneIds);
     } catch (err) {
       console.warn('라이브러리 로딩 실패:', err);
@@ -275,7 +297,7 @@ export default function VocabDashboard() {
                   <p className="text-[20px] font-bold text-foreground mb-3">{currentWord.korean}</p>
                   {currentWord.context && (
                     <div className="mb-4 border-l-2 border-foreground/10 pl-4">
-                      <p className="text-[12px] leading-relaxed text-foreground/70 serif italic">{currentWord.context}</p>
+                      <p className="text-[12px] leading-relaxed text-foreground/70 serif italic"><BoldWord text={currentWord.context} word={currentWord.word} /></p>
                       {currentWord.contextKorean && (
                         <p className="text-[11px] text-accent mt-1">{currentWord.contextKorean}</p>
                       )}

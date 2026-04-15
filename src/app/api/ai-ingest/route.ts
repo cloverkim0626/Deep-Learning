@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 export async function POST(req: Request) {
@@ -14,14 +14,14 @@ export async function POST(req: Request) {
     });
 
     const prompt = `
-      You are the 'Parallax Adaptive Engine' - a world-class English education AI specializing in Korean CSAT (수능) and high-tier 내신 (Internal Exam) preparation.
+      You are the 'Parallax Adaptive Engine' - a world-class English education AI specializing in Korean CSAT (?섎뒫) and high-tier ?댁떊 (Internal Exam) preparation.
       Your goal is to transform raw English text into a "diagnostic learning set" for top-performing students.
 
       ### CORE LOGIC (THE PARALLAX WAY):
       1. **Structural Scrutiny**: Extract "The Killer Sentence" (the most complex one) for deep parsing.
       2. **Contextual Nuance**: Vocab synonyms must be contextually interchangeable in THIS passage. Avoid generic thesaurus results.
-      3. **Strategic Traps**: For each vocab tip, explain common exam traps (오답 유도 포인트) in Korean.
-      4. **Logical Cohesion**: Essay tasks must test "flow of ideas" (순서 배열, 문장 삽입), not just translation.
+      3. **Strategic Traps**: For each vocab tip, explain common exam traps (?ㅻ떟 ?좊룄 ?ъ씤?? in Korean.
+      4. **Logical Cohesion**: Essay tasks must test "flow of ideas" (?쒖꽌 諛곗뿴, 臾몄옣 ?쎌엯), not just translation.
 
       ### INPUT DATA:
       "${rawText}"
@@ -29,24 +29,24 @@ export async function POST(req: Request) {
       ### EXTRACTION REQUIREMENTS:
       1. **Sentences**: Map the full passage to S01, S02, ... S[N].
 
-      2. **Vocab (10–20 items)**:
+      2. **Vocab (10??0 items)**:
          - Extract a MINIMUM of 10 and MAXIMUM of 20 vocabulary items.
-         - Prioritize: content words with high CSAT/내신 relevance (nouns, verbs, adjectives, adverbs appearing in exam contexts).
+         - Prioritize: content words with high CSAT/?댁떊 relevance (nouns, verbs, adjectives, adverbs appearing in exam contexts).
          - If the passage is lexically rich, extract up to 20. If sparse, at least 10.
          - For each word provide ALL of the following fields:
-           * word        — the vocabulary item as used in the passage
-           * pos_abbr    — part of speech abbreviation (n, v, adj, adv, prep, etc.)
-           * korean      — precise CONTEXTUAL meaning in Korean (not dictionary gloss)
-           * context     — the EXACT full sentence from the passage where this word appears
-           * context_korean — full Korean translation of that exact sentence
-           * synonyms    — EXACTLY 3 high-level synonyms (comma-separated), each contextually interchangeable in the passage
-           * antonyms    — EXACTLY 3 antonyms (comma-separated), at CSAT/내신 vocabulary level
-           * grammar_tip — exam-focused tip written in Korean 반말체 (how this word is tested)
-           * is_key      — true if this is a CORE word central to the passage's main idea (key words get both synonym AND antonym questions); false otherwise
+           * word        ??the vocabulary item as used in the passage
+           * pos_abbr    ??part of speech abbreviation (n, v, adj, adv, prep, etc.)
+           * korean      ??precise CONTEXTUAL meaning in Korean (not dictionary gloss)
+           * context     ??the EXACT full sentence from the passage where this word appears
+           * context_korean ??full Korean translation of that exact sentence
+           * synonyms    ??EXACTLY 3 high-level synonyms (comma-separated), each contextually interchangeable in the passage
+           * antonyms    ??EXACTLY 3 antonyms (comma-separated), at CSAT/?댁떊 vocabulary level
+           * grammar_tip ??exam-focused tip written in Korean 諛섎쭚泥?(how this word is tested)
+           * is_key      ??true if this is a CORE word central to the passage's main idea (key words get both synonym AND antonym questions); false otherwise
 
-      3. **Diagnostic Points**: 2–3 logical essay tasks testing idea flow.
+      3. **Diagnostic Points**: 2?? logical essay tasks testing idea flow.
 
-      ### OUTPUT FORMAT (STRICT JSON — no markdown, no code fences):
+      ### OUTPUT FORMAT (STRICT JSON ??no markdown, no code fences):
       {
         "sentences": { "S01": "...", "S02": "..." },
         "words": [
@@ -55,10 +55,10 @@ export async function POST(req: Request) {
             "pos_abbr": "...",
             "korean": "...",
             "context": "exact sentence from passage",
-            "context_korean": "한글 해석",
+            "context_korean": "?쒓? ?댁꽍",
             "synonyms": "word1, word2, word3",
             "antonyms": "word1, word2, word3",
-            "grammar_tip": "수능/내신 출제 포인트 (한국어)",
+            "grammar_tip": "?섎뒫/?댁떊 異쒖젣 ?ъ씤??(?쒓뎅??",
             "is_key": true
           }
         ],
@@ -87,3 +87,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
+
