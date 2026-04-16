@@ -367,3 +367,34 @@ export async function getEssaySets() {
   if (error) throw error;
   return data;
 }
+
+// ─── Student Password Change ──────────────────────────────────────────────────
+export async function changeStudentPassword(
+  name: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<{ success: boolean; error?: string }> {
+  // 1. 현재 비밀번호 확인
+  const { data, error } = await supabase
+    .from('students')
+    .select('id, password')
+    .eq('name', name)
+    .eq('password', currentPassword)
+    .single();
+
+  if (error || !data) {
+    return { success: false, error: '현재 비밀번호가 맞지 않습니다.' };
+  }
+
+  // 2. 새 비밀번호로 업데이트
+  const { error: updateError } = await supabase
+    .from('students')
+    .update({ password: newPassword })
+    .eq('id', data.id);
+
+  if (updateError) {
+    return { success: false, error: '비밀번호 변경에 실패했습니다.' };
+  }
+
+  return { success: true };
+}

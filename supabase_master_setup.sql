@@ -100,7 +100,7 @@ DO $$ BEGIN
   DELETE FROM folder_passages;
 EXCEPTION WHEN undefined_table THEN NULL; END $$;
 DO $$ BEGIN
-  DELETE FROM folders;
+  DELETE FROM passage_folders;
 EXCEPTION WHEN undefined_table THEN NULL; END $$;
 
 -- 단어 및 지문 삭제
