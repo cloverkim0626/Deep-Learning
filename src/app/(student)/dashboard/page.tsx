@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   ChevronDown, Trophy, AlertCircle,
-  Sparkles, Clock, Calendar, FilterX, Volume2
+  Sparkles, Clock, Calendar, FilterX, Volume2, Star
 } from "lucide-react";
 import { getAssignmentsByStudent, getWrongAnswers, logWrongAnswer, type TimeFilter } from "@/lib/assignment-service";
 import { getTestSessionsByStudent } from "@/lib/database-service";
@@ -53,14 +53,27 @@ function BoldWord({ text, word }: { text: string; word: string }) {
   );
 }
 
-// ─── Bold Korean meaning in context translation ──────────────────────────────
-// Rather than trying to regex-match the Korean meaning inside the translation
-// (which over-matches compound words), we display韓meaning as a bold badge BEFORE
-// the context translation. Clean, unambiguous, zero false positives.
+// ─── Bold Korean meaning: just display as-is (no regex) ─────────────────────
 function KoreanContextLine({ contextKorean }: { contextKorean: string }) {
   return <>{contextKorean}</>;
 }
 
+// ─── Star / Bookmark helpers ─────────────────────────────────────────────────
+function getStarKey(studentName: string) {
+  return `starred_words_${studentName}`;
+}
+function loadStarred(studentName: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(getStarKey(studentName));
+    if (raw) return new Set(JSON.parse(raw));
+  } catch { /* noop */ }
+  return new Set();
+}
+function saveStarred(studentName: string, ids: Set<string>) {
+  try {
+    localStorage.setItem(getStarKey(studentName), JSON.stringify([...ids]));
+  } catch { /* noop */ }
+}
 
 
 export default function VocabDashboard() {
@@ -81,6 +94,7 @@ export default function VocabDashboard() {
   const [swipeDelta, setSwipeDelta] = useState(0);
   // Remaining tests count
   const [completedSetIds, setCompletedSetIds] = useState<Set<string>>(new Set());
+  const [starredIds, setStarredIds] = useState<Set<string>>(new Set());
 
   const getStudentName = useCallback((): string => {
     try {
@@ -94,6 +108,8 @@ export default function VocabDashboard() {
     setIsLoading(true);
     try {
       const name = getStudentName();
+      // Load starred once on mount
+      setStarredIds(loadStarred(name));
       const [assignments, sessions] = await Promise.all([
         getAssignmentsByStudent(name),
         getTestSessionsByStudent(name).catch(() => []),
@@ -123,7 +139,7 @@ export default function VocabDashboard() {
           return {
             id: s.id,
             workbook: s.workbook || '배당된 교재',
-            chapter: [chapterLabel, lessonLabel].filter(Boolean).join(' '),  // "Part1 3강"
+            chapter: [chapterLabel, lessonLabel].filter(Boolean).join(' · '),  // "Part1 · 3강"
             passageNumber: passageLabel ? `${passageLabel}번` : '',          // "2번"
             label: s.label,
             words: (s.words || []).map(w => ({
@@ -185,14 +201,15 @@ export default function VocabDashboard() {
   // Remaining tests = sets not yet completed
   const remainingTests = wordSets.filter(s => !completedSetIds.has(s.id)).length;
 
-  const handleLogWrong = async () => {
-    if (!currentWord) return;
-    try {
-      const name = getStudentName();
-      await logWrongAnswer(name, currentWord.id, 'vocab');
-      await loadWrongAnswers(timeFilter);
-      alert(`"${currentWord.word}" 단어가 오답 노트에 저장되었습니다.`);
-    } catch (err) { console.error(err); }
+  const toggleStar = (wordId: string) => {
+    const name = getStudentName();
+    setStarredIds(prev => {
+      const next = new Set(prev);
+      if (next.has(wordId)) next.delete(wordId);
+      else next.add(wordId);
+      saveStarred(name, next);
+      return next;
+    });
   };
 
   const handleSpeak = (e: React.MouseEvent) => {
@@ -351,6 +368,25 @@ export default function VocabDashboard() {
                     isFlipped ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100'
                   }`}
                 >
+                  {/* 진행상황 — 좌상단 */}
+                  <div className="absolute top-4 left-5 flex items-center gap-1.5">
+                    <span className="text-[10px] font-black text-accent/50">{wordIdx + 1}</span>
+                    <span className="text-[8px] text-accent/30 font-bold">/</span>
+                    <span className="text-[10px] font-bold text-accent/30">{currentSet.words.length}</span>
+                  </div>
+                  {/* 별표 북마크 — 우상단 */}
+                  <button
+                    className={`absolute top-4 right-5 w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                      starredIds.has(currentWord.id)
+                        ? 'text-amber-400 bg-amber-50 scale-110'
+                        : 'text-accent/30 hover:text-amber-300 hover:bg-amber-50/60'
+                    }`}
+                    onClick={e => { e.stopPropagation(); toggleStar(currentWord.id); }}
+                    title="어려운 단어 별표"
+                  >
+                    <Star size={16} strokeWidth={2} fill={starredIds.has(currentWord.id) ? 'currentColor' : 'none'} />
+                  </button>
+
                   <button
                     className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all mb-4 ${isSpeaking ? 'bg-foreground text-background scale-110' : 'bg-accent-light/60 text-accent hover:bg-foreground/10'}`}
                     title="발음 듣기"
@@ -365,7 +401,7 @@ export default function VocabDashboard() {
                   <p className="text-[10px] text-accent/40 font-bold mt-3">← 스와이프 · 탭하면 뒤집기 →</p>
                 </div>
 
-                {/* BACK — scrollable meaning panel */}
+                {/* BACK — scrollable meaning panel. 외곽 클릭 → 뒤집기 */}
                 <div
                   onClick={() => setIsFlipped(false)}
                   style={{ transform: `translateX(${swipeDelta * 0.08}px)` }}
@@ -373,11 +409,8 @@ export default function VocabDashboard() {
                     isFlipped ? 'opacity-100' : 'opacity-0 pointer-events-none scale-95'
                   }`}
                 >
-                  {/* Inner scrollable — stops click propagation to allow scrolling */}
-                  <div
-                    className="h-full overflow-y-auto custom-scrollbar p-7"
-                    onClick={e => e.stopPropagation()}
-                  >
+                  {/* 내부 스크롤 컨테이너: click은 막지 않음(외곽으로 전파 허용) */}
+                  <div className="h-full overflow-y-auto custom-scrollbar p-7">
                     <p className="text-[20px] font-bold text-foreground mb-1">{currentWord.korean}</p>
                     {currentWord.context && (
                       <div className="mb-4 border-l-2 border-foreground/10 pl-4">
@@ -386,8 +419,7 @@ export default function VocabDashboard() {
                         </p>
                         {currentWord.contextKorean && (
                           <p className="text-[11px] text-accent mt-1">
-                            <strong className="font-black text-foreground not-italic">[{currentWord.korean}]</strong>
-                            {' '}{currentWord.contextKorean}
+                            {currentWord.contextKorean}
                           </p>
                         )}
                       </div>
@@ -412,11 +444,7 @@ export default function VocabDashboard() {
                         </div>
                       </div>
                     )}
-                    {/* Tap anywhere to flip back */}
-                    <p
-                      className="text-[10px] text-accent/30 font-bold mt-5 text-center cursor-pointer"
-                      onClick={() => setIsFlipped(false)}
-                    >탭하면 다시 뒤집기</p>
+                    <p className="text-[10px] text-accent/30 font-bold mt-5 text-center">탭하면 다시 앞면으로</p>
                   </div>
                 </div>
               </div>
@@ -439,15 +467,14 @@ export default function VocabDashboard() {
 
 
 
-              {/* Bottom bar — counter + 오답 */}
-              <div className="flex items-center justify-between gap-3 shrink-0 pb-1">
-                <span className="text-[13px] font-black text-accent min-w-[50px]">{wordIdx + 1} / {currentSet.words.length}</span>
-                <button
-                  onClick={handleLogWrong}
-                  className="flex items-center gap-1.5 px-4 py-3 bg-red-50 text-red-600 rounded-2xl text-[12px] font-bold border border-red-100 hover:bg-red-100 transition-all active:scale-95"
-                >
-                  <AlertCircle size={15} strokeWidth={2.5} /> 오답 추가
-                </button>
+              {/* Bottom bar — 별표 단어 보기 링크 자리 */}
+              <div className="flex items-center justify-center gap-3 shrink-0 pb-1">
+                {starredIds.size > 0 && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-amber-500 font-bold">
+                    <Star size={12} fill="currentColor" />
+                    별표 단어 {[...starredIds].filter(id => currentSet.words.some(w => w.id === id)).length}개
+                  </div>
+                )}
               </div>
             </div>
           ) : (

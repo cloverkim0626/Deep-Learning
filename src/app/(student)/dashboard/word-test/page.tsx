@@ -93,79 +93,132 @@ function PassStamp() {
   );
 }
 
-// ─── Intro Screen ─────────────────────────────────────────────────────────────
+// ─── Intro Screen (다중 선택) ─────────────────────────────────────────────────
 function IntroScreen({ sets, passedSetIds, onStartQuiz, onStartGame }: {
   sets: { id: string; label: string; workbook: string; chapter: string; passageNumber?: string; words: TestWord[] }[];
   passedSetIds: Set<string>;
-  onStartQuiz: (selectedSetId: string | null) => void;
-  onStartGame: (selectedSetId: string | null) => void;
+  onStartQuiz: (selectedSetIds: string[] | null) => void;
+  onStartGame: (selectedSetIds: string[] | null) => void;
 }) {
-  const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
+  // null = 전체, string[] = 선택된 ID들
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showModeModal, setShowModeModal] = useState(false);
-  const selected = sets.find(s => s.id === selectedSetId);
-  const totalWords = selected ? selected.words.length : sets.reduce((a, s) => a + s.words.length, 0);
-  const totalSyn = selected
-    ? selected.words.filter(w => w.testSynonym).length
-    : sets.reduce((a, s) => a + s.words.filter(w => w.testSynonym).length, 0);
-  const totalAnt = selected
-    ? selected.words.filter(w => w.testAntonym).length
-    : sets.reduce((a, s) => a + s.words.filter(w => w.testAntonym).length, 0);
-  const estQ = totalSyn + totalAnt;
 
+  const allSelected = selectedIds.size === 0; // size=0 이면 전체
+  const activeIds = selectedIds.size === 0 ? sets.map(s => s.id) : [...selectedIds];
+  const activeSets = sets.filter(s => activeIds.includes(s.id));
+
+  const totalSyn = activeSets.reduce((a, s) => a + s.words.filter(w => w.testSynonym).length, 0);
+  const totalAnt = activeSets.reduce((a, s) => a + s.words.filter(w => w.testAntonym).length, 0);
+  const estQ = totalSyn + totalAnt;
   const allPassed = sets.length > 0 && sets.every(s => passedSetIds.has(s.id));
 
+  const toggleSet = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleStartMode = (mode: 'quiz' | 'game') => {
+    setShowModeModal(false);
+    const ids = selectedIds.size === 0 ? null : [...selectedIds];
+    if (mode === 'quiz') onStartQuiz(ids);
+    else onStartGame(ids);
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center h-full px-8 text-center gap-6 pb-20">
-      <div className="w-16 h-16 rounded-[1.3rem] bg-foreground text-background flex items-center justify-center shadow-xl">
-        <Trophy size={26} strokeWidth={1.5} />
-      </div>
-      <div>
-        <h1 className="text-2xl text-foreground serif mb-2">유반의어 테스트</h1>
-        <p className="text-[13px] text-accent font-medium leading-relaxed">
-          선생님이 지정한 단어만 출제돼요.<br />
-          <span className="text-sky-500 font-black">하늘색</span> = 유의어 &nbsp;·&nbsp; <span className="text-rose-500 font-black">빨간색</span> = 반의어
-        </p>
+    <div className="flex flex-col h-full px-5 py-6 overflow-y-auto custom-scrollbar">
+      {/* 헤더 */}
+      <div className="flex items-center gap-3 mb-5 shrink-0">
+        <div className="w-10 h-10 rounded-[0.9rem] bg-foreground text-background flex items-center justify-center shadow-md shrink-0">
+          <Trophy size={18} strokeWidth={1.5} />
+        </div>
+        <div>
+          <h1 className="text-[17px] font-black text-foreground">유반의어 테스트</h1>
+          <p className="text-[11px] text-accent font-medium">
+            <span className="text-sky-500 font-black">하늘색</span> = 유의어 &nbsp;·&nbsp;
+            <span className="text-rose-500 font-black">빨간색</span> = 반의어
+          </p>
+        </div>
       </div>
 
-      <div className="w-full max-w-xs space-y-2">
-        <p className="text-[11px] font-black text-accent uppercase tracking-widest mb-3">시험 범위 선택</p>
-        {/* 전체 선택 버튼 */}
+      {/* 지문 선택 목록 */}
+      <div className="flex-1 space-y-2 mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] font-black text-accent uppercase tracking-widest">시험 범위 선택 (복수 선택 가능)</p>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className={`text-[10px] font-black px-2 py-0.5 rounded-lg transition-all ${allSelected ? 'bg-foreground text-background' : 'bg-foreground/5 text-accent hover:bg-foreground/10'}`}
+          >
+            전체
+          </button>
+        </div>
+
+        {/* 전체선택 行 */}
         <div className="relative">
           {allPassed && <PassStamp />}
           <button
-            onClick={() => setSelectedSetId(null)}
-            className={`w-full px-5 py-3.5 rounded-2xl border text-[13px] font-bold text-left transition-all ${selectedSetId === null ? 'bg-foreground text-background border-foreground shadow-lg' : 'bg-background border-foreground/10 hover:border-foreground/30'}`}
+            onClick={() => setSelectedIds(new Set())}
+            className={`w-full px-4 py-3 rounded-2xl border text-left transition-all flex items-center gap-3 ${allSelected ? 'bg-foreground text-background border-foreground shadow-lg' : 'bg-background border-foreground/10 hover:border-foreground/30'}`}
           >
-            <div className="flex items-center gap-2">
-              <Sparkles size={14} className={selectedSetId === null ? 'text-background' : 'text-accent'} />
-              전체 배당 세트 ({totalWords}단어)
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${allSelected ? 'border-white bg-white' : 'border-foreground/20'}`}>
+              {allSelected && <div className="w-2.5 h-2.5 rounded-full bg-foreground" />}
             </div>
-            <div className={`text-[10px] mt-0.5 flex gap-2 ${selectedSetId === null ? 'opacity-60' : 'text-accent'}`}>
-              <span className="text-sky-400">유의어 {sets.reduce((a,s) => a + s.words.filter(w => w.testSynonym).length, 0)}문제</span>
-              <span className="text-rose-400">반의어 {sets.reduce((a,s) => a + s.words.filter(w => w.testAntonym).length, 0)}문제</span>
+            <div>
+              <div className="text-[13px] font-bold flex items-center gap-1.5">
+                <Sparkles size={12} className={allSelected ? 'text-background opacity-70' : 'text-accent'} />
+                전체 배당 세트
+              </div>
+              <div className={`text-[10px] mt-0.5 ${allSelected ? 'opacity-60' : 'text-accent'}`}>
+                총 {sets.reduce((a,s) => a + s.words.length, 0)}단어 ·
+                <span className="text-sky-400 ml-1">유 {sets.reduce((a,s) => a + s.words.filter(w => w.testSynonym).length, 0)}</span>
+                <span className="text-rose-400 ml-1">반 {sets.reduce((a,s) => a + s.words.filter(w => w.testAntonym).length, 0)}</span>
+              </div>
             </div>
           </button>
         </div>
+
+        {/* 개별 지문 행 */}
         {sets.map(s => {
           const sSyn = s.words.filter(w => w.testSynonym).length;
           const sAnt = s.words.filter(w => w.testAntonym).length;
           const label = [s.workbook, s.chapter, s.passageNumber].filter(Boolean).join(' · ');
           const isPassed = passedSetIds.has(s.id);
+          const isChecked = !allSelected && selectedIds.has(s.id);
           return (
             <div key={s.id} className="relative">
               {isPassed && <PassStamp />}
-              <button onClick={() => setSelectedSetId(s.id)}
-                className={`w-full px-5 py-3.5 rounded-2xl border text-[13px] font-bold text-left transition-all ${selectedSetId === s.id ? 'bg-foreground text-background border-foreground shadow-lg' : 'bg-background border-foreground/10 hover:border-foreground/30'}`}>
-                <div className="flex items-center gap-2">
-                  <BookOpen size={14} className={selectedSetId === s.id ? 'text-background' : 'text-accent'} />
-                  <span className="truncate">{s.label}</span>
+              <button
+                onClick={() => toggleSet(s.id)}
+                className={`w-full px-4 py-3 rounded-2xl border text-left transition-all flex items-center gap-3 ${
+                  isChecked
+                    ? 'bg-foreground text-background border-foreground shadow-lg'
+                    : 'bg-background border-foreground/10 hover:border-foreground/30'
+                }`}
+              >
+                {/* 체크박스 */}
+                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isChecked ? 'border-white bg-white' : 'border-foreground/20'}`}>
+                  {isChecked && (
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                      <path d="M1 4L3.5 6.5L9 1" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
                 </div>
-                <div className={`text-[10px] mt-0.5 ${selectedSetId === s.id ? 'opacity-60' : 'text-accent'}`}>
-                  {label && <span className="mr-2">{label}</span>}
-                  <span className="text-sky-400">유 {sSyn}</span>
-                  <span className="mx-1">·</span>
-                  <span className="text-rose-400">반 {sAnt}</span>
-                  <span className="mx-1">·</span>총 {sSyn + sAnt}문제
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <BookOpen size={11} className={isChecked ? 'text-background opacity-60' : 'text-accent'} />
+                    <span className="text-[13px] font-bold truncate">{s.label}</span>
+                  </div>
+                  <div className={`text-[10px] mt-0.5 ${isChecked ? 'opacity-60' : 'text-accent'}`}>
+                    {label && <span className="mr-2">{label}</span>}
+                    <span className="text-sky-400">유 {sSyn}</span>
+                    <span className="mx-1">·</span>
+                    <span className="text-rose-400">반 {sAnt}</span>
+                    <span className="mx-1">·</span>총 {sSyn + sAnt}문제
+                  </div>
                 </div>
               </button>
             </div>
@@ -173,26 +226,34 @@ function IntroScreen({ sets, passedSetIds, onStartQuiz, onStartGame }: {
         })}
       </div>
 
-      {estQ === 0 ? (
-        <div className="flex items-center gap-2 px-5 py-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-700 text-[13px] font-bold">
-          <AlertCircle size={15} /> 출제할 단어가 없습니다. 선생님께 문의하세요.
-        </div>
-      ) : (
-        <div className="text-center">
-          <p className="text-[12px] text-accent font-bold mb-3">
-            예상 문제 수: <span className="text-foreground font-black">{estQ}문제</span>
-            <span className="ml-2 text-sky-400">유의어 {totalSyn}</span>
-            <span className="mx-1 text-accent">+</span>
-            <span className="text-rose-400">반의어 {totalAnt}</span>
-          </p>
-          <button
-            onClick={() => setShowModeModal(true)}
-            className="h-14 px-10 bg-foreground text-background font-bold rounded-2xl flex items-center gap-2 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all mx-auto"
-          >
-            테스트 시작 <ChevronRight size={18} strokeWidth={1.5} />
-          </button>
-        </div>
-      )}
+      {/* 현재 선택 요약 + 시작 */}
+      <div className="shrink-0 pt-4 border-t border-foreground/5">
+        {estQ === 0 ? (
+          <div className="flex items-center gap-2 px-5 py-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-700 text-[13px] font-bold">
+            <AlertCircle size={15} /> 출제할 단어가 없습니다. 선생님께 문의하세요.
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[11px] text-accent font-bold">
+                {allSelected ? '전체' : `${selectedIds.size}개 지문`} 선택됨
+              </p>
+              <p className="text-[10px] text-accent/60">
+                예상 <span className="text-foreground font-black">{estQ}문제</span>
+                <span className="ml-1.5 text-sky-400">유 {totalSyn}</span>
+                <span className="mx-1 text-accent/30">+</span>
+                <span className="text-rose-400">반 {totalAnt}</span>
+              </p>
+            </div>
+            <button
+              onClick={() => setShowModeModal(true)}
+              className="h-12 px-7 bg-foreground text-background font-bold rounded-2xl flex items-center gap-2 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all"
+            >
+              시작 <ChevronRight size={16} strokeWidth={2} />
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* 모드 선택 모달 */}
       {showModeModal && (
@@ -206,7 +267,7 @@ function IntroScreen({ sets, passedSetIds, onStartQuiz, onStartGame }: {
             </div>
             <div className="space-y-3">
               <button
-                onClick={() => { setShowModeModal(false); onStartQuiz(selectedSetId); }}
+                onClick={() => handleStartMode('quiz')}
                 className="w-full p-5 rounded-2xl border-2 border-foreground/10 hover:border-foreground/30 bg-white text-left transition-all hover:-translate-y-0.5 group"
               >
                 <div className="flex items-center gap-3 mb-1.5">
@@ -215,10 +276,10 @@ function IntroScreen({ sets, passedSetIds, onStartQuiz, onStartGame }: {
                   </div>
                   <span className="text-[15px] font-black text-foreground">객관식</span>
                 </div>
-                <p className="text-[12px] text-accent leading-relaxed pl-12">4지선다로 유의어/반의어 선택<br/>정답률을 오답 노트에 기록해요.</p>
+                <p className="text-[12px] text-accent leading-relaxed pl-12">4지선다로 유의어/반의어 선택<br/>정답률 90% 이상이면 PASS!</p>
               </button>
               <button
-                onClick={() => { setShowModeModal(false); onStartGame(selectedSetId); }}
+                onClick={() => handleStartMode('game')}
                 className="w-full p-5 rounded-2xl border-2 border-sky-200 hover:border-sky-400 bg-sky-50 text-left transition-all hover:-translate-y-0.5 group"
               >
                 <div className="flex items-center gap-3 mb-1.5">
@@ -248,16 +309,16 @@ function ResultScreen({ results, onRestart }: { results: ResultEntry[], onRestar
   return (
     <div className="flex flex-col h-full overflow-y-auto custom-scrollbar px-6 py-10 pb-24">
       <div className="text-center mb-8">
-        <div className={`w-20 h-20 rounded-[1.5rem] flex items-center justify-center shadow-xl mx-auto mb-4 ${pct >= 70 ? 'bg-emerald-500 text-white' : pct >= 50 ? 'bg-amber-400 text-white' : 'bg-foreground text-background'}`}>
+        <div className={`w-20 h-20 rounded-[1.5rem] flex items-center justify-center shadow-xl mx-auto mb-4 ${pct >= 90 ? 'bg-emerald-500 text-white' : pct >= 70 ? 'bg-amber-400 text-white' : 'bg-foreground text-background'}`}>
           <span className="text-3xl font-black">{pct}</span>
         </div>
         <h2 className="text-2xl text-foreground serif">테스트 완료</h2>
         <p className="text-[13px] text-accent mt-1 font-medium">
-          {score}/{results.length}개 정답 · {pct >= 80 ? "아주 잘했어 👍" : pct >= 50 ? "오답을 다시 확인해봐" : "오답 위주로 집중 복습이 필요해"}
+          {score}/{results.length}개 정답 · {pct >= 90 ? "아주 잘했어 👍" : pct >= 70 ? "거의 다 왔어! 오답을 다시 확인해봐" : "오답 위주로 집중 복습이 필요해"}
         </p>
-        {pct >= 70 && (
+        {pct >= 90 && (
           <div className="inline-flex items-center gap-1.5 mt-2 px-4 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-emerald-600 text-[11px] font-black">
-            <Stamp size={12} /> PASS 인장이 찍혔어요!
+            <Stamp size={12} /> PASS 인장이 찍혔어요! (90% 이상)
           </div>
         )}
       </div>
@@ -700,9 +761,12 @@ export default function WordTestPage() {
 
   useEffect(() => { loadSets(); }, [loadSets]);
 
-  const handleStart = async (setId: string | null) => {
-    setSelectedSetId(setId);
-    const targetSets = setId ? allSets.filter(s => s.id === setId) : allSets;
+  const handleStart = async (setIds: string[] | null) => {
+    // setIds=null이면 전체, 아니면 지정된 ID들만
+    const targetSets = setIds ? allSets.filter(s => setIds.includes(s.id)) : allSets;
+    // 단일 set_id (DB용) — 복수 선택 시 null로
+    const singleId = setIds && setIds.length === 1 ? setIds[0] : null;
+    setSelectedSetId(singleId);
     const words = targetSets.flatMap(s => s.words);
     const qs = buildQuestions(words);
 
@@ -720,7 +784,7 @@ export default function WordTestPage() {
     try {
       const session = await createTestSession({
         student_name: name,
-        set_id: setId || undefined,
+        set_id: singleId || undefined,
         total_questions: qs.length
       });
       setSessionId(session?.id || null);
@@ -732,15 +796,16 @@ export default function WordTestPage() {
     setPhase("test");
   };
 
-  const handleStartGame = (setId: string | null) => {
-    const targetSets = setId ? allSets.filter(s => s.id === setId) : allSets;
+  const handleStartGame = (setIds: string[] | null) => {
+    const targetSets = setIds ? allSets.filter(s => setIds.includes(s.id)) : allSets;
     const words = targetSets.flatMap(s => s.words);
     const eligible = words.filter(w => (w.testSynonym && w.synonyms.length > 0) || (w.testAntonym && w.antonyms.length > 0));
     if (eligible.length === 0) {
       alert('게임에 출제할 단어가 없습니다. 선생님이 유/반의어 출제 단어를 지정하지 않았어요.');
       return;
     }
-    setSelectedSetId(setId);
+    const singleId = setIds && setIds.length === 1 ? setIds[0] : null;
+    setSelectedSetId(singleId);
     setGameWords(words);
     setPhase("game");
   };
@@ -798,9 +863,9 @@ export default function WordTestPage() {
         if (sessionId) {
           const correctCount = newResults.filter(r => r.correct).length;
           try { await completeTestSession(sessionId, correctCount); } catch (err) { console.error(err); }
-          // 70% 이상이면 PASS 인장
+          // 90% 이상이면 PASS 인장
           const pct = correctCount / newResults.length;
-          if (pct >= 0.7 && selectedSetId) {
+          if (pct >= 0.9 && selectedSetId) {
             setPassedSetIds(prev => new Set([...prev, selectedSetId]));
           }
         }
