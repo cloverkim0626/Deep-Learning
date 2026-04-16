@@ -15,7 +15,7 @@ type Word = {
 };
 
 type WordSet = {
-  id: string; workbook: string; chapter: string; label: string; words: Word[];
+  id: string; workbook: string; chapter: string; passageNumber: string; label: string; words: Word[];
 };
 
 const TIME_FILTERS: { value: TimeFilter; label: string; icon: React.ReactNode }[] = [
@@ -92,12 +92,13 @@ export default function VocabDashboard() {
 
       if (assignments && assignments.length > 0) {
         const formatted: WordSet[] = (assignments as {
-          id: string; workbook?: string; chapter?: string; label: string;
+          id: string; workbook?: string; chapter?: string; passage_number?: string; sub_category?: string; label: string;
           words?: { id: string; word: string; pos_abbr: string; korean: string; context?: string; context_korean?: string; synonyms: string | string[]; antonyms: string | string[]; grammar_tip?: string }[]
         }[]).map(s => ({
           id: s.id,
           workbook: s.workbook || '배당된 교재',
-          chapter: s.chapter || '',
+          chapter: s.chapter || s.sub_category || '',
+          passageNumber: s.passage_number || '',
           label: s.label,
           words: (s.words || []).map(w => ({
             id: w.id,
@@ -267,10 +268,13 @@ export default function VocabDashboard() {
               <div>
                 <span className="text-[9px] font-black text-accent uppercase tracking-widest mb-0.5 block">현재 배당된 지문</span>
                 <div className="text-[14px] font-bold text-foreground">
-                  {currentSet
-                    ? `${currentSet.workbook} · ${currentSet.chapter} · ${currentSet.label}`
-                    : "배당된 세트가 없습니다."}
+                  {currentSet ? currentSet.label : "배당된 세트가 없습니다."}
                 </div>
+                {currentSet && (
+                  <div className="text-[10px] text-accent mt-0.5">
+                    {[currentSet.workbook, currentSet.chapter, currentSet.passageNumber].filter(Boolean).join(' · ')}
+                  </div>
+                )}
               </div>
               <ChevronDown size={18} className={`text-accent transition-transform shrink-0 ml-2 ${showSetPicker ? "rotate-180" : ""}`} />
             </button>
@@ -283,7 +287,9 @@ export default function VocabDashboard() {
                     onClick={() => { setSetIdx(idx); setWordIdx(0); setShowSetPicker(false); setIsFlipped(false); }}
                     className={`w-full px-5 py-3.5 text-left hover:bg-foreground/5 rounded-xl border-b border-foreground/5 last:border-0 ${setIdx === idx ? "bg-foreground/5" : ""}`}
                   >
-                    <div className="text-[9px] font-black text-accent uppercase tracking-tighter mb-0.5">{s.workbook} · {s.chapter}</div>
+                    <div className="text-[9px] font-black text-accent uppercase tracking-tighter mb-0.5">
+                      {[s.workbook, s.chapter, s.passageNumber].filter(Boolean).join(' · ')}
+                    </div>
                     <div className="text-[13px] font-bold text-foreground">{s.label}</div>
                     <div className="text-[10px] text-accent/50 mt-0.5">{s.words.length}개 단어 {completedSetIds.has(s.id) ? "· ✓ 시험 완료" : "· 미응시"}</div>
                   </button>

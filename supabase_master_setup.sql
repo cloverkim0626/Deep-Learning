@@ -19,12 +19,21 @@ ALTER TABLE word_sets
 ALTER TABLE words
   ADD COLUMN IF NOT EXISTS is_for_test BOOLEAN DEFAULT true;
 
+-- 수동 출제 제어: 유의어/반의어 각각 독립 플래그
+ALTER TABLE words
+  ADD COLUMN IF NOT EXISTS test_synonym BOOLEAN DEFAULT false;
+ALTER TABLE words
+  ADD COLUMN IF NOT EXISTS test_antonym BOOLEAN DEFAULT false;
+
 -- 기존 데이터 마이그레이션
 UPDATE word_sets
 SET category = workbook, sub_category = chapter
 WHERE category = '' AND workbook IS NOT NULL AND workbook != '';
 
 UPDATE words SET is_for_test = true WHERE is_for_test IS NULL;
+UPDATE words SET test_synonym = false WHERE test_synonym IS NULL;
+UPDATE words SET test_antonym = false WHERE test_antonym IS NULL;
+
 
 
 -- ──────────────────────────────────────────────────────────────────

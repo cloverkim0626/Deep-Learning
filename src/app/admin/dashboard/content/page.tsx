@@ -626,8 +626,8 @@ function FolderTab({ wordSets, students }: {
 type ReviewWord = {
   word: string; pos_abbr: string; korean: string; context: string; context_korean: string;
   synonyms: string; antonyms: string; grammar_tip: string;
-  is_for_test: boolean; // ✓ 출제: 테스트에 포함 (유의어 OR 반의어)
-  is_key: boolean;      // ★ 핵심: 유의어+반의어 모두 출제 (자동으로 is_for_test=true)
+  test_synonym: boolean; // 미렀색 버튼: 유의어 문제 출제
+  test_antonym: boolean; // 난색 버튼: 반의어 문제 출제
   _deleted?: boolean;
 };
 
@@ -653,8 +653,8 @@ function WordReviewPanel({ entry, onClose, onSave, onUpdateWord }: {
   onUpdateWord: (idx: number, field: keyof ReviewWord, val: string | boolean) => void;
 }) {
   const activeCount = entry.words.filter(w => !w._deleted).length;
-  const checkedCount = entry.words.filter(w => !w._deleted && w.is_for_test).length;
-  const keyCount = entry.words.filter(w => !w._deleted && w.is_key).length;
+  const synCount = entry.words.filter(w => !w._deleted && w.test_synonym).length;
+  const antCount = entry.words.filter(w => !w._deleted && w.test_antonym).length;
   return (
     <div className="flex flex-col h-full">
       <div className="px-5 py-4 border-b border-foreground/5 bg-accent-light/20 shrink-0">
@@ -667,31 +667,45 @@ function WordReviewPanel({ entry, onClose, onSave, onUpdateWord }: {
         </div>
         <div className="flex gap-2 mt-2.5 flex-wrap">
           <span className="text-[10px] font-black px-2 py-0.5 bg-foreground/8 rounded-lg">전체 {activeCount}</span>
-          <span className="text-[10px] font-black px-2 py-0.5 bg-foreground text-background rounded-lg">출제 {checkedCount}</span>
-          <span className="text-[10px] font-black px-2 py-0.5 bg-amber-400 text-white rounded-lg">핵심 {keyCount}</span>
+          <span className="text-[10px] font-black px-2 py-0.5 bg-sky-500 text-white rounded-lg">유의어 {synCount}개</span>
+          <span className="text-[10px] font-black px-2 py-0.5 bg-rose-500 text-white rounded-lg">반의어 {antCount}개</span>
         </div>
         <p className="mt-1.5 text-[9px] text-accent/60 leading-snug">
-          ✓ <b>출제</b> 체크 = 테스트 포함 (유의어 OR 반의어)&nbsp;|&nbsp;★ <b>핵심</b> = 유의어+반의어 둘 다 출제
+          <span className="text-sky-500 font-black">유</span> = 유의어 출제&nbsp;|&nbsp;<span className="text-rose-500 font-black">반</span> = 반의어 출제 (독립 선택)
         </p>
       </div>
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
         {entry.words.map((w, idx) => (
-          <div key={idx} className={`rounded-xl border transition-all ${w._deleted ? "opacity-25 border-red-100" : w.is_for_test ? "border-foreground/10 bg-white shadow-sm" : "border-foreground/5 opacity-50"}`}>
+          <div key={idx} className={`rounded-xl border transition-all ${
+            w._deleted ? "opacity-25 border-red-100"
+            : (w.test_synonym || w.test_antonym) ? "border-foreground/10 bg-white shadow-sm"
+            : "border-foreground/5 opacity-50"
+          }`}>
             <div className="flex items-center gap-1.5 px-3 py-2.5 flex-wrap">
               <span className="w-5 h-5 rounded-md bg-foreground/10 text-foreground flex items-center justify-center text-[9px] font-black shrink-0">{idx + 1}</span>
               <span className="text-[14px] font-black text-foreground serif">{w.word}</span>
               <span className="text-[8px] text-accent bg-accent-light px-1.5 py-0.5 rounded font-bold">{w.pos_abbr}</span>
               <span className="text-[10px] text-foreground/50 flex-1 truncate">{w.korean}</span>
               <button
-                onClick={() => { const v = !w.is_for_test; onUpdateWord(idx, "is_for_test", v); if (!v) onUpdateWord(idx, "is_key", false); }}
-                disabled={!!w._deleted} title="출제 포함/제외"
-                className={`flex items-center gap-0.5 px-2 py-0.5 rounded-lg text-[9px] font-black border transition-all shrink-0 ${w.is_for_test && !w._deleted ? "bg-foreground text-background border-foreground" : "bg-white border-foreground/15 text-foreground/30"}`}
-              ><Check size={8} strokeWidth={3} /> 출제</button>
+                onClick={() => onUpdateWord(idx, "test_synonym", !w.test_synonym)}
+                disabled={!!w._deleted}
+                title="유의어 문제 출제"
+                className={`flex items-center gap-0.5 px-2 py-0.5 rounded-lg text-[9px] font-black border transition-all shrink-0 ${
+                  w.test_synonym && !w._deleted
+                    ? "bg-sky-500 text-white border-sky-500"
+                    : "bg-white border-sky-200 text-sky-400"
+                }`}
+              >유</button>
               <button
-                onClick={() => { const v = !w.is_key; onUpdateWord(idx, "is_key", v); if (v) onUpdateWord(idx, "is_for_test", true); }}
-                disabled={!!w._deleted} title="유의어+반의어 모두 출제"
-                className={`px-2 py-0.5 rounded-lg text-[9px] font-black border transition-all shrink-0 ${w.is_key && !w._deleted ? "bg-amber-400 text-white border-amber-400" : "bg-white border-amber-200 text-amber-400"}`}
-              >★ 핵심</button>
+                onClick={() => onUpdateWord(idx, "test_antonym", !w.test_antonym)}
+                disabled={!!w._deleted}
+                title="반의어 문제 출제"
+                className={`flex items-center gap-0.5 px-2 py-0.5 rounded-lg text-[9px] font-black border transition-all shrink-0 ${
+                  w.test_antonym && !w._deleted
+                    ? "bg-rose-500 text-white border-rose-500"
+                    : "bg-white border-rose-200 text-rose-400"
+                }`}
+              >반</button>
               {w._deleted
                 ? <button onClick={() => onUpdateWord(idx, "_deleted", false)} className="text-[9px] font-black text-blue-500 px-1.5 py-0.5 border border-blue-200 rounded-lg bg-blue-50">복원</button>
                 : <button onClick={() => onUpdateWord(idx, "_deleted", true)} className="p-1 text-red-200 hover:text-red-500 transition-all"><Trash2 size={11} /></button>
@@ -717,10 +731,10 @@ function WordReviewPanel({ entry, onClose, onSave, onUpdateWord }: {
         ))}
       </div>
       <div className="p-4 border-t border-foreground/5 shrink-0">
-        <button onClick={onSave} disabled={entry.status === "saving" || checkedCount === 0}
+        <button onClick={onSave} disabled={entry.status === "saving" || (synCount === 0 && antCount === 0)}
           className="w-full h-12 bg-foreground text-background rounded-2xl font-black text-[13px] disabled:opacity-30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 shadow-xl">
           <Save size={14} />
-          {entry.status === "saving" ? "저장 중..." : `출제 ${checkedCount}개 (핵심 ${keyCount}개) 저장`}
+          {entry.status === "saving" ? "저장 중..." : `유의어 ${synCount}개 · 반의어 ${antCount}개 저장`}
         </button>
       </div>
     </div>
@@ -790,7 +804,7 @@ function PassageCard({ entry, idx, onUpdate, onScan, onOpenReview, onRemove, isR
           </button>
         </>
       ) : entry.status === "saved" ? (
-        <p className="text-[12px] text-success font-bold flex items-center gap-1.5"><Check size={13} strokeWidth={3} /> {entry.words.filter(w => w.is_for_test && !w._deleted).length}개 단어 저장됨</p>
+        <p className="text-[12px] text-success font-bold flex items-center gap-1.5"><Check size={13} strokeWidth={3} /> 저장 완료 (유의어 {entry.words.filter(w => w.test_synonym && !w._deleted).length} · 반의어 {entry.words.filter(w => w.test_antonym && !w._deleted).length})</p>
       ) : (
         <div className="flex gap-2">
           <button onClick={onOpenReview}
@@ -835,8 +849,12 @@ function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      const words: ReviewWord[] = (data.words || []).map((w: ReviewWord) => ({
-        ...w, is_for_test: true, is_key: !!w.is_key, _deleted: false,
+      const words: ReviewWord[] = (data.words || []).map((w: ReviewWord & { is_key?: boolean }) => ({
+        ...w,
+        // AI marks is_key for truly important words — pre-check both for them
+        test_synonym: !!w.is_key,
+        test_antonym: !!w.is_key,
+        _deleted: false,
       }));
       setPassages(prev => prev.map(p => {
         if (p.id !== id) return p;
@@ -869,14 +887,14 @@ function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
           word: w.word, pos_abbr: w.pos_abbr, korean: w.korean,
           context: w.context, context_korean: w.context_korean,
           synonyms: w.synonyms, antonyms: w.antonyms, grammar_tip: w.grammar_tip,
-          is_key: w.is_key, is_for_test: w.is_for_test,
+          test_synonym: w.test_synonym, test_antonym: w.test_antonym,
         })),
         category: entry.category, sub_category: entry.subCategory,
         sub_sub_category: entry.subSubCategory, passage_number: entry.passageNumber,
       });
       updateEntry(id, "status", "saved");
       setReviewingId(null);
-      onComplete();
+      // NOTE: onComplete() intentionally NOT called here so other queued passages are preserved
     } catch (err: unknown) {
       alert("저장 실패: " + (err as Error).message);
       updateEntry(id, "status", "ready");
