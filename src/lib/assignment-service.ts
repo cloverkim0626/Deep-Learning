@@ -59,13 +59,16 @@ export async function getAssignmentsByStudent(studentName: string) {
 export async function logWrongAnswer(
   studentName: string,
   wordId: string,
-  mode: string = 'vocab'
+  mode: string = 'vocab',
+  selectedAnswer: string = '',
+  correctAnswer: string = ''
 ) {
   const { data: existing } = await supabase
     .from('wrong_answers')
     .select('*')
-    .eq('student_id', studentName)  // student_id column stores name as TEXT
+    .eq('student_id', studentName)
     .eq('word_id', wordId)
+    .eq('question_type', mode)  // 유의어/반의어 별도 집계
     .single();
 
   if (existing) {
@@ -73,7 +76,9 @@ export async function logWrongAnswer(
       .from('wrong_answers')
       .update({ 
         wrong_count: (existing.wrong_count || 0) + 1,
-        last_attempt: new Date().toISOString()
+        last_attempt: new Date().toISOString(),
+        selected_answer: selectedAnswer,
+        correct_answer: correctAnswer,
       })
       .eq('id', existing.id);
     if (error) throw error;
@@ -81,9 +86,12 @@ export async function logWrongAnswer(
     const { error } = await supabase
       .from('wrong_answers')
       .insert([{
-        student_id: studentName,  // student_id column stores name as TEXT
+        student_id: studentName,
         word_id: wordId,
         mode,
+        question_type: mode,
+        selected_answer: selectedAnswer,
+        correct_answer: correctAnswer,
         wrong_count: 1
       }]);
     if (error) throw error;

@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   ChevronDown, Trophy, AlertCircle,
-  Sparkles, Clock, Calendar, FilterX, Volume2, Star
+  Sparkles, Clock, Calendar, FilterX, Volume2, Star,
+  CheckCircle, XCircle
 } from "lucide-react";
 import { getAssignmentsByStudent, getWrongAnswers, logWrongAnswer, type TimeFilter } from "@/lib/assignment-service";
 import { getTestSessionsByStudent } from "@/lib/database-service";
@@ -80,7 +81,11 @@ function saveStarred(studentName: string, ids: Set<string>) {
 export default function VocabDashboard() {
   const [activeTab, setActiveTab] = useState<"library" | "wrong">("library");
   const [wordSets, setWordSets] = useState<WordSet[]>([]);
-  const [wrongWords, setWrongWords] = useState<{ id: string; wrong_count: number; created_at: string; words?: { word: string; korean: string } }[]>([]);
+  const [wrongWords, setWrongWords] = useState<{ 
+    id: string; wrong_count: number; created_at: string; 
+    question_type?: string; selected_answer?: string; correct_answer?: string;
+    words?: { word: string; korean: string } 
+  }[]>([]);
   const [setIdx, setSetIdx] = useState(0);
   const [wordIdx, setWordIdx] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -536,22 +541,51 @@ export default function VocabDashboard() {
           ) : (
             <div className="space-y-3 pb-4">
               {wrongWords.map(item => (
-                <div key={item.id} className="p-5 glass rounded-[2rem] border border-foreground/5 flex justify-between items-center">
-                  <div>
-                    <div className="text-[16px] font-bold text-foreground flex items-center gap-2">
-                      {item.words?.word}
-                      <button
-                        onClick={() => speakWord(item.words?.word || '')}
-                        className="w-7 h-7 rounded-lg bg-accent-light/60 flex items-center justify-center text-accent hover:bg-foreground/10 transition-all"
-                      >
-                        <Volume2 size={13} />
-                      </button>
+                <div key={item.id} className="glass rounded-[2rem] border border-foreground/5 overflow-hidden">
+                  {/* 표제어 행 */}
+                  <div className="p-5 flex items-center justify-between">
+                    <div>
+                      <div className="text-[16px] font-bold text-foreground flex items-center gap-2">
+                        {item.words?.word}
+                        <button
+                          onClick={() => speakWord(item.words?.word || '')}
+                          className="w-7 h-7 rounded-lg bg-accent-light/60 flex items-center justify-center text-accent hover:bg-foreground/10 transition-all"
+                        >
+                          <Volume2 size={13} />
+                        </button>
+                        {/* 유/반의어 배지 */}
+                        {item.question_type && item.question_type !== 'vocab' && (
+                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
+                            item.question_type === 'synonym' 
+                              ? 'bg-sky-100 text-sky-600' 
+                              : 'bg-rose-100 text-rose-600'
+                          }`}>
+                            {item.question_type === 'synonym' ? '유의어' : '반의어'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[12px] text-accent font-medium mt-0.5">{item.words?.korean}</div>
                     </div>
-                    <div className="text-[12px] text-accent font-medium mt-0.5">{item.words?.korean}</div>
+                    <span className="text-[10px] font-black bg-red-500 text-white px-3 py-1 rounded-full uppercase tracking-tighter shrink-0">
+                      오답 {item.wrong_count}회
+                    </span>
                   </div>
-                  <span className="text-[10px] font-black bg-red-500 text-white px-3 py-1 rounded-full uppercase tracking-tighter">
-                    오답 {item.wrong_count}회
-                  </span>
+                  {/* 내 답 / 정답 행 */}
+                  {(item.selected_answer || item.correct_answer) && (
+                    <div className="px-5 pb-4 flex items-center gap-3 text-[12px] border-t border-foreground/5 pt-3">
+                      <div className="flex items-center gap-1.5 text-red-500">
+                        <XCircle size={12} strokeWidth={2.5} />
+                        <span className="font-bold">내 답:</span>
+                        <span>{item.selected_answer || '—'}</span>
+                      </div>
+                      <span className="text-foreground/20 font-black">→</span>
+                      <div className="flex items-center gap-1.5 text-emerald-600">
+                        <CheckCircle size={12} strokeWidth={2.5} />
+                        <span className="font-bold">정답:</span>
+                        <span className="font-black">{item.correct_answer || '—'}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               {wrongWords.length === 0 && (

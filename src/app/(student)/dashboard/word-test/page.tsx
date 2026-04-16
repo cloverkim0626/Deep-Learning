@@ -854,7 +854,7 @@ export default function WordTestPage() {
 
     if (!isCorrect) {
       const name = getStudentName();
-      try { await logWrongAnswer(name, q.word.id, q.mode); } catch (err) { console.error(err); }
+      try { await logWrongAnswer(name, q.word.id, q.mode, choice, q.correct); } catch (err) { console.error(err); }
     }
 
     setTimeout(async () => {
