@@ -53,27 +53,14 @@ function BoldWord({ text, word }: { text: string; word: string }) {
   );
 }
 
-// ─── Bold Korean meaning in context translation ─────────────────────────────
-// Highlights the Korean meaning of the headword within the Korean context sentence.
-// e.g. korean="모으다", contextKorean="매년 녹대들이 식량을 모으는다" → "바다"는 보통 짧으므로 suffixless match
-function BoldKorean({ text, korean }: { text: string; korean: string }) {
-  if (!text || !korean) return <>{text}</>;
-  // Take only the first 4 chars to avoid over-matching long definitions
-  const keyword = korean.split(/[,\s\/()]/)[0].trim().slice(0, 5);
-  if (!keyword) return <>{text}</>;
-  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`(${escaped}[\uAC00-\uD7A3]*)`, 'g');
-  const parts = text.split(regex);
-  return (
-    <>
-      {parts.map((part, i) =>
-        regex.test(part)
-          ? <strong key={i} className="font-black text-foreground">{part}</strong>
-          : part
-      )}
-    </>
-  );
+// ─── Bold Korean meaning in context translation ──────────────────────────────
+// Rather than trying to regex-match the Korean meaning inside the translation
+// (which over-matches compound words), we display韓meaning as a bold badge BEFORE
+// the context translation. Clean, unambiguous, zero false positives.
+function KoreanContextLine({ contextKorean }: { contextKorean: string }) {
+  return <>{contextKorean}</>;
 }
+
 
 
 export default function VocabDashboard() {
@@ -382,7 +369,7 @@ export default function VocabDashboard() {
                 <div
                   onClick={() => setIsFlipped(false)}
                   style={{ transform: `translateX(${swipeDelta * 0.08}px)` }}
-                  className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 shadow-xl transition-all duration-500 cursor-pointer select-none overflow-hidden ${
+                  className={`absolute inset-0 glass rounded-[2.5rem] border border-foreground/5 shadow-xl transition-all duration-500 cursor-pointer select-none overflow-hidden ${
                     isFlipped ? 'opacity-100' : 'opacity-0 pointer-events-none scale-95'
                   }`}
                 >
@@ -390,10 +377,8 @@ export default function VocabDashboard() {
                   <div
                     className="h-full overflow-y-auto custom-scrollbar p-7"
                     onClick={e => e.stopPropagation()}
-                    onTouchStart={e => e.stopPropagation()}
-                    onTouchMove={e => e.stopPropagation()}
                   >
-                    <p className="text-[20px] font-bold text-foreground mb-3">{currentWord.korean}</p>
+                    <p className="text-[20px] font-bold text-foreground mb-1">{currentWord.korean}</p>
                     {currentWord.context && (
                       <div className="mb-4 border-l-2 border-foreground/10 pl-4">
                         <p className="text-[12px] leading-relaxed text-foreground/70 serif italic">
@@ -401,7 +386,8 @@ export default function VocabDashboard() {
                         </p>
                         {currentWord.contextKorean && (
                           <p className="text-[11px] text-accent mt-1">
-                            <BoldKorean text={currentWord.contextKorean} korean={currentWord.korean} />
+                            <strong className="font-black text-foreground not-italic">[{currentWord.korean}]</strong>
+                            {' '}{currentWord.contextKorean}
                           </p>
                         )}
                       </div>

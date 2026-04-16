@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   ChevronRight, CheckCircle, XCircle, Trophy, RotateCcw,
-  BookOpen, Sparkles, AlertCircle, LogOut
+  BookOpen, Sparkles, AlertCircle, LogOut, Gamepad2, ClipboardList, X
 } from "lucide-react";
 import { getAssignmentsByStudent, logWrongAnswer } from "@/lib/assignment-service";
 import {
@@ -87,11 +87,13 @@ function buildQuestions(words: TestWord[]): Question[] {
 }
 
 // ─── Intro Screen ─────────────────────────────────────────────────────────────
-function IntroScreen({ sets, onStart }: {
+function IntroScreen({ sets, onStartQuiz, onStartGame }: {
   sets: { id: string; label: string; workbook: string; chapter: string; passageNumber?: string; words: TestWord[] }[];
-  onStart: (selectedSetId: string | null) => void
+  onStartQuiz: (selectedSetId: string | null) => void;
+  onStartGame: (selectedSetId: string | null) => void;
 }) {
   const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
+  const [showModeModal, setShowModeModal] = useState(false);
   const selected = sets.find(s => s.id === selectedSetId);
   const totalWords = selected ? selected.words.length : sets.reduce((a, s) => a + s.words.length, 0);
   const totalSyn = selected
@@ -166,11 +168,54 @@ function IntroScreen({ sets, onStart }: {
             <span className="text-rose-400">반의어 {totalAnt}</span>
           </p>
           <button
-            onClick={() => onStart(selectedSetId)}
-            className="h-14 px-10 bg-foreground text-background font-bold rounded-2xl flex items-center gap-2 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all"
+            onClick={() => setShowModeModal(true)}
+            className="h-14 px-10 bg-foreground text-background font-bold rounded-2xl flex items-center gap-2 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all mx-auto"
           >
             테스트 시작 <ChevronRight size={18} strokeWidth={1.5} />
           </button>
+        </div>
+      )}
+
+      {/* 모드 선택 모달 */}
+      {showModeModal && (
+        <div className="fixed inset-0 bg-foreground/40 backdrop-blur-sm z-50 flex items-end justify-center p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-background rounded-[2rem] border border-foreground/10 shadow-2xl p-6 animate-in slide-in-from-bottom-4 duration-300">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[17px] font-black text-foreground">테스트 방식 선택</h3>
+              <button onClick={() => setShowModeModal(false)} className="p-1.5 rounded-xl hover:bg-foreground/5 text-accent">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="space-y-3">
+              {/* 객관식 */}
+              <button
+                onClick={() => { setShowModeModal(false); onStartQuiz(selectedSetId); }}
+                className="w-full p-5 rounded-2xl border-2 border-foreground/10 hover:border-foreground/30 bg-white text-left transition-all hover:-translate-y-0.5 group"
+              >
+                <div className="flex items-center gap-3 mb-1.5">
+                  <div className="w-9 h-9 rounded-xl bg-foreground/5 flex items-center justify-center group-hover:bg-foreground group-hover:text-background transition-all">
+                    <ClipboardList size={18} />
+                  </div>
+                  <span className="text-[15px] font-black text-foreground">객관식</span>
+                </div>
+                <p className="text-[12px] text-accent leading-relaxed pl-12">4지선다로 유의어/반의어 선택<br/>정답률을 오답 노트에 기록해요.</p>
+              </button>
+              {/* 게임형 */}
+              <button
+                onClick={() => { setShowModeModal(false); onStartGame(selectedSetId); }}
+                className="w-full p-5 rounded-2xl border-2 border-sky-200 hover:border-sky-400 bg-sky-50 text-left transition-all hover:-translate-y-0.5 group"
+              >
+                <div className="flex items-center gap-3 mb-1.5">
+                  <div className="w-9 h-9 rounded-xl bg-sky-100 flex items-center justify-center group-hover:bg-sky-500 group-hover:text-white transition-all">
+                    <Gamepad2 size={18} className="text-sky-600 group-hover:text-white" />
+                  </div>
+                  <span className="text-[15px] font-black text-foreground">🎮 메모리 게임</span>
+                  <span className="text-[10px] px-2 py-0.5 bg-sky-500 text-white rounded-full font-black">NEW</span>
+                </div>
+                <p className="text-[12px] text-accent leading-relaxed pl-12">표제어↔유/반의어 짝 맞추기<br/>30초 암기 후 카드를 뒤집어요!</p>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -255,11 +300,317 @@ function ResultScreen({ results, onRestart }: { results: ResultEntry[], onRestar
     </div>
   );
 }
+// ─── Game Mode ────────────────────────────────────────────────────────────────
+type GameCard = {
+  id: string;       // unique card id
+  pairId: string;   // matched with the other card of the same pair  
+  content: string;  // shown text
+  isHeadword: boolean;
+  revealed: boolean;
+  matched: boolean;
+};
+
+type GameRound = 'synonym' | 'antonym';
+type GamePhase = 'memorize' | 'playing' | 'round_result' | 'final_result';
+
+function GameMode({ words, onExit }: { words: TestWord[]; onExit: () => void }) {
+  const buildRound = useCallback((round: GameRound): GameCard[] => {
+    const eligible = words.filter(w =>
+      round === 'synonym' ? w.testSynonym && w.synonyms.length > 0
+                          : w.testAntonym && w.antonyms.length > 0
+    );
+    const cards: GameCard[] = [];
+    eligible.forEach((w, i) => {
+      const pairId = `pair_${i}`;
+      const partner = round === 'synonym' ? w.synonyms[0] : w.antonyms[0];
+      cards.push({ id: `hw_${i}`, pairId, content: w.word, isHeadword: true, revealed: true, matched: false });
+      cards.push({ id: `pt_${i}`, pairId, content: partner, isHeadword: false, revealed: true, matched: false });
+    });
+    return shuffle(cards);
+  }, [words]);
+
+  const hasSynRound = words.some(w => w.testSynonym && w.synonyms.length > 0);
+  const hasAntRound = words.some(w => w.testAntonym && w.antonyms.length > 0);
+  const firstRound: GameRound = hasSynRound ? 'synonym' : 'antonym';
+
+  const [gamePhase, setGamePhase] = useState<GamePhase>('memorize');
+  const [currentRound, setCurrentRound] = useState<GameRound>(firstRound);
+  const [cards, setCards] = useState<GameCard[]>(() => buildRound(firstRound));
+  const [selected, setSelected] = useState<string[]>([]);  // up to 2 card ids
+  const [failCount, setFailCount] = useState(0);
+  const [synResult, setSynResult] = useState<{failed: number; pairs: number} | null>(null);
+  const [antResult, setAntResult] = useState<{failed: number; pairs: number} | null>(null);
+  const [timer, setTimer] = useState(30);  // memorize timer
+  const [playTimer, setPlayTimer] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const pairs = cards.length / 2;
+  const failThreshold = Math.ceil(pairs / 2); // 절반 이상 실패 = Fail
+
+  // memorize countdown
+  useEffect(() => {
+    if (gamePhase !== 'memorize') return;
+    setTimer(30);
+    timerRef.current = setInterval(() => {
+      setTimer(t => {
+        if (t <= 1) {
+          clearInterval(timerRef.current!);
+          // flip all cards
+          setCards(prev => prev.map(c => ({ ...c, revealed: false })));
+          setGamePhase('playing');
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current!);
+  }, [gamePhase]);
+
+  // play countdown
+  useEffect(() => {
+    if (gamePhase !== 'playing') return;
+    const total = pairs * 5;
+    setPlayTimer(total);
+    timerRef.current = setInterval(() => {
+      setPlayTimer(t => {
+        if (t <= 1) {
+          clearInterval(timerRef.current!);
+          endRound(failCount + (cards.filter(c => !c.matched).length / 2));
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current!);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gamePhase]);
+
+  const endRound = useCallback((totalFails: number) => {
+    const result = { failed: totalFails, pairs };
+    if (currentRound === 'synonym') {
+      setSynResult(result);
+      if (hasAntRound && !antResult) {
+        setGamePhase('round_result');
+      } else {
+        setGamePhase('final_result');
+      }
+    } else {
+      setAntResult(result);
+      setGamePhase('final_result');
+    }
+  }, [currentRound, pairs, hasAntRound, antResult]);
+
+  const handleCardClick = (cardId: string) => {
+    if (gamePhase !== 'playing') return;
+    const card = cards.find(c => c.id === cardId);
+    if (!card || card.matched || card.revealed || selected.includes(cardId)) return;
+    if (selected.length === 2) return; // wait for mismatch animation
+
+    const newSelected = [...selected, cardId];
+    setCards(prev => prev.map(c => c.id === cardId ? { ...c, revealed: true } : c));
+    setSelected(newSelected);
+
+    if (newSelected.length === 2) {
+      const [a, b] = newSelected.map(id => cards.find(c => c.id === id)!);
+      const isMatch = a.pairId === b.pairId;
+      setTimeout(() => {
+        if (isMatch) {
+          setCards(prev => prev.map(c =>
+            newSelected.includes(c.id) ? { ...c, matched: true, revealed: true } : c
+          ));
+          setSelected([]);
+          // Check if all matched
+          const remaining = cards.filter(c => !c.matched && !newSelected.includes(c.id)).length;
+          if (remaining === 0) {
+            clearInterval(timerRef.current!);
+            endRound(failCount);
+          }
+        } else {
+          const newFail = failCount + 1;
+          setFailCount(newFail);
+          setCards(prev => prev.map(c =>
+            newSelected.includes(c.id) ? { ...c, revealed: false } : c
+          ));
+          setSelected([]);
+          if (newFail >= failThreshold + (pairs - cards.filter(c => c.matched).length / 2)) {
+            clearInterval(timerRef.current!);
+            endRound(newFail);
+          }
+        }
+      }, 800);
+    }
+  };
+
+  const nextRound = () => {
+    setCurrentRound('antonym');
+    const newCards = buildRound('antonym');
+    setCards(newCards);
+    setSelected([]);
+    setFailCount(0);
+    setGamePhase('memorize');
+  };
+
+  // ── Memorize Phase ──────────────────────────────────────────────────────────
+  if (gamePhase === 'memorize') {
+    return (
+      <div className="flex flex-col h-full px-5 py-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-[11px] font-black text-accent uppercase tracking-widest">
+              {currentRound === 'synonym' ? '유의어 라운드' : '반의어 라운드'}
+            </p>
+            <h2 className="text-[18px] font-black text-foreground">위치를 기억하세요!</h2>
+          </div>
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-[22px] font-black text-white ${
+            timer > 15 ? 'bg-sky-500' : timer > 8 ? 'bg-amber-500' : 'bg-rose-500 animate-pulse'
+          }`}>{timer}</div>
+        </div>
+        <div className="flex-1">
+          <div className="grid grid-cols-4 gap-2 h-full">
+            {cards.map(card => (
+              <div key={card.id}
+                className={`rounded-2xl flex items-center justify-center text-center p-2 text-[11px] font-black border-2 ${
+                  card.isHeadword
+                    ? 'bg-foreground text-background border-foreground'
+                    : currentRound === 'synonym'
+                      ? 'bg-sky-500 text-white border-sky-500'
+                      : 'bg-rose-500 text-white border-rose-400'
+                }`}>
+                {card.content}
+              </div>
+            ))}
+          </div>
+        </div>
+        <button onClick={onExit} className="mt-4 text-[11px] text-accent/50 font-bold">← 나가기</button>
+      </div>
+    );
+  }
+
+  // ── Playing Phase ───────────────────────────────────────────────────────────
+  if (gamePhase === 'playing') {
+    const matched = cards.filter(c => c.matched).length / 2;
+    const remaining = pairs - matched;
+    return (
+      <div className="flex flex-col h-full px-5 py-6">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-[11px] font-black text-accent uppercase tracking-widest">
+              {currentRound === 'synonym' ? '유의어' : '반의어'} 짝 맞추기
+            </p>
+            <p className="text-[13px] font-bold text-foreground">남은 짝 {remaining} · 실패 {failCount}/{failThreshold}</p>
+          </div>
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-[18px] font-black text-white ${
+            playTimer > pairs * 3 ? 'bg-sky-500' : playTimer > pairs ? 'bg-amber-500' : 'bg-rose-500 animate-pulse'
+          }`}>{playTimer}</div>
+        </div>
+        <div className="flex-1">
+          <div className="grid grid-cols-4 gap-2 h-full">
+            {cards.map(card => (
+              <button
+                key={card.id}
+                onClick={() => handleCardClick(card.id)}
+                disabled={card.matched}
+                className={`rounded-2xl flex items-center justify-center text-center p-2 text-[11px] font-black border-2 transition-all active:scale-95 ${
+                  card.matched
+                    ? 'opacity-0 pointer-events-none'
+                    : card.revealed
+                      ? selected.includes(card.id)
+                        ? 'border-amber-400 bg-amber-50 text-foreground scale-105 shadow-lg'
+                        : card.isHeadword
+                          ? 'bg-foreground text-background border-foreground'
+                          : currentRound === 'synonym'
+                            ? 'bg-sky-500 text-white border-sky-500'
+                            : 'bg-rose-500 text-white border-rose-400'
+                      : 'bg-accent-light border-foreground/10 text-foreground/0 cursor-pointer hover:bg-foreground/10'
+                }`}>
+                {card.revealed ? card.content : '?'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <button onClick={onExit} className="mt-4 text-[11px] text-accent/50 font-bold">← 포기하기</button>
+      </div>
+    );
+  }
+
+  // ── Round Result ────────────────────────────────────────────────────────────
+  if (gamePhase === 'round_result' && synResult) {
+    const passed = synResult.failed < failThreshold;
+    return (
+      <div className="flex flex-col items-center justify-center h-full px-8 text-center gap-6">
+        <div className={`w-20 h-20 rounded-[1.5rem] flex items-center justify-center text-4xl shadow-xl ${
+          passed ? 'bg-sky-500 text-white' : 'bg-rose-100'
+        }`}>
+          {passed ? '🎉' : '😅'}
+        </div>
+        <div>
+          <h2 className="text-2xl font-black text-foreground serif">유의어 라운드 {passed ? 'PASS' : 'FAIL'}</h2>
+          <p className="text-[13px] text-accent mt-1">{synResult.pairs}쌍 중 {synResult.failed}쌍 실패</p>
+        </div>
+        {hasAntRound && (
+          <button onClick={nextRound}
+            className="h-14 px-10 bg-foreground text-background font-bold rounded-2xl shadow-xl hover:-translate-y-0.5 transition-all">
+            반의어 라운드 시작 →
+          </button>
+        )}
+        <button onClick={onExit} className="text-[12px] text-accent underline">종료</button>
+      </div>
+    );
+  }
+
+  // ── Final Result ────────────────────────────────────────────────────────────
+  const synPassed = !synResult || synResult.failed < Math.ceil(synResult.pairs / 2);
+  const antPassed = !antResult || antResult.failed < Math.ceil(antResult.pairs / 2);
+  const overallPass = synPassed && antPassed;
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-8 text-center gap-6">
+      <div className={`w-24 h-24 rounded-[1.8rem] flex items-center justify-center text-5xl shadow-2xl ${
+        overallPass ? 'bg-foreground text-background' : 'bg-rose-50'
+      }`}>
+        {overallPass ? '🏆' : '📖'}
+      </div>
+      <div>
+        <h2 className="text-3xl font-black text-foreground serif">{overallPass ? 'PASS! 👏' : 'FAIL'}</h2>
+        <p className="text-[13px] text-accent mt-2 font-medium">
+          {overallPass ? '완벽해! 다음 단계로 go!' : '한 번 더 연습하면 분명 통과할 수 있어!'}
+        </p>
+      </div>
+      <div className="w-full max-w-xs space-y-2">
+        {synResult && (
+          <div className={`flex items-center justify-between px-5 py-3 rounded-2xl border ${
+            synPassed ? 'bg-sky-50 border-sky-200' : 'bg-rose-50 border-rose-200'
+          }`}>
+            <span className="text-[13px] font-bold">유의어 라운드</span>
+            <span className={`text-[12px] font-black ${synPassed ? 'text-sky-600' : 'text-rose-600'}`}>
+              {synResult.failed}/{synResult.pairs} 실패 · {synPassed ? 'PASS' : 'FAIL'}
+            </span>
+          </div>
+        )}
+        {antResult && (
+          <div className={`flex items-center justify-between px-5 py-3 rounded-2xl border ${
+            antPassed ? 'bg-sky-50 border-sky-200' : 'bg-rose-50 border-rose-200'
+          }`}>
+            <span className="text-[13px] font-bold">반의어 라운드</span>
+            <span className={`text-[12px] font-black ${antPassed ? 'text-sky-600' : 'text-rose-600'}`}>
+              {antResult.failed}/{antResult.pairs} 실패 · {antPassed ? 'PASS' : 'FAIL'}
+            </span>
+          </div>
+        )}
+      </div>
+      <button onClick={onExit}
+        className="h-14 px-10 bg-foreground text-background font-bold rounded-2xl shadow-xl hover:-translate-y-0.5 transition-all">
+        다시 선택
+      </button>
+    </div>
+  );
+}
+
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function WordTestPage() {
   const router = useRouter();
-  const [phase, setPhase] = useState<"loading" | "intro" | "test" | "result">("loading");
+  const [phase, setPhase] = useState<"loading" | "intro" | "test" | "result" | "game">("loading");
   const [allSets, setAllSets] = useState<{ id: string; label: string; workbook: string; chapter: string; passageNumber?: string; words: TestWord[] }[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -267,6 +618,7 @@ export default function WordTestPage() {
   const [results, setResults] = useState<ResultEntry[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
+  const [gameWords, setGameWords] = useState<TestWord[]>([]);
 
   const getStudentName = () => {
     try {
@@ -357,6 +709,18 @@ export default function WordTestPage() {
     setPhase("test");
   };
 
+  const handleStartGame = (setId: string | null) => {
+    const targetSets = setId ? allSets.filter(s => s.id === setId) : allSets;
+    const words = targetSets.flatMap(s => s.words);
+    const eligible = words.filter(w => (w.testSynonym && w.synonyms.length > 0) || (w.testAntonym && w.antonyms.length > 0));
+    if (eligible.length === 0) {
+      alert('게임에 출제할 단어가 없습니다. 선생님이 유/반의어 출제 단어를 지정하지 않았어요.');
+      return;
+    }
+    setGameWords(words);
+    setPhase("game");
+  };
+
   const handleSelect = async (choice: string) => {
     if (selected) return;
     const q = questions[currentIdx];
@@ -424,8 +788,10 @@ export default function WordTestPage() {
     </div>
   );
 
-  if (phase === "intro") return <IntroScreen sets={allSets} onStart={handleStart} />;
+  if (phase === "intro") return <IntroScreen sets={allSets} onStartQuiz={handleStart} onStartGame={handleStartGame} />;
+  if (phase === "game") return <GameMode words={gameWords} onExit={() => setPhase("intro")} />;
   if (phase === "result") return <ResultScreen results={results} onRestart={handleRestart} />;
+
 
   // ─── Test Phase ──────────────────────────────────────────────────────────────
   const q = questions[currentIdx];

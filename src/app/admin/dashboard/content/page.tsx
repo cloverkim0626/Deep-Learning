@@ -309,7 +309,7 @@ function AssignModal({
   );
 }
 
-// ─── Library Word Panel (오른쪽 슬라이드 패널 — test_synonym/test_antonym 지원) ─
+// ─── Library Word Panel (오른쪽 슬라이드 패널 — 전체저장) ──────────────────────
 function LibraryWordPanel({
   set, onClose, onSaved
 }: {
@@ -324,25 +324,32 @@ function LibraryWordPanel({
   onClose: () => void; onSaved: () => void;
 }) {
   const [words, setWords] = useState(set.words.map(w => ({ ...w })));
-  const [savingWordId, setSavingWordId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [deletingWordId, setDeletingWordId] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
   const synCount = words.filter(w => w.test_synonym).length;
   const antCount = words.filter(w => w.test_antonym).length;
 
-  const setWordField = (id: string, field: string, val: string | boolean) =>
+  const setWordField = (id: string, field: string, val: string | boolean) => {
     setWords(prev => prev.map(w => w.id === id ? { ...w, [field]: val } : w));
+    setDirty(true);
+  };
 
-  const handleSaveWord = async (w: typeof words[0]) => {
-    setSavingWordId(w.id);
+  // ── 전체저장 ──────────────────────────────────────────────────────────────
+  const handleSaveAll = async () => {
+    setSaving(true);
     try {
-      await updateWord(w.id, {
-        korean: w.korean, synonyms: w.synonyms, antonyms: w.antonyms,
-        grammar_tip: w.grammar_tip, context: w.context,
-        test_synonym: w.test_synonym, test_antonym: w.test_antonym,
-      });
+      await Promise.all(words.map(w =>
+        updateWord(w.id, {
+          korean: w.korean, synonyms: w.synonyms, antonyms: w.antonyms,
+          grammar_tip: w.grammar_tip, context: w.context,
+          test_synonym: w.test_synonym, test_antonym: w.test_antonym,
+        })
+      ));
+      setDirty(false);
       onSaved();
     } catch (err: unknown) { alert((err as Error).message); }
-    finally { setSavingWordId(null); }
+    finally { setSaving(false); }
   };
 
   const handleDeleteWord = async (wordId: string) => {
@@ -352,7 +359,7 @@ function LibraryWordPanel({
       const { deleteWord } = await import('@/lib/database-service');
       await deleteWord(wordId);
       setWords(prev => prev.filter(w => w.id !== wordId));
-      onSaved();
+      setDirty(true);
     } catch (err: unknown) { alert((err as Error).message); }
     finally { setDeletingWordId(null); }
   };
@@ -361,18 +368,27 @@ function LibraryWordPanel({
     <div className="fixed top-0 right-0 w-[440px] h-screen bg-background border-l border-foreground/10 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
       {/* Header */}
       <div className="px-5 py-4 border-b border-foreground/5 bg-accent-light/20 shrink-0">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 mb-2.5">
           <div className="min-w-0">
             <h3 className="text-[13px] font-black text-foreground truncate">{set.label}</h3>
             <p className="text-[10px] text-accent mt-0.5">단어 {words.length}개 · 유의어 {synCount} · 반의어 {antCount}</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-foreground/5 text-accent shrink-0"><X size={16} /></button>
         </div>
-        <div className="flex gap-2 mt-2.5">
-          <span className="text-[10px] font-black px-2 py-0.5 bg-sky-500 text-white rounded-lg">유의어 {synCount}개</span>
-          <span className="text-[10px] font-black px-2 py-0.5 bg-rose-500 text-white rounded-lg">반의어 {antCount}개</span>
-          <span className="text-[9px] text-accent/60 ml-1 self-center">유/반 버튼 클릭 후 → 해당 단어 버튼 저장</span>
-        </div>
+        {/* 전체저장 버튼 */}
+        <button
+          onClick={handleSaveAll}
+          disabled={saving || !dirty}
+          className={`w-full h-10 rounded-xl text-[12px] font-black flex items-center justify-center gap-2 transition-all ${
+            dirty
+              ? 'bg-foreground text-background hover:-translate-y-0.5 shadow-lg'
+              : 'bg-foreground/10 text-accent/40 cursor-not-allowed'
+          } disabled:opacity-50`}
+        >
+          <Save size={13} strokeWidth={2.5} />
+          {saving ? '저장 중...' : dirty ? `전체저장 (유 ${synCount} · 반 ${antCount})` : '변경사항 없음'}
+        </button>
+        <p className="text-[9px] text-accent/50 mt-1.5 text-center">유/반 버튼 · 필드 수정 후 위 전체저장 클릭</p>
       </div>
       {/* Word list */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
@@ -403,7 +419,7 @@ function LibraryWordPanel({
                 { key: 'korean', label: '한글 의미' },
                 { key: 'synonyms', label: '유의어' },
                 { key: 'antonyms', label: '반의어' },
-                { key: 'grammar_tip', label: '팀' },
+                { key: 'grammar_tip', label: '팁' },
               ] as { key: string; label: string }[]).map(f => (
                 <div key={f.key} className="flex items-center gap-2">
                   <label className="text-[8px] font-black text-accent uppercase shrink-0 w-12">{f.label}</label>
@@ -412,11 +428,6 @@ function LibraryWordPanel({
                     className="flex-1 h-7 px-2 rounded-lg border border-foreground/8 bg-transparent text-[11px] outline-none focus:border-foreground/30" />
                 </div>
               ))}
-              <button onClick={() => handleSaveWord(w)} disabled={savingWordId === w.id}
-                className="w-full h-8 mt-1 bg-foreground/5 hover:bg-foreground hover:text-background rounded-xl text-[11px] font-black transition-all disabled:opacity-40 flex items-center justify-center gap-1">
-                <Save size={11} strokeWidth={2} />
-                {savingWordId === w.id ? '저장 중...' : '저장'}
-              </button>
             </div>
           </div>
         ))}
