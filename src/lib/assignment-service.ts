@@ -115,34 +115,42 @@ export async function getWrongAnswers(studentName: string, timeFilter: TimeFilte
  * Includes status field for filtering
  */
 export async function getAllAssignments() {
-  const { data, error } = await supabase
+  // Step 1: set_assignments 전체 조회 (join 없이)
+  const { data: assignments, error: aErr } = await supabase
     .from('set_assignments')
-    .select(`
-      id,
-      student_name,
-      student_class,
-      set_id,
-      status,
-      completed_at,
-      created_at,
-      word_sets (
-        id,
-        label,
-        workbook,
-        chapter
-      )
-    `)
+    .select('id, student_name, student_class, set_id, status, completed_at, created_at')
     .order('student_name', { ascending: true })
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('[getAllAssignments] DB error:', error);
-    throw error;
+  if (aErr) {
+    console.error('[getAllAssignments] DB error:', aErr);
+    throw aErr;
   }
 
-  return (data || []).map((row: Record<string, unknown>) => ({
+  if (!assignments || assignments.length === 0) return [];
+
+  // Step 2: 관련 word_sets 조회
+  const setIds = [...new Set(assignments.map((a: Record<string, unknown>) => a.set_id as string))];
+  const { data: wordSets, error: wErr } = await supabase
+    .from('word_sets')
+    .select('id, label, workbook, chapter')
+    .in('id', setIds);
+
+  if (wErr) {
+    console.error('[getAllAssignments] word_sets error:', wErr);
+    // word_sets 조회 실패해도 배당 목록은 표시
+  }
+
+  // Step 3: 수동 merge
+  const wsMap: Record<string, { id: string; label: string; workbook: string; chapter: string }> = {};
+  (wordSets || []).forEach((ws: Record<string, unknown>) => {
+    wsMap[ws.id as string] = ws as { id: string; label: string; workbook: string; chapter: string };
+  });
+
+  return (assignments as Record<string, unknown>[]).map((row) => ({
     ...row,
     created_at: row.created_at || new Date().toISOString(),
+    word_sets: wsMap[row.set_id as string] || null,
   }));
 }
 
