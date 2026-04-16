@@ -648,8 +648,8 @@ function makeEntry(): PassageEntry {
 }
 
 // ── Word Review Right Panel ──────────────────────────────────────────────────
-function WordReviewPanel({ entry, onClose, onSave, onUpdateWord }: {
-  entry: PassageEntry; onClose: () => void; onSave: () => void;
+function WordReviewPanel({ entry, onClose, onUpdateWord }: {
+  entry: PassageEntry; onClose: () => void;
   onUpdateWord: (idx: number, field: keyof ReviewWord, val: string | boolean) => void;
 }) {
   const activeCount = entry.words.filter(w => !w._deleted).length;
@@ -731,10 +731,10 @@ function WordReviewPanel({ entry, onClose, onSave, onUpdateWord }: {
         ))}
       </div>
       <div className="p-4 border-t border-foreground/5 shrink-0">
-        <button onClick={onSave} disabled={entry.status === "saving" || (synCount === 0 && antCount === 0)}
-          className="w-full h-12 bg-foreground text-background rounded-2xl font-black text-[13px] disabled:opacity-30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 shadow-xl">
-          <Save size={14} />
-          {entry.status === "saving" ? "저장 중..." : `유의어 ${synCount}개 · 반의어 ${antCount}개 저장`}
+        <button onClick={onClose}
+          className="w-full h-12 bg-foreground text-background rounded-2xl font-black text-[13px] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 shadow-xl">
+          <Check size={14} />
+          편집 완료 — 닫기
         </button>
       </div>
     </div>
@@ -874,30 +874,41 @@ function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
     }
   };
 
-  const handleSave = async (id: string) => {
-    const entry = passages.find(p => p.id === id);
-    if (!entry) return;
-    updateEntry(id, "status", "saving");
-    try {
-      const activeWords = entry.words.filter(w => !w._deleted);
-      await saveIngestedPassage({
-        workbook: entry.category, chapter: entry.subCategory, label: entry.label,
-        full_text: entry.rawText, sentences: entry.sentences,
-        words: activeWords.map(w => ({
-          word: w.word, pos_abbr: w.pos_abbr, korean: w.korean,
-          context: w.context, context_korean: w.context_korean,
-          synonyms: w.synonyms, antonyms: w.antonyms, grammar_tip: w.grammar_tip,
-          test_synonym: w.test_synonym, test_antonym: w.test_antonym,
-        })),
-        category: entry.category, sub_category: entry.subCategory,
-        sub_sub_category: entry.subSubCategory, passage_number: entry.passageNumber,
-      });
-      updateEntry(id, "status", "saved");
-      setReviewingId(null);
-      // NOTE: onComplete() intentionally NOT called here so other queued passages are preserved
-    } catch (err: unknown) {
-      alert("저장 실패: " + (err as Error).message);
-      updateEntry(id, "status", "ready");
+  const handleSaveAll = async () => {
+    const toSave = passages.filter(p => p.status === "ready");
+    if (toSave.length === 0) {
+      alert("저장할 수 있는 지문이 없습니다. \nAI 분석 완료한 지문을 먼저 비정해 주세요.");
+      return;
+    }
+    setReviewingId(null);
+    let savedCount = 0;
+    for (const entry of toSave) {
+      updateEntry(entry.id, "status", "saving");
+      try {
+        const activeWords = entry.words.filter(w => !w._deleted);
+        await saveIngestedPassage({
+          workbook: entry.category, chapter: entry.subCategory, label: entry.label,
+          full_text: entry.rawText, sentences: entry.sentences,
+          words: activeWords.map(w => ({
+            word: w.word, pos_abbr: w.pos_abbr, korean: w.korean,
+            context: w.context, context_korean: w.context_korean,
+            synonyms: w.synonyms, antonyms: w.antonyms, grammar_tip: w.grammar_tip,
+            test_synonym: w.test_synonym, test_antonym: w.test_antonym,
+          })),
+          category: entry.category, sub_category: entry.subCategory,
+          sub_sub_category: entry.subSubCategory, passage_number: entry.passageNumber,
+        });
+        updateEntry(entry.id, "status", "saved");
+        savedCount++;
+      } catch (err: unknown) {
+        alert(`"${entry.label}" 저장 실패: ` + (err as Error).message);
+        updateEntry(entry.id, "status", "ready");
+      }
+    }
+    if (savedCount > 0) {
+      setTimeout(() => {
+        onComplete();
+      }, 800);
     }
   };
 
@@ -915,7 +926,7 @@ function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
             <div className="w-10 h-10 rounded-2xl bg-foreground text-background flex items-center justify-center"><Sparkles size={18} strokeWidth={2} /></div>
             <div>
               <h3 className="text-[16px] font-bold text-foreground">AI 다중 지문 인제스트</h3>
-              <p className="text-[12px] text-accent">여러 지문 동시 입력 · AI 20개 추출 · 오른쪽에서 출제 체크 후 저장</p>
+              <p className="text-[12px] text-accent">여러 지문 동시 입력 · AI 20개 추출 · 오른쪽 패널에서 유/반 체크 후 <b>전체저장</b></p>
             </div>
           </div>
           <button onClick={addPassage} className="flex items-center gap-2 h-10 px-4 bg-foreground text-background rounded-xl text-[12px] font-black hover:-translate-y-0.5 transition-all shrink-0">
@@ -935,12 +946,32 @@ function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
           <Plus size={18} /> 지문 추가
         </button>
       </div>
+
+      {/* ── 전체저장 버튼 (ready 상태 지문이 하나 이상일 때 표시) ── */}
+      {passages.some(p => p.status === "ready") && (
+        <div className="glass rounded-[2rem] border border-foreground/5 p-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[13px] font-black text-foreground">
+              {passages.filter(p => p.status === "ready").length}개 지문 검토 완료
+            </p>
+            <p className="text-[11px] text-accent mt-0.5">모든 지문을 한번에 저장합니다</p>
+          </div>
+          <button
+            onClick={handleSaveAll}
+            disabled={passages.some(p => p.status === "saving")}
+            className="flex items-center gap-2 h-12 px-6 bg-foreground text-background rounded-2xl text-[13px] font-black hover:-translate-y-0.5 disabled:opacity-30 transition-all shadow-xl shrink-0"
+          >
+            <Save size={15} />
+            전체저장 ({passages.filter(p => p.status === "ready").length}개)
+          </button>
+        </div>
+      )}
+
       {reviewEntry && (
         <div className="fixed top-0 right-0 w-[400px] h-screen bg-background border-l border-foreground/10 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
           <WordReviewPanel
             entry={reviewEntry}
             onClose={() => setReviewingId(null)}
-            onSave={() => handleSave(reviewEntry.id)}
             onUpdateWord={updateReviewWord}
           />
         </div>
