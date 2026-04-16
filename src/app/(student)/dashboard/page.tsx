@@ -16,6 +16,7 @@ type Word = {
 
 type WordSet = {
   id: string; workbook: string; chapter: string; passageNumber: string; label: string; words: Word[];
+  _rawLesson?: string; _rawPassage?: string;
 };
 
 const TIME_FILTERS: { value: TimeFilter; label: string; icon: React.ReactNode }[] = [
@@ -142,19 +143,37 @@ export default function VocabDashboard() {
             chapter: [chapterLabel, lessonLabel].filter(Boolean).join(' · '),  // "Part1 · 3강"
             passageNumber: passageLabel ? `${passageLabel}번` : '',          // "2번"
             label: s.label,
-            words: (s.words || []).map(w => ({
-              id: w.id,
-              word: w.word,
-              posAbbr: w.pos_abbr,
-              korean: w.korean,
-              context: w.context || '',
-              contextKorean: w.context_korean || '',
-              synonyms: typeof w.synonyms === 'string' ? w.synonyms.split(',').map(x => x.trim()).filter(Boolean) : (w.synonyms || []),
-              antonyms: typeof w.antonyms === 'string' ? w.antonyms.split(',').map(x => x.trim()).filter(Boolean) : (w.antonyms || []),
-              grammarTip: w.grammar_tip || ''
-            }))
-          };
-        });
+          // 정렬용 원시 값 보존
+          _rawLesson: s.sub_sub_category || '',
+          _rawPassage: s.passage_number || '',
+          words: (s.words || []).map(w => ({
+            id: w.id,
+            word: w.word,
+            posAbbr: w.pos_abbr,
+            korean: w.korean,
+            context: w.context || '',
+            contextKorean: w.context_korean || '',
+            synonyms: typeof w.synonyms === 'string' ? w.synonyms.split(',').map(x => x.trim()).filter(Boolean) : (w.synonyms || []),
+            antonyms: typeof w.antonyms === 'string' ? w.antonyms.split(',').map(x => x.trim()).filter(Boolean) : (w.antonyms || []),
+            grammarTip: w.grammar_tip || ''
+          }))
+        };
+      });
+
+      // 정렬: gateway(지문번호 없음) 먼저, 강 오름차순, 같은 강내 지문번호 오름차순
+      const parseLessonNum = (lesson: string) => {
+        const m = lesson.match(/(\d+)/);
+        return m ? parseInt(m[1], 10) : 0;
+      };
+      formatted.sort((a, b) => {
+        const aIsGateway = !a._rawPassage;
+        const bIsGateway = !b._rawPassage;
+        if (aIsGateway !== bIsGateway) return aIsGateway ? -1 : 1;
+        const lessonDiff = parseLessonNum(a._rawLesson ?? '') - parseLessonNum(b._rawLesson ?? '');
+        if (lessonDiff !== 0) return lessonDiff;
+        return parseInt(a._rawPassage || '0', 10) - parseInt(b._rawPassage || '0', 10);
+      });
+
         setWordSets(formatted);
       }
 

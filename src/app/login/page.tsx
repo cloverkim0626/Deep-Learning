@@ -1,11 +1,13 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft, LogIn, ChevronDown } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
-const CLASS_DATA = [
+// 하드코딩된 반 목록 (GUEST 반은 DB에서 동적으로 로드)
+const STATIC_CLASS_DATA = [
   { 
     name: "[WOODOK] 고3 금토반", 
     students: ["김가연 - 백석고", "장서현 - 백석고", "박시연 - 백석고", "이예윤 - 백석고", "이은서 - 검단고", "김슬기 - 검단고", "김가빈 - 원당고"] 
@@ -18,11 +20,10 @@ const CLASS_DATA = [
     name: "[WOODOK] 고1 아라원당 연합반", 
     students: ["송시후", "정준", "한상혁"] 
   },
-  {
-    name: "[WOODOK] GUEST",
-    students: ["게스트"]
-  }
 ];
+
+// GUEST 반 class_name 키워드 (DB에서 이 이름으로 필터)
+const GUEST_CLASS_KEY = "guest반";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -33,6 +34,41 @@ function LoginForm() {
   const [selectedStudent, setSelectedStudent] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  // DB에서 불러온 GUEST 학생 목록
+  const [guestStudents, setGuestStudents] = useState<string[]>([]);
+  const [loadingGuest, setLoadingGuest] = useState(false);
+
+  // 컴포넌트 마운트시 GUEST 반 학생 DB에서 로드
+  useEffect(() => {
+    const fetchGuest = async () => {
+      setLoadingGuest(true);
+      try {
+        const { data, error: err } = await supabase
+          .from('students')
+          .select('name, class_name')
+          .ilike('class_name', `%guest%`)
+          .order('name', { ascending: true });
+        if (!err && data && data.length > 0) {
+          setGuestStudents(data.map((s: { name: string; class_name: string }) => s.name));
+        } else {
+          setGuestStudents([]);
+        }
+      } finally {
+        setLoadingGuest(false);
+      }
+    };
+    fetchGuest();
+  }, []);
+
+  // 최종 CLASS_DATA: 정적 반 + GUEST 반(동적)
+  const CLASS_DATA = [
+    ...STATIC_CLASS_DATA,
+    {
+      name: "[WOODOK] GUEST",
+      students: guestStudents,
+    },
+  ];
 
   const handleLogin = () => {
     setError("");
@@ -48,7 +84,7 @@ function LoginForm() {
         setError("반과 이름을 모두 선택해 주세요.");
         return;
       }
-      // GUEST class — no password required
+      // GUEST 반 — 비밀번호 불필요
       if (selectedClass === "[WOODOK] GUEST") {
         localStorage.setItem("stu_session", JSON.stringify({
           name: selectedStudent.split(" - ")[0],
@@ -71,6 +107,7 @@ function LoginForm() {
 
   const currentClassObj = CLASS_DATA.find(c => c.name === selectedClass);
   const studentsInClass = currentClassObj?.students || [];
+  const isGuestClass = selectedClass === "[WOODOK] GUEST";
 
   return (
     <div className="w-full max-w-sm mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000">
@@ -102,7 +139,7 @@ function LoginForm() {
           </div>
         ) : (
           <div className="space-y-5">
-            {/* Elegant Form Items */}
+            {/* 1. 반 선택 */}
             <div className="space-y-1.5 focus-within:text-foreground text-accent transition-colors">
               <label className="text-[11px] font-black pl-4 uppercase tracking-widest block">1. 소속 반</label>
               <div className="relative">
@@ -115,23 +152,42 @@ function LoginForm() {
               </div>
             </div>
 
+            {/* 2. 이름 선택 */}
             <div className={`space-y-1.5 transition-all duration-500 ${selectedClass ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
               <label className="text-[11px] font-black pl-4 uppercase tracking-widest block text-accent focus-within:text-foreground">2. 본인 이름</label>
               <div className="relative">
                 <select value={selectedStudent} onChange={e => setSelectedStudent(e.target.value)}
                   className="w-full h-16 px-6 bg-white border border-foreground/10 rounded-3xl appearance-none font-bold text-[15px] text-foreground focus:ring-4 focus:ring-foreground/5 outline-none transition-all shadow-sm cursor-pointer">
-                  <option value="" disabled>이름을 선택해 주세요</option>
+                  <option value="" disabled>
+                    {isGuestClass && loadingGuest ? "불러오는 중..." : "이름을 선택해 주세요"}
+                  </option>
                   {studentsInClass.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
                 <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-accent" size={18} />
               </div>
+              {isGuestClass && !loadingGuest && studentsInClass.length === 0 && (
+                <p className="text-[11px] text-amber-500 font-bold pl-4">
+                  등록된 체험 학생이 없습니다. 선생님께 문의하세요.
+                </p>
+              )}
             </div>
 
-            <div className={`space-y-1.5 transition-all duration-500 pt-2 ${selectedStudent ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
-              <label className="text-[11px] font-black pl-4 uppercase tracking-widest block text-accent focus-within:text-foreground">3. 비밀번호</label>
-              <input type="password" placeholder="초기 비밀번호 1234" value={password} onChange={e => setPassword(e.target.value)}
-                  className="w-full h-16 px-6 bg-white border border-foreground/10 rounded-3xl font-black text-[18px] text-foreground text-center focus:ring-4 focus:ring-foreground/5 outline-none transition-all shadow-sm placeholder:text-[14px] placeholder:font-bold placeholder:text-accent/30" />
-            </div>
+            {/* 3. 비밀번호 (GUEST 제외) */}
+            {!isGuestClass && (
+              <div className={`space-y-1.5 transition-all duration-500 pt-2 ${selectedStudent ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
+                <label className="text-[11px] font-black pl-4 uppercase tracking-widest block text-accent focus-within:text-foreground">3. 비밀번호</label>
+                <input type="password" placeholder="초기 비밀번호 1234" value={password} onChange={e => setPassword(e.target.value)}
+                    className="w-full h-16 px-6 bg-white border border-foreground/10 rounded-3xl font-black text-[18px] text-foreground text-center focus:ring-4 focus:ring-foreground/5 outline-none transition-all shadow-sm placeholder:text-[14px] placeholder:font-bold placeholder:text-accent/30" />
+              </div>
+            )}
+
+            {isGuestClass && selectedStudent && (
+              <div className="px-4 py-3 bg-sky-50 border border-sky-200 rounded-2xl">
+                <p className="text-[12px] text-sky-600 font-bold text-center">
+                  🎉 체험 계정 — 비밀번호 없이 바로 입장!
+                </p>
+              </div>
+            )}
 
             {error && <p className="text-error text-[12px] font-black text-center pt-2 animate-in fade-in zoom-in">{error}</p>}
 
