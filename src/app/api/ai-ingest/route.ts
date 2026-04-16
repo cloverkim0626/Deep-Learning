@@ -20,6 +20,11 @@ Extract a structured learning set from the given passage.
 
 ### EXTRACTION RULES:
 
+**PASSAGE LABEL (자동 제목 생성)**
+- Summarize the passage's main topic as a concise Korean label (10자 이내)
+- Use a keyword or short phrase, e.g. "인지 편향", "기억의 재구성", "공감의 역설"
+- This becomes the passage's display title in the system.
+
 **VOCABULARY — Extract EXACTLY 20 words. No more, no less.**
 
 Priority order for selection (must include all of these types):
@@ -45,6 +50,7 @@ For each word, provide ALL fields:
 
 ### OUTPUT FORMAT (strict JSON, no markdown, no code fences):
 {
+  "label": "자동 추출된 지문 제목 (한국어, 10자 이내)",
   "sentences": { "S01": "...", "S02": "..." },
   "words": [
     {
@@ -74,13 +80,16 @@ For each word, provide ALL fields:
 
     const parsed = JSON.parse(response.choices[0].message.content || "{}");
 
+    // Prefer manually entered label; fall back to AI-generated label
+    const finalLabel = passageLabel?.trim() || parsed.label || "미제목 지문";
+
     return NextResponse.json({
       category: category || '',
       sub_category: sub_category || '',
       sub_sub_category: sub_sub_category || '',
       passage_number: passage_number || '',
-      label: passageLabel,
-      ...parsed
+      ...parsed,
+      label: finalLabel,
     });
   } catch (error: unknown) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });

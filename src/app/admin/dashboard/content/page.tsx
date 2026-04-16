@@ -780,11 +780,11 @@ function PassageCard({ entry, idx, onUpdate, onScan, onOpenReview, onRemove, isR
                 className="w-full h-9 px-2 rounded-xl border border-foreground/10 bg-transparent text-[11px] font-medium outline-none" />
             </div>
           </div>
-          <input value={entry.label} onChange={e => onUpdate("label", e.target.value)} placeholder="지문 제목/키워드 *"
+          <input value={entry.label} onChange={e => onUpdate("label", e.target.value)} placeholder="지문 제목 (비워두면 AI가 자동 추출)"
             className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] font-bold outline-none mb-2" />
           <textarea value={entry.rawText} onChange={e => onUpdate("rawText", e.target.value)} placeholder="지문 원문을 붙여넣으세요..." rows={4}
             className="w-full p-3 rounded-2xl border border-foreground/10 bg-transparent text-[12px] leading-relaxed font-serif outline-none resize-none mb-2" />
-          <button onClick={onScan} disabled={entry.status === "scanning" || !entry.rawText.trim() || !entry.label.trim()}
+          <button onClick={onScan} disabled={entry.status === "scanning" || !entry.rawText.trim()}
             className="w-full h-10 bg-foreground text-background rounded-xl flex items-center justify-center gap-2 text-[12px] font-black disabled:opacity-20 hover:-translate-y-0.5 transition-all">
             {entry.status === "scanning" ? "AI 추출 중..." : <><Sparkles size={13} /> AI 분석 (20개 추출)</>}
           </button>
@@ -838,7 +838,17 @@ function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
       const words: ReviewWord[] = (data.words || []).map((w: ReviewWord) => ({
         ...w, is_for_test: true, is_key: !!w.is_key, _deleted: false,
       }));
-      setPassages(prev => prev.map(p => p.id === id ? { ...p, status: "ready", words, sentences: data.sentences } : p));
+      setPassages(prev => prev.map(p => {
+        if (p.id !== id) return p;
+        return {
+          ...p,
+          status: "ready",
+          words,
+          sentences: data.sentences,
+          // Auto-fill label from AI if user didn't type one
+          label: p.label.trim() ? p.label : (data.label || "미제목 지문"),
+        };
+      }));
       setReviewingId(id);
     } catch (err: unknown) {
       alert("AI 분석 실패: " + (err as Error).message);

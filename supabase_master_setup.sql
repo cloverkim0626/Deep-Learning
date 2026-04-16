@@ -32,14 +32,18 @@ UPDATE words SET is_for_test = true WHERE is_for_test IS NULL;
 --            학생 정보는 건드리지 않음!
 -- ──────────────────────────────────────────────────────────────────
 
--- 테스트 기록 삭제
-DELETE FROM test_sessions;
-DELETE FROM wrong_answers;
+-- 테스트 기록 삭제 (없으면 무시)
+DELETE FROM test_sessions   WHERE true;
+DELETE FROM wrong_answers   WHERE true;
 
--- 배당 관계 삭제
-DELETE FROM set_assignments;
-DELETE FROM folder_passages;
-DELETE FROM folders;
+-- 배당·폴더 관계 삭제 (없으면 무시)
+DELETE FROM set_assignments WHERE true;
+DO $$ BEGIN
+  DELETE FROM folder_passages;
+EXCEPTION WHEN undefined_table THEN NULL; END $$;
+DO $$ BEGIN
+  DELETE FROM folders;
+EXCEPTION WHEN undefined_table THEN NULL; END $$;
 
 -- 단어 및 지문 삭제
 DELETE FROM words;
@@ -50,13 +54,14 @@ DELETE FROM word_sets;
 -- SECTION 3: GUEST 반 학생 추가
 -- ──────────────────────────────────────────────────────────────────
 
--- GUEST 반 학부모/학생 계정 5명 생성
--- 이미 있으면 무시
+-- 기존 GUEST 반 데이터가 있으면 먼저 삭제 후 재삽입
+DELETE FROM students WHERE class_name = 'GUEST';
+
 INSERT INTO students (name, class_name, school, grade, gender, password, notes, enrolled_at)
 VALUES
-  ('학부모', 'GUEST', '체험', 1, 'OTHER', 'guest1234', '학부모 체험 계정', NOW()),
-  ('학생1', 'GUEST', '체험', 1, 'OTHER', 'guest1234', '학생 체험 계정', NOW()),
-  ('학생2', 'GUEST', '체험', 1, 'OTHER', 'guest1234', '학생 체험 계정', NOW()),
-  ('학생3', 'GUEST', '체험', 1, 'OTHER', 'guest1234', '학생 체험 계정', NOW()),
-  ('학생4', 'GUEST', '체험', 1, 'OTHER', 'guest1234', '학생 체험 계정', NOW())
-ON CONFLICT (name) DO NOTHING;
+  ('학부모',  'GUEST', '체험', 1, 'OTHER', 'guest1234', '학부모 체험 계정', NOW()),
+  ('학생1',   'GUEST', '체험', 1, 'OTHER', 'guest1234', '학생 체험 계정',  NOW()),
+  ('학생2',   'GUEST', '체험', 1, 'OTHER', 'guest1234', '학생 체험 계정',  NOW()),
+  ('학생3',   'GUEST', '체험', 1, 'OTHER', 'guest1234', '학생 체험 계정',  NOW()),
+  ('학생4',   'GUEST', '체험', 1, 'OTHER', 'guest1234', '학생 체험 계정',  NOW());
+
