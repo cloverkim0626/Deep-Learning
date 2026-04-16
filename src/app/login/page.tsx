@@ -70,7 +70,7 @@ function LoginForm() {
     },
   ];
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError("");
     if (role === "admin") {
       if (password === "parallax2026") {
@@ -93,15 +93,27 @@ function LoginForm() {
         window.location.href = "/dashboard";
         return;
       }
-      if (password === "1234") {
-        localStorage.setItem("stu_session", JSON.stringify({ 
-          name: selectedStudent.split(" - ")[0], 
-          class: selectedClass 
-        }));
-        window.location.href = "/dashboard";
-      } else {
-        setError("비밀번호가 틀렸습니다. (초기: 1234)");
+      // 정규 학생 — DB에서 비밀번호 검증
+      const studentName = selectedStudent.split(" - ")[0];
+      const { data, error: dbErr } = await supabase
+        .from('students')
+        .select('id, name, class_name, password')
+        .eq('name', studentName)
+        .single();
+
+      if (dbErr || !data) {
+        setError("학생 정보를 찾을 수 없습니다. 선생님께 문의하세요.");
+        return;
       }
+      if (data.password !== password) {
+        setError("비밀번호가 틀렸습니다.");
+        return;
+      }
+      localStorage.setItem("stu_session", JSON.stringify({
+        name: data.name,
+        class: selectedClass,
+      }));
+      window.location.href = "/dashboard";
     }
   };
 
@@ -176,7 +188,7 @@ function LoginForm() {
             {!isGuestClass && (
               <div className={`space-y-1.5 transition-all duration-500 pt-2 ${selectedStudent ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
                 <label className="text-[11px] font-black pl-4 uppercase tracking-widest block text-accent focus-within:text-foreground">3. 비밀번호</label>
-                <input type="password" placeholder="초기 비밀번호 1234" value={password} onChange={e => setPassword(e.target.value)}
+                <input type="password" placeholder="비밀번호" value={password} onChange={e => setPassword(e.target.value)}
                     className="w-full h-16 px-6 bg-white border border-foreground/10 rounded-3xl font-black text-[18px] text-foreground text-center focus:ring-4 focus:ring-foreground/5 outline-none transition-all shadow-sm placeholder:text-[14px] placeholder:font-bold placeholder:text-accent/30" />
               </div>
             )}
