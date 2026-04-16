@@ -229,6 +229,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     if (!currentPw.trim()) { setPwError('현재 비밀번호를 입력하세요.'); return; }
     if (!newPw.trim() || newPw.length < 4) { setPwError('새 비밀번호는 4자 이상이어야 합니다.'); return; }
     if (currentPw === newPw) { setPwError('현재 비밀번호와 동일합니다.'); return; }
+    setShowSettings(false);
     setShowConfirmModal(true);
   };
 
@@ -312,7 +313,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       {/* Profile Panel */}
       {showProfile && (
         <div className="absolute inset-0 z-50 flex flex-col animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-foreground/30 backdrop-blur-md" onClick={() => setShowProfile(false)} />
+          <div className="absolute inset-0 bg-foreground/30 backdrop-blur-md" onClick={() => { setShowProfile(false); setShowSettings(false); }} />
           <div className="absolute bottom-0 left-0 right-0 bg-background rounded-t-[3rem] shadow-[0_-24px_60px_rgba(0,0,0,0.2)] overflow-y-auto max-h-[90vh] custom-scrollbar animate-in slide-in-from-bottom duration-700">
             <div className="flex justify-center pt-6 pb-2">
               <div className="w-14 h-1.5 rounded-full bg-foreground/10" />
@@ -323,10 +324,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 {/* 설정 버튼 — GUEST 반 제외 */}
                 {profile.class !== 'GUEST' && (
                   <button
-                    onClick={() => { setShowSettings(s => !s); setPwError(''); }}
-                    className={`absolute right-0 top-0 p-2.5 rounded-xl transition-all ${
-                      showSettings ? 'bg-foreground text-background' : 'bg-accent-light/60 text-accent hover:bg-foreground/10'
-                    }`}
+                    onClick={() => { setShowSettings(true); setPwError(''); setCurrentPw(''); setNewPw(''); }}
+                    className="absolute right-0 top-0 p-2.5 rounded-xl bg-accent-light/60 text-accent hover:bg-foreground/10 transition-all"
                     title="비밀번호 설정"
                   >
                     <Settings size={16} strokeWidth={2} />
@@ -336,48 +335,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 <p className="text-[14px] text-accent font-bold tracking-widest">{profile.class}</p>
               </div>
 
-              {/* 비밀번호 변경 패널 */}
-              {showSettings && profile.class !== 'GUEST' && (
-                <div className="mb-6 p-5 glass border border-foreground/8 rounded-[1.5rem] space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Lock size={13} className="text-accent" />
-                    <span className="text-[11px] font-black text-accent uppercase tracking-widest">비밀번호 변경</span>
-                  </div>
-                  {/* 현재 비밀번호 */}
-                  <div className="relative">
-                    <input
-                      type={showCurrentPw ? 'text' : 'password'}
-                      value={currentPw}
-                      onChange={e => setCurrentPw(e.target.value)}
-                      placeholder="현재 비밀번호"
-                      className="w-full h-12 pl-4 pr-10 rounded-xl border border-foreground/10 bg-white text-[14px] font-bold outline-none focus:border-foreground/30 transition-colors"
-                    />
-                    <button onClick={() => setShowCurrentPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-accent hover:text-foreground">
-                      {showCurrentPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                  {/* 변경할 비밀번호 */}
-                  <div className="relative">
-                    <input
-                      type={showNewPw ? 'text' : 'password'}
-                      value={newPw}
-                      onChange={e => setNewPw(e.target.value)}
-                      placeholder="변경할 비밀번호 (4자 이상)"
-                      className="w-full h-12 pl-4 pr-10 rounded-xl border border-foreground/10 bg-white text-[14px] font-bold outline-none focus:border-foreground/30 transition-colors"
-                    />
-                    <button onClick={() => setShowNewPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-accent hover:text-foreground">
-                      {showNewPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                  {pwError && <p className="text-[12px] text-red-500 font-bold px-1">{pwError}</p>}
-                  <button
-                    onClick={handlePwConfirm}
-                    className="w-full h-11 bg-foreground text-background rounded-xl font-black text-[13px] hover:-translate-y-0.5 active:scale-95 transition-all"
-                  >
-                    확인
-                  </button>
-                </div>
-              )}
+
 
               {/* AI 격려/피드백 */}
               <div className="mb-6 px-5 py-4 bg-foreground rounded-[1.5rem] text-background">
@@ -431,6 +389,62 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
               <button onClick={handleLogout} className="w-full h-14 rounded-[2rem] bg-error/10 text-error font-black text-[14px] flex items-center justify-center gap-2 hover:bg-error hover:text-white transition-all">
                 <LogOut size={18} strokeWidth={3} /> 로그아웃
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 비밀번호 변경 입력 모달 ── */}
+      {showSettings && profile.class !== 'GUEST' && (
+        <div className="absolute inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" onClick={() => { setShowSettings(false); setPwError(''); }} />
+          <div className="relative w-full max-w-sm bg-background rounded-[2rem] shadow-2xl p-8 animate-in zoom-in-95 duration-300">
+            <div className="w-12 h-12 rounded-2xl bg-foreground/5 flex items-center justify-center mx-auto mb-5">
+              <Lock size={22} className="text-foreground" />
+            </div>
+            <h3 className="text-[18px] font-black text-foreground text-center mb-6">비밀번호 변경</h3>
+            <div className="space-y-3">
+              {/* 현재 비밀번호 */}
+              <div className="relative">
+                <input
+                  type={showCurrentPw ? 'text' : 'password'}
+                  value={currentPw}
+                  onChange={e => setCurrentPw(e.target.value)}
+                  placeholder="현재 비밀번호"
+                  className="w-full h-12 pl-4 pr-10 rounded-xl border border-foreground/10 bg-white text-[14px] font-bold outline-none focus:border-foreground/30 transition-colors"
+                />
+                <button onClick={() => setShowCurrentPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-accent hover:text-foreground">
+                  {showCurrentPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+              {/* 변경할 비밀번호 */}
+              <div className="relative">
+                <input
+                  type={showNewPw ? 'text' : 'password'}
+                  value={newPw}
+                  onChange={e => setNewPw(e.target.value)}
+                  placeholder="변경할 비밀번호 (4자 이상)"
+                  className="w-full h-12 pl-4 pr-10 rounded-xl border border-foreground/10 bg-white text-[14px] font-bold outline-none focus:border-foreground/30 transition-colors"
+                />
+                <button onClick={() => setShowNewPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-accent hover:text-foreground">
+                  {showNewPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+              {pwError && <p className="text-[12px] text-red-500 font-bold px-1">{pwError}</p>}
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handlePwConfirm}
+                className="flex-1 h-12 bg-foreground text-background rounded-2xl font-black text-[14px] hover:-translate-y-0.5 active:scale-95 transition-all"
+              >
+                확인
+              </button>
+              <button
+                onClick={() => { setShowSettings(false); setPwError(''); setCurrentPw(''); setNewPw(''); }}
+                className="flex-1 h-12 border border-foreground/10 text-accent rounded-2xl font-black text-[14px] hover:bg-foreground/5 transition-all"
+              >
+                취소
               </button>
             </div>
           </div>

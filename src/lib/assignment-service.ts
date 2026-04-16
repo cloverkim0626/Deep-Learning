@@ -28,7 +28,7 @@ export async function getAssignmentsByStudent(studentName: string) {
   // Step 1: 학생 배당 목록 조회 (join 없이)
   const { data: assignments, error: aErr } = await supabase
     .from('set_assignments')
-    .select('id, set_id, status, student_name, student_class')
+    .select('id, set_id, status, student_name, student_class, created_at')
     .eq('student_name', studentName)
     .or('status.eq.active,status.is.null');
 
@@ -44,13 +44,18 @@ export async function getAssignmentsByStudent(studentName: string) {
 
   if (wErr) throw wErr;
 
-  // Step 3: 수동 merge — word_sets 기준으로 반환
+  // Step 3: 수동 merge — word_sets 기준으로 반환, assignment created_at 포함
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (wordSets || []).map((ws: any) => ({
-    ...ws,
-    passage_number: ws.passage_number || '',
-    sub_sub_category: ws.sub_sub_category || '',
-  }));
+  return (wordSets || []).map((ws: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const asgn = (assignments as any[]).find((a) => a.set_id === ws.id);
+    return {
+      ...ws,
+      passage_number: ws.passage_number || '',
+      sub_sub_category: ws.sub_sub_category || '',
+      assigned_at: asgn?.created_at || null,  // set_assignments.created_at
+    };
+  });
 }
 
 /**

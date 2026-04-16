@@ -17,9 +17,17 @@ type Word = {
 
 type WordSet = {
   id: string; workbook: string; chapter: string; passageNumber: string; label: string; words: Word[];
-  _rawLesson?: string; _rawPassage?: string;
+  _rawLesson?: string; _rawPassage?: string; assigned_at?: string;
 };
 
+// ─── Assignment age badge ─────────────────────────────────────────────────────
+function getAgeBadge(assignedAt?: string): { label: string; cls: string } | null {
+  if (!assignedAt) return null;
+  const days = Math.floor((Date.now() - new Date(assignedAt).getTime()) / 86400000);
+  if (days === 0) return { label: 'NEW', cls: 'bg-emerald-500 text-white' };
+  if (days <= 2) return { label: `+${days}일`, cls: 'bg-amber-400 text-white' };
+  return { label: `+${days}일`, cls: 'bg-red-500 text-white' };
+}
 const TIME_FILTERS: { value: TimeFilter; label: string; icon: React.ReactNode }[] = [
   { value: 'all', label: '전체', icon: <FilterX size={11} /> },
   { value: '1d', label: '1일', icon: <Clock size={11} /> },
@@ -130,6 +138,7 @@ export default function VocabDashboard() {
           sub_sub_category?: string; // 하위분류 (예: 3강)
           passage_number?: string;   // 지문 번호 (예: 2)
           label: string;
+          assigned_at?: string;      // set_assignments.created_at
           words?: {
             id: string; word: string; pos_abbr: string; korean: string;
             context?: string; context_korean?: string;
@@ -148,6 +157,7 @@ export default function VocabDashboard() {
             chapter: [chapterLabel, lessonLabel].filter(Boolean).join(' · '),  // "Part1 · 3강"
             passageNumber: passageLabel ? `${passageLabel}번` : '',          // "2번"
             label: s.label,
+          assigned_at: (s as { assigned_at?: string }).assigned_at || undefined,
           // 정렬용 원시 값 보존
           _rawLesson: s.sub_sub_category || '',
           _rawPassage: s.passage_number || '',
@@ -335,8 +345,13 @@ export default function VocabDashboard() {
             >
               <div>
                 <span className="text-[9px] font-black text-accent uppercase tracking-widest mb-0.5 block">현재 배당된 지문</span>
-                <div className="text-[14px] font-bold text-foreground">
-                  {currentSet ? currentSet.label : "배당된 세트가 없습니다."}
+                <div className="flex items-center gap-2">
+                  <span className="text-[14px] font-bold text-foreground">
+                    {currentSet ? currentSet.label : "배당된 세트가 없습니다."}
+                  </span>
+                  {currentSet && (() => { const b = getAgeBadge(currentSet.assigned_at); return b ? (
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${b.cls}`}>{b.label}</span>
+                  ) : null; })()}
                 </div>
                 {currentSet && (
                   <div className="text-[10px] text-accent mt-0.5">
@@ -358,7 +373,12 @@ export default function VocabDashboard() {
                     <div className="text-[9px] font-black text-accent uppercase tracking-tighter mb-0.5">
                       {[s.workbook, s.chapter, s.passageNumber].filter(Boolean).join(' · ')}
                     </div>
-                    <div className="text-[13px] font-bold text-foreground">{s.label}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-bold text-foreground">{s.label}</span>
+                      {(() => { const b = getAgeBadge(s.assigned_at); return b ? (
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${b.cls}`}>{b.label}</span>
+                      ) : null; })()}
+                    </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="text-[10px] text-accent/50">{s.words.length}개 단어</span>
                       {completedSetIds.has(s.id) ? (
