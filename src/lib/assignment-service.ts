@@ -8,7 +8,8 @@ export async function assignSetToStudents(setId: string, students: { name: strin
   const inserts = students.map(s => ({
     student_name: s.name,
     student_class: s.class,
-    set_id: setId
+    set_id: setId,
+    status: 'active',
   }));
 
   const { error } = await supabase
@@ -20,16 +21,20 @@ export async function assignSetToStudents(setId: string, students: { name: strin
 }
 
 /**
- * Get all Word Sets assigned to a specific student (by name)
+ * Get all ACTIVE Word Sets assigned to a specific student (by name)
+ * Excludes completed/expired assignments from student view.
  */
 export async function getAssignmentsByStudent(studentName: string) {
   const { data, error } = await supabase
     .from('set_assignments')
     .select('*, word_sets(*, words(*))')
-    .eq('student_name', studentName);
+    .eq('student_name', studentName)
+    .or('status.eq.active,status.is.null'); // backward compat: null = active
 
   if (error) throw error;
-  return data.map(d => d.word_sets);
+  return data
+    .filter(d => d.word_sets) // skip orphan assignments
+    .map(d => ({ ...d.word_sets, passage_number: d.word_sets?.passage_number || '' }));
 }
 
 /**
@@ -102,14 +107,30 @@ export async function getWrongAnswers(studentName: string, timeFilter: TimeFilte
 
 /**
  * Get all assignments grouped by student (for admin view)
+ * Includes status field for filtering
  */
 export async function getAllAssignments() {
   const { data, error } = await supabase
     .from('set_assignments')
-    .select('id, student_name, student_class, set_id, created_at, word_sets(id, label, workbook, chapter)')
-    .order('student_name');
+    .select('id, student_name, student_class, set_id, created_at, status, word_sets(id, label, workbook, chapter, passage_number)')
+    .order('student_name')
+    .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
+}
+
+/**
+ * Update assignment status: 'active' | 'completed' | 'expired'
+ */
+export async function updateAssignmentStatus(
+  assignmentId: string,
+  status: 'active' | 'completed' | 'expired'
+) {
+  const { error } = await supabase
+    .from('set_assignments')
+    .update({ status, completed_at: status !== 'active' ? new Date().toISOString() : null })
+    .eq('id', assignmentId);
+  if (error) throw error;
 }
 
 /**
@@ -123,3 +144,15 @@ export async function removeAssignment(assignmentId: string) {
   if (error) throw error;
 }
 
+/**
+ * Get which students already have a specific set assigned (active)
+ */
+export async function getAssignedStudentsForSet(setId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('set_assignments')
+    .select('student_name')
+    .eq('set_id', setId)
+    .or('status.eq.active,status.is.null');
+  if (error) throw error;
+  return (data || []).map(d => d.student_name);
+}

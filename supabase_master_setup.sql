@@ -15,6 +15,12 @@ ALTER TABLE word_sets
   ADD COLUMN IF NOT EXISTS sub_sub_category TEXT DEFAULT '',
   ADD COLUMN IF NOT EXISTS passage_number TEXT DEFAULT '';
 
+-- set_assignments: 상태 및 완료 시각 컬럼 추가
+ALTER TABLE set_assignments
+  ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'; -- 'active' | 'completed' | 'expired'
+ALTER TABLE set_assignments
+  ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ DEFAULT NULL;
+
 -- words: 출제 제어 컬럼 추가
 ALTER TABLE words
   ADD COLUMN IF NOT EXISTS is_for_test BOOLEAN DEFAULT true;

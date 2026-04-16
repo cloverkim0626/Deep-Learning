@@ -11,7 +11,10 @@ import {
   getFolders, createFolder, deleteFolder, addPassageToFolder, removePassageFromFolder,
   getStudents
 } from "@/lib/database-service";
-import { assignSetToStudents, getAllAssignments, removeAssignment } from "@/lib/assignment-service";
+import {
+  assignSetToStudents, getAllAssignments, removeAssignment,
+  updateAssignmentStatus, getAssignedStudentsForSet
+} from "@/lib/assignment-service";
 
 // ─── Taxonomy ──────────────────────────────────────────────────────────────────
 const TAXONOMY: Record<string, Record<string, string[]>> = {
@@ -45,14 +48,18 @@ type AssignmentRow = {
   student_class: string;
   set_id: string;
   created_at: string;
-  word_sets: { id: string; label: string; workbook: string; chapter: string } | null;
+  status?: string | null; // 'active' | 'completed' | 'expired' | null
+  completed_at?: string | null;
+  word_sets: { id: string; label: string; workbook: string; chapter: string; passage_number?: string } | null;
 };
 
 function AssignmentTab() {
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStudent, setFilterStudent] = useState("전체");
+  const [statusFilter, setStatusFilter] = useState<'active' | 'completed' | 'expired' | 'all'>('active');
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -66,7 +73,7 @@ function AssignmentTab() {
   useEffect(() => { load(); }, [load]);
 
   const handleRemove = async (id: string, studentName: string, setLabel: string) => {
-    if (!confirm(`"${studentName}"의 "${setLabel}" 배당을 삭제하시겠습니까?\n라이브러리에서는 삭제되지 않습니다.`)) return;
+    if (!confirm(`"${studentName}"의 "${setLabel}" 배당을 완전 제거하시겠습니까?\n라이브러리에서는 삭제되지 않습니다.`)) return;
     setRemovingId(id);
     try {
       await removeAssignment(id);
@@ -75,16 +82,32 @@ function AssignmentTab() {
     finally { setRemovingId(null); }
   };
 
-  // Group by student
-  const studentNames = ["전체", ...Array.from(new Set(assignments.map(a => a.student_name)))];
-  const filtered = filterStudent === "전체" ? assignments : assignments.filter(a => a.student_name === filterStudent);
+  const handleStatusUpdate = async (id: string, newStatus: 'completed' | 'expired') => {
+    setUpdatingId(id);
+    try {
+      await updateAssignmentStatus(id, newStatus);
+      setAssignments(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
+    } catch (err: unknown) { alert((err as Error).message); }
+    finally { setUpdatingId(null); }
+  };
 
-  // Group filtered assignments by student
+  const studentNames = ["전체", ...Array.from(new Set(assignments.map(a => a.student_name)))];
+  const statusFiltered = statusFilter === 'all' ? assignments
+    : statusFilter === 'active' ? assignments.filter(a => !a.status || a.status === 'active')
+    : assignments.filter(a => a.status === statusFilter);
+  const filtered = filterStudent === "전체" ? statusFiltered : statusFiltered.filter(a => a.student_name === filterStudent);
+
   const grouped: Record<string, AssignmentRow[]> = {};
   filtered.forEach(a => {
     if (!grouped[a.student_name]) grouped[a.student_name] = [];
     grouped[a.student_name].push(a);
   });
+
+  const statusBadge = (status?: string | null) => {
+    if (!status || status === 'active') return <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-sky-100 text-sky-600">진행중</span>;
+    if (status === 'completed') return <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-success/10 text-success">완료</span>;
+    if (status === 'expired') return <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-amber-100 text-amber-600">기간만료</span>;
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -92,12 +115,18 @@ function AssignmentTab() {
         <BarChart2 size={16} className="text-accent" />
         <span className="text-[13px] font-black text-foreground">학생별 배당 현황</span>
         <span className="text-[11px] text-accent bg-accent-light px-3 py-1 rounded-xl font-bold ml-1">총 {assignments.length}건</span>
-        <div className="ml-auto flex items-center gap-2">
-          <select
-            value={filterStudent}
-            onChange={e => setFilterStudent(e.target.value)}
-            className="h-9 px-3 rounded-xl border border-foreground/10 bg-white text-[12px] font-bold outline-none"
-          >
+        <div className="ml-auto flex items-center gap-2 flex-wrap">
+          {/* Status filter tabs */}
+          {(['active','completed','expired','all'] as const).map(s => (
+            <button key={s} onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all ${
+                statusFilter === s ? 'bg-foreground text-background' : 'bg-white border border-foreground/10 text-accent hover:text-foreground'
+              }`}>
+              {s === 'active' ? '진행중' : s === 'completed' ? '완료' : s === 'expired' ? '기간만료' : '전체'}
+            </button>
+          ))}
+          <select value={filterStudent} onChange={e => setFilterStudent(e.target.value)}
+            className="h-9 px-3 rounded-xl border border-foreground/10 bg-white text-[12px] font-bold outline-none">
             {studentNames.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
           <button onClick={load} className="h-9 px-3 rounded-xl border border-foreground/10 text-accent hover:text-foreground hover:bg-foreground/5 transition-all">
@@ -111,7 +140,7 @@ function AssignmentTab() {
       ) : Object.keys(grouped).length === 0 ? (
         <div className="py-16 text-center glass rounded-[2.5rem] border border-foreground/5">
           <Users size={32} className="text-accent mx-auto mb-3 opacity-30" />
-          <p className="text-accent font-bold opacity-50">배당된 세트가 없습니다.</p>
+          <p className="text-accent font-bold opacity-50">{statusFilter === 'active' ? '진행중인 배당이 없습니다.' : '해당 항목이 없습니다.'}</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -128,20 +157,48 @@ function AssignmentTab() {
               </div>
               <div className="divide-y divide-foreground/5">
                 {rows.map(row => (
-                  <div key={row.id} className="flex items-center gap-4 px-6 py-4 hover:bg-accent-light/20 transition-colors">
+                  <div key={row.id} className={`flex items-center gap-3 px-6 py-4 hover:bg-accent-light/20 transition-colors ${
+                    row.status === 'completed' ? 'opacity-60' : row.status === 'expired' ? 'opacity-50' : ''
+                  }`}>
                     <BookOpen size={14} className="text-accent shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-bold text-foreground truncate">{row.word_sets?.label || "알 수 없는 세트"}</div>
-                      <div className="text-[11px] text-accent">{row.word_sets?.workbook} · {row.word_sets?.chapter}</div>
+                      <div className="text-[13px] font-bold text-foreground truncate flex items-center gap-2">
+                        {row.word_sets?.label || "알 수 없는 세트"}
+                        {statusBadge(row.status)}
+                      </div>
+                      <div className="text-[11px] text-accent">
+                        {[row.word_sets?.workbook, row.word_sets?.chapter, row.word_sets?.passage_number].filter(Boolean).join(' · ')}
+                      </div>
                     </div>
                     <span className="text-[10px] text-accent/50 font-bold shrink-0">
                       {new Date(row.created_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
                     </span>
+                    {/* 완료/만료 버튼 — active 상태만 표시 */}
+                    {(!row.status || row.status === 'active') && (
+                      <>
+                        <button
+                          onClick={() => handleStatusUpdate(row.id, 'completed')}
+                          disabled={updatingId === row.id}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black text-success border border-success/30 bg-success/5 hover:bg-success/10 transition-all disabled:opacity-30 shrink-0"
+                          title="학생이 통과함 — 학생 실습 목록에서 제거"
+                        >
+                          <Check size={10} strokeWidth={3} /> 완료
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate(row.id, 'expired')}
+                          disabled={updatingId === row.id}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black text-amber-600 border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-all disabled:opacity-30 shrink-0"
+                          title="기간 만료 처리 — 미완료로 DB 저장"
+                        >
+                          기간만료
+                        </button>
+                      </>
+                    )}
                     <button
                       onClick={() => handleRemove(row.id, studentName, row.word_sets?.label || "")}
                       disabled={removingId === row.id}
                       className="p-2 text-red-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all disabled:opacity-30 shrink-0"
-                      title="배당 삭제 (라이브러리는 유지됨)"
+                      title="배당 완전 제거 (라이브러리 유지)"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -167,10 +224,16 @@ function AssignModal({
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
   const [filterClass, setFilterClass] = useState<string>("전체");
+  const [assignedStudents, setAssignedStudents] = useState<string[]>([]);
+
+  useEffect(() => {
+    getAssignedStudentsForSet(set.id).then(setAssignedStudents).catch(() => {});
+  }, [set.id]);
+
   const uniqueClasses = ["전체", ...Array.from(new Set(students.map(s => s.class)))];
   const visibleStudents = filterClass === "전체" ? students : students.filter(s => s.class === filterClass);
   const toggle = (name: string) => setSelectedNames(prev => prev.includes(name) ? prev.filter(x => x !== name) : [...prev, name]);
-  const selectAll = () => setSelectedNames(visibleStudents.map(s => s.name));
+  const selectAll = () => setSelectedNames(visibleStudents.filter(s => !assignedStudents.includes(s.name)).map(s => s.name));
 
   const handleAssign = async () => {
     if (selectedNames.length === 0) return;
@@ -202,18 +265,38 @@ function AssignModal({
         </div>
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-2">
           <p className="text-[11px] font-black text-accent uppercase tracking-widest mb-3">{selectedNames.length > 0 ? `${selectedNames.length}명 선택됨` : '학생을 선택하세요'}</p>
-          {visibleStudents.map(student => (
-            <button key={student.name} onClick={() => toggle(student.name)} className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${selectedNames.includes(student.name) ? 'bg-foreground border-foreground text-background shadow-lg' : 'bg-white border-foreground/5 text-foreground hover:border-foreground/20'}`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[12px] ${selectedNames.includes(student.name) ? 'bg-background text-foreground' : 'bg-accent-light text-accent'}`}>{student.name[0]}</div>
-                <div className="text-left">
-                  <div className="text-[14px] font-bold">{student.name}</div>
-                  <div className={`text-[10px] font-bold ${selectedNames.includes(student.name) ? 'opacity-60' : 'text-accent'}`}>{student.class}</div>
+          {visibleStudents.map(student => {
+            const isAssigned = assignedStudents.includes(student.name);
+            const isSelected = selectedNames.includes(student.name);
+            return (
+              <button key={student.name} onClick={() => !isAssigned && toggle(student.name)}
+                className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                  isAssigned
+                    ? 'bg-sky-50 border-sky-200 cursor-not-allowed'
+                    : isSelected ? 'bg-foreground border-foreground text-background shadow-lg' : 'bg-white border-foreground/5 text-foreground hover:border-foreground/20'
+                }`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[12px] ${
+                    isAssigned ? 'bg-sky-100 text-sky-600'
+                    : isSelected ? 'bg-background text-foreground' : 'bg-accent-light text-accent'
+                  }`}>{student.name[0]}</div>
+                  <div className="text-left">
+                    <div className={`text-[14px] font-bold flex items-center gap-1.5 ${
+                      isAssigned ? 'text-sky-700' : ''
+                    }`}>
+                      {student.name}
+                      {isAssigned && <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-sky-200 text-sky-700">배당중</span>}
+                    </div>
+                    <div className={`text-[10px] font-bold ${
+                      isAssigned ? 'text-sky-400'
+                      : isSelected ? 'opacity-60' : 'text-accent'
+                    }`}>{student.class}</div>
+                  </div>
                 </div>
-              </div>
-              {selectedNames.includes(student.name) && <Check size={18} strokeWidth={3} />}
-            </button>
-          ))}
+                {isSelected && !isAssigned && <Check size={18} strokeWidth={3} />}
+              </button>
+            );
+          })}
         </div>
         <div className="p-6 border-t border-foreground/5 bg-accent-light/10">
           <button onClick={handleAssign} disabled={isAssigning || selectedNames.length === 0}
@@ -226,7 +309,122 @@ function AssignModal({
   );
 }
 
-// ─── Word Edit Panel ───────────────────────────────────────────────────────────
+// ─── Library Word Panel (오른쪽 슬라이드 패널 — test_synonym/test_antonym 지원) ─
+function LibraryWordPanel({
+  set, onClose, onSaved
+}: {
+  set: {
+    id: string; label: string; full_text?: string;
+    words: {
+      id: string; word: string; pos_abbr: string; korean: string;
+      context: string; synonyms: string; antonyms: string; grammar_tip: string;
+      test_synonym?: boolean; test_antonym?: boolean;
+    }[];
+  };
+  onClose: () => void; onSaved: () => void;
+}) {
+  const [words, setWords] = useState(set.words.map(w => ({ ...w })));
+  const [savingWordId, setSavingWordId] = useState<string | null>(null);
+  const [deletingWordId, setDeletingWordId] = useState<string | null>(null);
+  const synCount = words.filter(w => w.test_synonym).length;
+  const antCount = words.filter(w => w.test_antonym).length;
+
+  const setWordField = (id: string, field: string, val: string | boolean) =>
+    setWords(prev => prev.map(w => w.id === id ? { ...w, [field]: val } : w));
+
+  const handleSaveWord = async (w: typeof words[0]) => {
+    setSavingWordId(w.id);
+    try {
+      await updateWord(w.id, {
+        korean: w.korean, synonyms: w.synonyms, antonyms: w.antonyms,
+        grammar_tip: w.grammar_tip, context: w.context,
+        test_synonym: w.test_synonym, test_antonym: w.test_antonym,
+      });
+      onSaved();
+    } catch (err: unknown) { alert((err as Error).message); }
+    finally { setSavingWordId(null); }
+  };
+
+  const handleDeleteWord = async (wordId: string) => {
+    if (!confirm('이 단어를 삭제하시겠습니까?')) return;
+    setDeletingWordId(wordId);
+    try {
+      const { deleteWord } = await import('@/lib/database-service');
+      await deleteWord(wordId);
+      setWords(prev => prev.filter(w => w.id !== wordId));
+      onSaved();
+    } catch (err: unknown) { alert((err as Error).message); }
+    finally { setDeletingWordId(null); }
+  };
+
+  return (
+    <div className="fixed top-0 right-0 w-[440px] h-screen bg-background border-l border-foreground/10 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-foreground/5 bg-accent-light/20 shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="text-[13px] font-black text-foreground truncate">{set.label}</h3>
+            <p className="text-[10px] text-accent mt-0.5">단어 {words.length}개 · 유의어 {synCount} · 반의어 {antCount}</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-foreground/5 text-accent shrink-0"><X size={16} /></button>
+        </div>
+        <div className="flex gap-2 mt-2.5">
+          <span className="text-[10px] font-black px-2 py-0.5 bg-sky-500 text-white rounded-lg">유의어 {synCount}개</span>
+          <span className="text-[10px] font-black px-2 py-0.5 bg-rose-500 text-white rounded-lg">반의어 {antCount}개</span>
+          <span className="text-[9px] text-accent/60 ml-1 self-center">유/반 버튼 클릭 후 → 해당 단어 버튼 저장</span>
+        </div>
+      </div>
+      {/* Word list */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+        {words.map((w, idx) => (
+          <div key={w.id} className={`rounded-xl border transition-all ${
+            (w.test_synonym || w.test_antonym) ? 'border-foreground/10 bg-white shadow-sm' : 'border-foreground/5 opacity-60'
+          }`}>
+            <div className="flex items-center gap-1.5 px-3 py-2.5 flex-wrap">
+              <span className="w-5 h-5 rounded-md bg-foreground/10 text-foreground flex items-center justify-center text-[9px] font-black shrink-0">{idx + 1}</span>
+              <span className="text-[14px] font-black text-foreground serif">{w.word}</span>
+              <span className="text-[8px] text-accent bg-accent-light px-1.5 py-0.5 rounded font-bold">{w.pos_abbr}</span>
+              <span className="text-[10px] text-foreground/50 flex-1 truncate">{w.korean}</span>
+              <button
+                onClick={() => setWordField(w.id, 'test_synonym', !w.test_synonym)}
+                className={`px-2 py-0.5 rounded-lg text-[9px] font-black border transition-all shrink-0 ${
+                  w.test_synonym ? 'bg-sky-500 text-white border-sky-500' : 'bg-white border-sky-200 text-sky-400'
+                }`}>유</button>
+              <button
+                onClick={() => setWordField(w.id, 'test_antonym', !w.test_antonym)}
+                className={`px-2 py-0.5 rounded-lg text-[9px] font-black border transition-all shrink-0 ${
+                  w.test_antonym ? 'bg-rose-500 text-white border-rose-500' : 'bg-white border-rose-200 text-rose-400'
+                }`}>반</button>
+              <button onClick={() => handleDeleteWord(w.id)} disabled={deletingWordId === w.id}
+                className="p-1 text-red-200 hover:text-red-500 transition-all"><Trash2 size={11} /></button>
+            </div>
+            <div className="px-3 pb-2.5 space-y-1">
+              {([
+                { key: 'korean', label: '한글 의미' },
+                { key: 'synonyms', label: '유의어' },
+                { key: 'antonyms', label: '반의어' },
+                { key: 'grammar_tip', label: '팀' },
+              ] as { key: string; label: string }[]).map(f => (
+                <div key={f.key} className="flex items-center gap-2">
+                  <label className="text-[8px] font-black text-accent uppercase shrink-0 w-12">{f.label}</label>
+                  <input value={(w as Record<string, string | boolean>)[f.key] as string || ''}
+                    onChange={e => setWordField(w.id, f.key, e.target.value)}
+                    className="flex-1 h-7 px-2 rounded-lg border border-foreground/8 bg-transparent text-[11px] outline-none focus:border-foreground/30" />
+                </div>
+              ))}
+              <button onClick={() => handleSaveWord(w)} disabled={savingWordId === w.id}
+                className="w-full h-8 mt-1 bg-foreground/5 hover:bg-foreground hover:text-background rounded-xl text-[11px] font-black transition-all disabled:opacity-40 flex items-center justify-center gap-1">
+                <Save size={11} strokeWidth={2} />
+                {savingWordId === w.id ? '저장 중...' : '저장'}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function WordEditPanel({ set, onClose, onSaved }: { set: { id: string; label: string; full_text?: string; words: { id: string; word: string; pos_abbr: string; korean: string; context: string; synonyms: string; antonyms: string; grammar_tip: string }[] }, onClose: () => void, onSaved: () => void }) {
   const [fullText, setFullText] = useState(set.full_text || '');
   const [words, setWords] = useState(set.words.map(w => ({ ...w })));
@@ -1096,7 +1294,7 @@ export default function AdminContentPage() {
       </div>
 
       {assignTarget && <AssignModal set={assignTarget} onClose={() => setAssignTarget(null)} students={students} />}
-      {editTarget && <WordEditPanel set={editTarget} onClose={() => setEditTarget(null)} onSaved={loadData} />}
+      {editTarget && <LibraryWordPanel set={editTarget} onClose={() => setEditTarget(null)} onSaved={loadData} />}
 
       <div className="mt-20 pt-10 border-t border-foreground/5 text-center">
         <p className="text-[12px] font-black text-accent tracking-[0.3em] uppercase opacity-40">

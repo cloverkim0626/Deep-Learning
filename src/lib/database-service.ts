@@ -53,6 +53,7 @@ export async function upsertWord(wordData: any) {
 export async function updateWord(id: string, data: {
   korean?: string; synonyms?: string; antonyms?: string;
   grammar_tip?: string; context?: string; word?: string; pos_abbr?: string;
+  test_synonym?: boolean; test_antonym?: boolean;
 }) {
   const { error } = await supabase
     .from('words')
