@@ -56,18 +56,22 @@ type AssignmentRow = {
 function AssignmentTab() {
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [filterStudent, setFilterStudent] = useState("전체");
-  const [statusFilter, setStatusFilter] = useState<'active' | 'completed' | 'expired' | 'all'>('active');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'completed' | 'expired' | 'all'>('all');
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await getAllAssignments();
       setAssignments((data || []) as unknown as AssignmentRow[]);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+    } catch (err) {
+      console.error('[AssignmentTab] load error:', err);
+      setLoadError((err as Error).message || '배당 데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -137,10 +141,17 @@ function AssignmentTab() {
 
       {loading ? (
         <div className="py-16 text-center text-accent animate-pulse font-bold">배당 현황을 불러오는 중...</div>
+      ) : loadError ? (
+        <div className="py-12 text-center glass rounded-[2.5rem] border border-red-100 bg-red-50">
+          <p className="text-red-600 font-bold text-[13px] mb-2">⚠️ 배당 데이터 로드 실패</p>
+          <p className="text-red-400 text-[11px] font-medium">{loadError}</p>
+          <button onClick={load} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-xl text-[12px] font-black hover:bg-red-700 transition-all">다시 시도</button>
+        </div>
       ) : Object.keys(grouped).length === 0 ? (
         <div className="py-16 text-center glass rounded-[2.5rem] border border-foreground/5">
           <Users size={32} className="text-accent mx-auto mb-3 opacity-30" />
           <p className="text-accent font-bold opacity-50">{statusFilter === 'active' ? '진행중인 배당이 없습니다.' : '해당 항목이 없습니다.'}</p>
+          <p className="text-accent/50 text-[11px] font-medium mt-1">전체 필터로 변경해보세요.</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -167,7 +178,7 @@ function AssignmentTab() {
                         {statusBadge(row.status)}
                       </div>
                       <div className="text-[11px] text-accent">
-                        {[row.word_sets?.workbook, row.word_sets?.chapter, row.word_sets?.passage_number].filter(Boolean).join(' · ')}
+                        {[row.word_sets?.workbook, row.word_sets?.chapter, row.word_sets?.sub_sub_category, row.word_sets?.passage_number ? `${row.word_sets.passage_number}번` : ''].filter(Boolean).join(' · ')}
                       </div>
                     </div>
                     <span className="text-[10px] text-accent/50 font-bold shrink-0">

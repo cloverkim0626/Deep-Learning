@@ -117,11 +117,33 @@ export async function getWrongAnswers(studentName: string, timeFilter: TimeFilte
 export async function getAllAssignments() {
   const { data, error } = await supabase
     .from('set_assignments')
-    .select('id, student_name, student_class, set_id, created_at, status, word_sets(id, label, workbook, chapter, passage_number)')
-    .order('student_name')
+    .select(`
+      id,
+      student_name,
+      student_class,
+      set_id,
+      status,
+      completed_at,
+      created_at,
+      word_sets (
+        id,
+        label,
+        workbook,
+        chapter
+      )
+    `)
+    .order('student_name', { ascending: true })
     .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data;
+
+  if (error) {
+    console.error('[getAllAssignments] DB error:', error);
+    throw error;
+  }
+
+  return (data || []).map((row: Record<string, unknown>) => ({
+    ...row,
+    created_at: row.created_at || new Date().toISOString(),
+  }));
 }
 
 /**
