@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   ChevronRight, CheckCircle, XCircle, Trophy, RotateCcw,
-  BookOpen, Sparkles, AlertCircle, LogOut, Gamepad2, ClipboardList, X, Stamp
+  BookOpen, Sparkles, AlertCircle, LogOut, Gamepad2, ClipboardList, X, Stamp, Timer
 } from "lucide-react";
 import { getAssignmentsByStudent, logWrongAnswer } from "@/lib/assignment-service";
 import {
@@ -690,6 +690,57 @@ export default function WordTestPage() {
   const [gameWords, setGameWords] = useState<TestWord[]>([]);
   const [passedSetIds, setPassedSetIds] = useState<Set<string>>(new Set());
 
+  // ─── Quiz Timer ───────────────────────────────────────────────────────────────
+  const [quizTimeLeft, setQuizTimeLeft] = useState(0);
+  const [quizTotalTime, setQuizTotalTime] = useState(0);
+  const quizTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // ref keeps handleTimeUp fresh each render (avoids stale closure in setInterval)
+  const handleTimeUpRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    handleTimeUpRef.current = () => {
+      if (quizTimerRef.current) clearInterval(quizTimerRef.current);
+      // Auto-mark remaining questions as wrong
+      const remaining = questions.slice(currentIdx + (selected !== null ? 1 : 0));
+      const wrongEntries: ResultEntry[] = remaining.map(q => ({
+        question: q, selected: '', correct: false
+      }));
+      const all = [...results, ...wrongEntries];
+      const name = getStudentName();
+      // Log to DB (fire-and-forget)
+      for (const entry of wrongEntries) {
+        logWrongAnswer(name, entry.question.word.id, entry.question.mode, '', entry.question.correct).catch(() => {});
+      }
+      if (sessionId) {
+        const correctCount = all.filter(r => r.correct).length;
+        completeTestSession(sessionId, correctCount).catch(() => {});
+        if (correctCount / (all.length || 1) >= 0.9 && selectedSetId) {
+          setPassedSetIds(prev => new Set([...prev, selectedSetId]));
+        }
+      }
+      setResults(all);
+      setPhase('result');
+    };
+  });
+
+  useEffect(() => {
+    if (phase !== 'test') {
+      if (quizTimerRef.current) clearInterval(quizTimerRef.current);
+      return;
+    }
+    quizTimerRef.current = setInterval(() => {
+      setQuizTimeLeft(t => {
+        if (t <= 1) {
+          clearInterval(quizTimerRef.current!);
+          handleTimeUpRef.current?.();
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => { if (quizTimerRef.current) clearInterval(quizTimerRef.current); };
+  }, [phase]);
+
   const getStudentName = () => {
     try {
       const saved = localStorage.getItem('stu_session');
@@ -779,6 +830,12 @@ export default function WordTestPage() {
     setCurrentIdx(0);
     setSelected(null);
     setResults([]);
+
+    // Start quiz timer
+    const totalTime = qs.length * 10;
+    setQuizTotalTime(totalTime);
+    setQuizTimeLeft(totalTime);
+    if (quizTimerRef.current) clearInterval(quizTimerRef.current);
 
     const name = getStudentName();
     try {
@@ -881,6 +938,7 @@ export default function WordTestPage() {
 
   const handleQuit = () => {
     if (!confirm("시험을 중단하고 나가시겠습니까?\n현재까지의 답변은 저장되지 않습니다.")) return;
+    if (quizTimerRef.current) clearInterval(quizTimerRef.current);
     router.push('/dashboard');
   };
 
@@ -921,9 +979,21 @@ export default function WordTestPage() {
 
   return (
     <div className="flex flex-col overflow-y-auto custom-scrollbar px-6 py-8 pb-36">
+      {/* Header row */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-[12px] font-bold text-accent">{currentIdx + 1} / {questions.length}</span>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Timer */}
+          <div className={`flex items-center gap-1 px-2.5 py-1 rounded-xl font-black text-[12px] transition-all ${
+            quizTimeLeft <= 10
+              ? 'bg-rose-500 text-white animate-pulse'
+              : quizTimeLeft <= 30
+              ? 'bg-amber-400 text-white'
+              : 'bg-foreground/5 text-accent'
+          }`}>
+            <Timer size={12} />
+            {quizTimeLeft}s
+          </div>
           <span className="text-[12px] font-bold text-emerald-500">{results.filter(r => r.correct).length}정답</span>
           <button onClick={handleQuit}
             className="flex items-center gap-1.5 text-[11px] font-black text-accent hover:text-rose-500 hover:bg-rose-50 px-3 py-1.5 rounded-xl border border-foreground/10 transition-all">
@@ -931,8 +1001,19 @@ export default function WordTestPage() {
           </button>
         </div>
       </div>
-      <div className={`h-[3px] rounded-full mb-6 overflow-hidden ${isSynonym ? 'bg-sky-100' : 'bg-rose-100'}`}>
+      {/* Progress bar (question) */}
+      <div className={`h-[3px] rounded-full mb-1.5 overflow-hidden ${isSynonym ? 'bg-sky-100' : 'bg-rose-100'}`}>
         <div className={`h-full transition-all duration-500 ${isSynonym ? 'bg-sky-500' : 'bg-rose-500'}`} style={{ width: `${(currentIdx / questions.length) * 100}%` }} />
+      </div>
+      {/* Timer bar */}
+      <div className="h-[3px] rounded-full mb-6 bg-foreground/5 overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-1000 ${
+            quizTimeLeft / quizTotalTime > 0.5 ? 'bg-emerald-400' :
+            quizTimeLeft / quizTotalTime > 0.2 ? 'bg-amber-400' : 'bg-rose-500'
+          }`}
+          style={{ width: `${(quizTimeLeft / (quizTotalTime || 1)) * 100}%` }}
+        />
       </div>
 
       <div className={`rounded-[2rem] border p-7 mb-5 text-center ${cardBg}`}>

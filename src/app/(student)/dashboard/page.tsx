@@ -359,116 +359,132 @@ export default function VocabDashboard() {
                       {[s.workbook, s.chapter, s.passageNumber].filter(Boolean).join(' · ')}
                     </div>
                     <div className="text-[13px] font-bold text-foreground">{s.label}</div>
-                    <div className="text-[10px] text-accent/50 mt-0.5">{s.words.length}개 단어 {completedSetIds.has(s.id) ? "· ✓ 시험 완료" : "· 미응시"}</div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] text-accent/50">{s.words.length}개 단어</span>
+                      {completedSetIds.has(s.id) ? (
+                        <span className="text-[9px] font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full tracking-widest">PASS ✓</span>
+                      ) : (
+                        <span className="text-[9px] text-accent/40 font-bold">미응시</span>
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {currentWord ? (
+            {currentWord ? (
             <div className="flex flex-col flex-1 min-h-0 gap-3">
-              {/* Flashcard — front / back stacked, only one visible at a time */}
+              {/* Flashcard — 3D flip */}
               <div
                 className="flex-1 min-h-0 relative"
-                style={{ minHeight: '200px' }}
+                style={{ minHeight: '200px', perspective: '1200px' }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
-                {/* Swipe overlay */}
+                {/* Swipe direction overlay */}
                 {swipeDelta !== 0 && (
-                  <div className={`absolute inset-0 z-20 rounded-[2.5rem] pointer-events-none transition-opacity ${
+                  <div className={`absolute inset-0 z-20 rounded-[2.5rem] pointer-events-none ${
                     swipeDelta < -30 ? 'bg-gradient-to-r from-transparent to-foreground/10' :
                     swipeDelta > 30 ? 'bg-gradient-to-l from-transparent to-foreground/10' : ''
                   }`} />
                 )}
 
-                {/* FRONT — word face */}
+                {/* 3D flipper */}
                 <div
-                  onClick={() => setIsFlipped(true)}
-                  style={{ transform: `translateX(${swipeDelta * 0.08}px)` }}
-                  className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 p-8 flex flex-col items-center justify-center text-center shadow-xl transition-all duration-500 cursor-pointer select-none ${
-                    isFlipped ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100'
-                  }`}
+                  className="absolute inset-0"
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    transform: `translateX(${swipeDelta * 0.08}px) rotateY(${isFlipped ? 180 : 0}deg)`,
+                    transition: swipeDelta !== 0 ? 'none' : 'transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1)',
+                  }}
                 >
-                  {/* 진행상황 — 좌상단 */}
-                  <div className="absolute top-4 left-5 flex items-center gap-1.5">
-                    <span className="text-[10px] font-black text-accent/50">{wordIdx + 1}</span>
-                    <span className="text-[8px] text-accent/30 font-bold">/</span>
-                    <span className="text-[10px] font-bold text-accent/30">{currentSet.words.length}</span>
+                  {/* FRONT */}
+                  <div
+                    onClick={() => setIsFlipped(true)}
+                    className="absolute inset-0 glass rounded-[2.5rem] border border-foreground/5 p-8 flex flex-col items-center justify-center text-center shadow-xl cursor-pointer select-none"
+                    style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' } as React.CSSProperties}
+                  >
+                    {/* 진행상황 — 좌상단 */}
+                    <div className="absolute top-4 left-5 flex items-center gap-1.5">
+                      <span className="text-[10px] font-black text-accent/50">{wordIdx + 1}</span>
+                      <span className="text-[8px] text-accent/30 font-bold">/</span>
+                      <span className="text-[10px] font-bold text-accent/30">{currentSet.words.length}</span>
+                    </div>
+                    {/* 별표 우상단 */}
+                    <button
+                      className={`absolute top-4 right-5 w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                        starredIds.has(currentWord.id)
+                          ? 'text-amber-400 bg-amber-50 scale-110'
+                          : 'text-accent/30 hover:text-amber-300 hover:bg-amber-50/60'
+                      }`}
+                      onClick={e => { e.stopPropagation(); toggleStar(currentWord.id); }}
+                      title="어려운 단어 별표"
+                    >
+                      <Star size={16} strokeWidth={2} fill={starredIds.has(currentWord.id) ? 'currentColor' : 'none'} />
+                    </button>
+
+                    <button
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all mb-4 ${isSpeaking ? 'bg-foreground text-background scale-110' : 'bg-accent-light/60 text-accent hover:bg-foreground/10'}`}
+                      title="발음 듣기"
+                      onClick={(e) => { e.stopPropagation(); handleSpeak(e); }}
+                    >
+                      <Volume2 size={16} strokeWidth={2} />
+                    </button>
+                    <h2 className="text-[42px] serif font-bold text-foreground mb-3">{currentWord.word}</h2>
+                    <p className="text-[14px] text-accent font-black tracking-widest flex items-center gap-2">
+                      <Sparkles size={13} className="opacity-50" /> {currentWord.posAbbr}
+                    </p>
+                    <p className="text-[10px] text-accent/40 font-bold mt-3">← 스와이프 · 탭하면 뒤집기 →</p>
                   </div>
-                  {/* 별표 북마크 — 우상단 */}
-                  <button
-                    className={`absolute top-4 right-5 w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-                      starredIds.has(currentWord.id)
-                        ? 'text-amber-400 bg-amber-50 scale-110'
-                        : 'text-accent/30 hover:text-amber-300 hover:bg-amber-50/60'
-                    }`}
-                    onClick={e => { e.stopPropagation(); toggleStar(currentWord.id); }}
-                    title="어려운 단어 별표"
-                  >
-                    <Star size={16} strokeWidth={2} fill={starredIds.has(currentWord.id) ? 'currentColor' : 'none'} />
-                  </button>
 
-                  <button
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all mb-4 ${isSpeaking ? 'bg-foreground text-background scale-110' : 'bg-accent-light/60 text-accent hover:bg-foreground/10'}`}
-                    title="발음 듣기"
-                    onClick={(e) => { e.stopPropagation(); handleSpeak(e); }}
+                  {/* BACK */}
+                  <div
+                    onClick={() => setIsFlipped(false)}
+                    className="absolute inset-0 glass rounded-[2.5rem] border border-foreground/5 shadow-xl cursor-pointer select-none overflow-hidden"
+                    style={{
+                      backfaceVisibility: 'hidden',
+                      WebkitBackfaceVisibility: 'hidden',
+                      transform: 'rotateY(180deg)',
+                    } as React.CSSProperties}
                   >
-                    <Volume2 size={16} strokeWidth={2} />
-                  </button>
-                  <h2 className="text-[42px] serif font-bold text-foreground mb-3">{currentWord.word}</h2>
-                  <p className="text-[14px] text-accent font-black tracking-widest flex items-center gap-2">
-                    <Sparkles size={13} className="opacity-50" /> {currentWord.posAbbr}
-                  </p>
-                  <p className="text-[10px] text-accent/40 font-bold mt-3">← 스와이프 · 탭하면 뒤집기 →</p>
-                </div>
-
-                {/* BACK — scrollable meaning panel. 외곽 클릭 → 뒤집기 */}
-                <div
-                  onClick={() => setIsFlipped(false)}
-                  style={{ transform: `translateX(${swipeDelta * 0.08}px)` }}
-                  className={`absolute inset-0 glass rounded-[2.5rem] border border-foreground/5 shadow-xl transition-all duration-500 cursor-pointer select-none overflow-hidden ${
-                    isFlipped ? 'opacity-100' : 'opacity-0 pointer-events-none scale-95'
-                  }`}
-                >
-                  {/* 내부 스크롤 컨테이너: click은 막지 않음(외곽으로 전파 허용) */}
-                  <div className="h-full overflow-y-auto custom-scrollbar p-7">
-                    <p className="text-[20px] font-bold text-foreground mb-1">{currentWord.korean}</p>
-                    {currentWord.context && (
-                      <div className="mb-4 border-l-2 border-foreground/10 pl-4">
-                        <p className="text-[12px] leading-relaxed text-foreground/70 serif italic">
-                          <BoldWord text={currentWord.context} word={currentWord.word} />
-                        </p>
-                        {currentWord.contextKorean && (
-                          <p className="text-[11px] text-accent mt-1">
-                            {currentWord.contextKorean}
+                    <div className="h-full overflow-y-auto custom-scrollbar p-7">
+                      <p className="text-[20px] font-bold text-foreground mb-1">{currentWord.korean}</p>
+                      {currentWord.context && (
+                        <div className="mb-4 border-l-2 border-foreground/10 pl-4">
+                          <p className="text-[12px] leading-relaxed text-foreground/70 serif italic">
+                            <BoldWord text={currentWord.context} word={currentWord.word} />
                           </p>
-                        )}
-                      </div>
-                    )}
-                    {currentWord.synonyms.length > 0 && (
-                      <div className="mb-2.5">
-                        <p className="text-[9px] font-black text-accent uppercase tracking-widest mb-1.5">유의어</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {currentWord.synonyms.map(s => (
-                            <span key={s} className="px-2.5 py-1 bg-foreground/5 rounded-lg text-[11px] font-black text-accent">{s}</span>
-                          ))}
+                          {currentWord.contextKorean && (
+                            <p className="text-[11px] text-accent mt-1">
+                              {currentWord.contextKorean}
+                            </p>
+                          )}
                         </div>
-                      </div>
-                    )}
-                    {currentWord.antonyms.length > 0 && (
-                      <div>
-                        <p className="text-[9px] font-black text-accent uppercase tracking-widest mb-1.5">반의어</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {currentWord.antonyms.map(a => (
-                            <span key={a} className="px-2.5 py-1 bg-red-50 rounded-lg text-[11px] font-black text-red-400">{a}</span>
-                          ))}
+                      )}
+                      {currentWord.synonyms.length > 0 && (
+                        <div className="mb-2.5">
+                          <p className="text-[9px] font-black text-accent uppercase tracking-widest mb-1.5">유의어</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {currentWord.synonyms.map(s => (
+                              <span key={s} className="px-2.5 py-1 bg-foreground/5 rounded-lg text-[11px] font-black text-accent">{s}</span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    <p className="text-[10px] text-accent/30 font-bold mt-5 text-center">탭하면 다시 앞면으로</p>
+                      )}
+                      {currentWord.antonyms.length > 0 && (
+                        <div>
+                          <p className="text-[9px] font-black text-accent uppercase tracking-widest mb-1.5">반의어</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {currentWord.antonyms.map(a => (
+                              <span key={a} className="px-2.5 py-1 bg-red-50 rounded-lg text-[11px] font-black text-red-400">{a}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <p className="text-[10px] text-accent/30 font-bold mt-5 text-center">탭하면 다시 앞면으로</p>
+                    </div>
                   </div>
                 </div>
               </div>
