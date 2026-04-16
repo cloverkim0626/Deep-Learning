@@ -13,7 +13,27 @@ type Post = {
   createdAt: string;
 };
 
-const WORKBOOKS = ["수능특강", "수능완성", "교과서 (고난도)", "기타/교제없음"];
+const TAXONOMY: Record<string, Record<string, string[]>> = {
+  "수능특강 영어": {
+    "Part1": ["1강","2강","3강","4강","5강","6강","7강","11강","12강","13강","14강","15강","16강"],
+    "Part2": ["21강","22강","23강","24강","25강","26강","27강","28강","29강","30강"],
+    "Part3": ["TEST1","TEST2","TEST3"],
+  },
+  "고3 평가원": {
+    "2025년": ["3월","6월","9월","11월"],
+    "2026년": ["3월","6월","9월"],
+  },
+  "고2 평가원": {
+    "2025년": ["3월","6월","9월"],
+    "2026년": ["3월","6월"],
+  },
+  "고1 평가원": {
+    "2025년": ["3월","6월","9월"],
+    "2026년": ["3월","6월"],
+  },
+};
+// Top-level choices in QnA: taxonomy categories + special options
+const QNA_TOP_OPTIONS = [...Object.keys(TAXONOMY), "교재 없음 (기타 자료)", "기타 문의"];
 
 export default function QnAPage() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -284,21 +304,33 @@ export default function QnAPage() {
                   </p>
                   <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
                     {step === 1 ? (
-                      [...WORKBOOKS].map(w => (
-                        <button key={w} onClick={() => { setSelWorkbook(w); w === "기타/교제없음" ? setStep(4) : setStep(2); }}
-                          className="w-full p-4 text-left bg-white border border-foreground/5 rounded-2xl hover:border-foreground/20 transition-all flex items-center justify-between font-bold text-[14px]">
-                          {w} <ChevronRight size={16} className="text-accent" />
-                        </button>
-                      ))
+                      QNA_TOP_OPTIONS.map(w => {
+                        const isSpecial = w === "교재 없음 (기타 자료)" || w === "기타 문의";
+                        return (
+                          <button key={w}
+                            onClick={() => {
+                              setSelWorkbook(w);
+                              isSpecial ? setStep(4) : setStep(2);
+                            }}
+                            className="w-full p-4 text-left bg-white border border-foreground/5 rounded-2xl hover:border-foreground/20 transition-all flex items-center justify-between font-bold text-[14px]"
+                          >
+                            <span>{w}</span>
+                            <span className="flex items-center gap-1 text-accent">
+                              {isSpecial && <span className="text-[10px] font-black bg-accent-light px-2 py-0.5 rounded-lg mr-1">바로 질문</span>}
+                              <ChevronRight size={16} />
+                            </span>
+                          </button>
+                        );
+                      })
                     ) : step === 2 ? (
-                      [...Array.from({ length: 10 }, (_, i) => `${i + 1}강`), "건너뛰기"].map(c => (
+                      Object.keys(TAXONOMY[selWorkbook] || {}).concat(["건너뛰기"]).map(c => (
                         <button key={c} onClick={() => { setSelChapter(c === "건너뛰기" ? "" : c); setStep(3); }}
                           className="w-full p-4 text-left bg-white border border-foreground/5 rounded-2xl hover:border-foreground/20 transition-all flex items-center justify-between font-bold text-[14px]">
                           {c} <ChevronRight size={16} className="text-accent" />
                         </button>
                       ))
                     ) : (
-                      ["1번 지문", "2번 지문", "3번 지문", "4번 지문", "5번 지문", "건너뛰기"].map(p => (
+                      ((TAXONOMY[selWorkbook]?.[selChapter] || [])).concat(["건너뛰기"]).map(p => (
                         <button key={p} onClick={() => { setSelPassage(p === "건너뛰기" ? "" : p); setStep(4); }}
                           className="w-full p-4 text-left bg-white border border-foreground/5 rounded-2xl hover:border-foreground/20 transition-all flex items-center justify-between font-bold text-[14px]">
                           {p} <ChevronRight size={16} className="text-accent" />

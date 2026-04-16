@@ -11,7 +11,7 @@ import {
 } from "@/lib/database-service";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
-const CLASSES = ["전체", "고3 금토반", "고2 아라고반", "고1 아라원당 연합반"];
+const CLASSES = ["전체", "고3 금토반", "고2 아라고반", "고1 아라원당 연합반", "GUEST"];
 const GRADES = [1, 2, 3];
 const GENDERS = [
   { value: 'M', label: '남' },
@@ -22,6 +22,7 @@ const CLASS_COLORS: Record<string, string> = {
   "고3 금토반": "bg-violet-100 text-violet-700 border-violet-200",
   "고2 아라고반": "bg-sky-100 text-sky-700 border-sky-200",
   "고1 아라원당 연합반": "bg-emerald-100 text-emerald-700 border-emerald-200",
+  "GUEST": "bg-orange-100 text-orange-700 border-orange-200",
 };
 
 type Student = {

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
-  ChevronRight, ChevronLeft, ChevronDown, Trophy, AlertCircle,
+  ChevronDown, Trophy, AlertCircle,
   Sparkles, Clock, Calendar, FilterX, Volume2
 } from "lucide-react";
 import { getAssignmentsByStudent, getWrongAnswers, logWrongAnswer, type TimeFilter } from "@/lib/assignment-service";
@@ -66,6 +66,10 @@ export default function VocabDashboard() {
   const [isLoadingWrong, setIsLoadingWrong] = useState(false);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  // Swipe state
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const [swipeDelta, setSwipeDelta] = useState(0);
   // Remaining tests count
   const [completedSetIds, setCompletedSetIds] = useState<Set<string>>(new Set());
 
@@ -183,6 +187,31 @@ export default function VocabDashboard() {
     }
   };
 
+  // ── Swipe handlers ────────────────────────────────────────────────
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    setSwipeDelta(0);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = Math.abs(e.touches[0].clientY - (touchStartY.current ?? 0));
+    // Only track horizontal swipe
+    if (Math.abs(dx) > dy) setSwipeDelta(dx);
+  };
+
+  const handleTouchEnd = () => {
+    if (Math.abs(swipeDelta) > 60) {
+      if (swipeDelta < 0) nextWord();
+      else prevWord();
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+    setSwipeDelta(0);
+  };
+
   if (isLoading) return (
     <div className="flex items-center justify-center h-full">
       <div className="text-center animate-pulse">
@@ -269,13 +298,24 @@ export default function VocabDashboard() {
               <div
                 className="flex-1 min-h-0 relative preserve-3d"
                 style={{ minHeight: '200px' }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
               >
+                {/* Swipe hint: subtle directional fade on swipe */}
+                {swipeDelta !== 0 && (
+                  <div className={`absolute inset-0 z-20 rounded-[2.5rem] pointer-events-none transition-opacity ${
+                    swipeDelta < -30 ? 'bg-gradient-to-r from-transparent to-foreground/10' :
+                    swipeDelta > 30 ? 'bg-gradient-to-l from-transparent to-foreground/10' : ''
+                  }`} />
+                )}
+
                 {/* Front — click = flip */}
                 <div
                   onClick={() => setIsFlipped(!isFlipped)}
+                  style={{ transform: `translateX(${swipeDelta * 0.08}px)` }}
                   className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 p-8 flex flex-col items-center justify-center text-center shadow-xl transition-all duration-700 cursor-pointer select-none ${isFlipped ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 opacity-100"}`}
                 >
-                  {/* Speaker — centered above word, inside front face (won't be covered by overlay) */}
                   <button
                     className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all mb-4 ${isSpeaking ? "bg-foreground text-background scale-110" : "bg-accent-light/60 text-accent hover:bg-foreground/10"}`}
                     title="발음 듣기"
@@ -287,11 +327,13 @@ export default function VocabDashboard() {
                   <p className="text-[14px] text-accent font-black tracking-widest flex items-center gap-2">
                     <Sparkles size={13} className="opacity-50" /> {currentWord.posAbbr}
                   </p>
+                  <p className="text-[10px] text-accent/40 font-bold mt-3">← 스와이프 · 탭하면 뒤집기 →</p>
                 </div>
 
                 {/* Back — click = flip */}
                 <div
                   onClick={() => setIsFlipped(!isFlipped)}
+                  style={{ transform: `translateX(${swipeDelta * 0.08}px)` }}
                   className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 p-7 flex flex-col justify-center shadow-xl transition-all duration-700 overflow-y-auto cursor-pointer select-none ${isFlipped ? "rotate-y-0 opacity-100" : "rotate-y-180 opacity-0 pointer-events-none"}`}
                 >
                   <p className="text-[20px] font-bold text-foreground mb-3">{currentWord.korean}</p>
@@ -324,26 +366,22 @@ export default function VocabDashboard() {
                     </div>
                   )}
                 </div>
+              </div>
 
-                {/* Arrow buttons — positioned at vertical center, outside the content area */}
-                {wordIdx > 0 && (
+              {/* Dot progress indicators (replaces arrow buttons) */}
+              <div className="flex items-center justify-center gap-1.5 shrink-0 py-1">
+                {currentSet.words.map((_, i) => (
                   <button
-                    onClick={(e) => { e.stopPropagation(); prevWord(); }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-foreground/8 backdrop-blur-sm flex items-center justify-center text-foreground/30 hover:text-foreground/70 hover:bg-foreground/15 transition-all active:scale-90"
-                    aria-label="이전 단어"
-                  >
-                    <ChevronLeft size={16} strokeWidth={2.5} />
-                  </button>
-                )}
-                {wordIdx < currentSet.words.length - 1 && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); nextWord(); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-foreground/8 backdrop-blur-sm flex items-center justify-center text-foreground/30 hover:text-foreground/70 hover:bg-foreground/15 transition-all active:scale-90"
-                    aria-label="다음 단어"
-                  >
-                    <ChevronRight size={16} strokeWidth={2.5} />
-                  </button>
-                )}
+                    key={i}
+                    onClick={() => { setWordIdx(i); setIsFlipped(false); }}
+                    className={`rounded-full transition-all ${
+                      i === wordIdx
+                        ? 'w-5 h-2 bg-foreground'
+                        : 'w-2 h-2 bg-foreground/15 hover:bg-foreground/30'
+                    }`}
+                    aria-label={`${i + 1}번 단어`}
+                  />
+                ))}
               </div>
 
 
