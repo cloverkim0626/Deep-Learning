@@ -25,21 +25,32 @@ export async function assignSetToStudents(setId: string, students: { name: strin
  * Excludes completed/expired assignments from student view.
  */
 export async function getAssignmentsByStudent(studentName: string) {
-  const { data, error } = await supabase
+  // Step 1: 학생 배당 목록 조회 (join 없이)
+  const { data: assignments, error: aErr } = await supabase
     .from('set_assignments')
-    .select('*, word_sets(*, words(*))')
+    .select('id, set_id, status, student_name, student_class')
     .eq('student_name', studentName)
-    .or('status.eq.active,status.is.null'); // backward compat: null = active
+    .or('status.eq.active,status.is.null');
 
-  if (error) throw error;
+  if (aErr) throw aErr;
+  if (!assignments || assignments.length === 0) return [];
+
+  // Step 2: 해당 set_ids의 word_sets + words 조회
+  const setIds = assignments.map((a: Record<string, unknown>) => a.set_id as string);
+  const { data: wordSets, error: wErr } = await supabase
+    .from('word_sets')
+    .select('*, words(*)')
+    .in('id', setIds);
+
+  if (wErr) throw wErr;
+
+  // Step 3: 수동 merge — word_sets 기준으로 반환
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data as any[])
-    .filter((d: any) => d.word_sets)
-    .map((d: any) => ({
-      ...d.word_sets,
-      passage_number: d.word_sets?.passage_number || '',
-      sub_sub_category: d.word_sets?.sub_sub_category || '',
-    }));
+  return (wordSets || []).map((ws: any) => ({
+    ...ws,
+    passage_number: ws.passage_number || '',
+    sub_sub_category: ws.sub_sub_category || '',
+  }));
 }
 
 /**
