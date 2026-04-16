@@ -371,7 +371,9 @@ function LibraryWordPanel({
         <div className="flex items-center justify-between gap-2 mb-2.5">
           <div className="min-w-0">
             <h3 className="text-[13px] font-black text-foreground truncate">{set.label}</h3>
-            <p className="text-[10px] text-accent mt-0.5">단어 {words.length}개 · 유의어 {synCount} · 반의어 {antCount}</p>
+            <p className="text-[10px] text-accent mt-0.5">
+              {[(set as { sub_sub_category?: string; passage_number?: string }).sub_sub_category, (set as { sub_sub_category?: string; passage_number?: string }).passage_number ? `${(set as { sub_sub_category?: string; passage_number?: string }).passage_number}번` : ''].filter(Boolean).join(' · ')} · 단어 {words.length}개 · 유의어 {synCount} · 반의어 {antCount}
+            </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-foreground/5 text-accent shrink-0"><X size={16} /></button>
         </div>
@@ -1198,7 +1200,9 @@ export default function AdminContentPage() {
   const [activeTab, setActiveTab] = useState<"explorer" | "ingest" | "folders" | "assignments">("explorer");
   const [filterWorkbook, setFilterWorkbook] = useState("전체");
   const [wordSets, setWordSets] = useState<{
-    id: string; label: string; workbook: string; chapter: string; full_text?: string;
+    id: string; label: string; workbook: string; chapter: string;
+    sub_sub_category?: string; passage_number?: string;
+    full_text?: string;
     words: { id: string; word: string; pos_abbr: string; korean: string; context: string; synonyms: string; antonyms: string; grammar_tip: string }[]
   }[]>([]);
   const [students, setStudents] = useState<{ name: string; class: string }[]>([]);
@@ -1269,7 +1273,7 @@ export default function AdminContentPage() {
                 <div key={set.id} className="glass rounded-[2rem] p-7 border border-foreground/5 hover:border-foreground/10 transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 bg-white/50 flex flex-col h-full">
                   <div className="flex items-start justify-between mb-3 gap-2">
                     <span className="text-[9px] font-black text-accent bg-accent-light px-2.5 py-1 rounded-lg uppercase tracking-tight">
-                      {set.workbook} · {set.chapter}
+                      {[set.workbook, set.chapter, set.sub_sub_category, set.passage_number ? `${set.passage_number}번` : ''].filter(Boolean).join(' · ')}
                     </span>
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => setAssignTarget(set)} className="text-[10px] font-black text-foreground hover:bg-foreground hover:text-background border border-foreground/10 px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1">
