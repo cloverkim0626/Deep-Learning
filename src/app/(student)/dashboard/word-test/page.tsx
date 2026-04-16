@@ -21,7 +21,8 @@ type TestWord = {
   contextKorean?: string;
   synonyms: string[];
   antonyms: string[];
-  isKey?: boolean;
+  isForTest?: boolean; // true = included in test
+  isKey?: boolean;     // true = test BOTH synonym AND antonym
 };
 
 type QuestionMode = "synonym" | "antonym";
@@ -46,28 +47,31 @@ function parseList(val: string | string[] | null | undefined): string[] {
 
 /**
  * Build questions:
- * - 목표 문제수 = 단어 수 * 1.5 (반올림)
- * - is_key 단어: 유의어 + 반의어 모두 출제
- * - 일반 단어: 유의어/반의어 중 pool이 더 풍부한 것 하나만 출제
- * - 랜덤 샘플링으로 목표 수에 맞춤
+ * - Only words with isForTest=true (or isKey=true) are tested
+ * - isKey=true → both synonym AND antonym questions
+ * - isForTest=true (not isKey) → synonym OR antonym (whichever has richer pool)
  */
 function buildQuestions(words: TestWord[]): Question[] {
-  const allSynonyms = words.flatMap(w => w.synonyms);
-  const allAntonyms = words.flatMap(w => w.antonyms);
-  const target = Math.round(words.length * 1.5);
+  // Filter to only testable words
+  const testWords = words.filter(w => w.isForTest !== false || w.isKey);
+  if (testWords.length === 0) return [];
+
+  const allSynonyms = testWords.flatMap(w => w.synonyms);
+  const allAntonyms = testWords.flatMap(w => w.antonyms);
 
   const pool: Question[] = [];
 
-  words.forEach(word => {
-    const modes: QuestionMode[] = word.isKey ? ["synonym", "antonym"] : (
-      word.synonyms.length >= word.antonyms.length ? ["synonym"] : ["antonym"]
-    );
+  testWords.forEach(word => {
+    // isKey → both synonym AND antonym; otherwise → whichever pool is richer
+    const modes: QuestionMode[] = word.isKey
+      ? ["synonym", "antonym"]
+      : (word.synonyms.length >= word.antonyms.length ? ["synonym"] : ["antonym"]);
 
     modes.forEach(mode => {
       const wordPool = mode === "synonym" ? word.synonyms : word.antonyms;
       if (wordPool.length === 0) return;
 
-      const correct = wordPool[0]; // use first as correct answer
+      const correct = wordPool[0];
       const allPool = mode === "synonym" ? allSynonyms : allAntonyms;
       const distractors = allPool.filter(w => !wordPool.includes(w) && w !== correct);
       if (distractors.length < 3) return;
@@ -77,10 +81,7 @@ function buildQuestions(words: TestWord[]): Question[] {
   });
 
   if (pool.length === 0) return [];
-
-  // If we have enough questions, sample to target; otherwise use all
-  const shuffled = shuffle(pool);
-  return shuffled.slice(0, Math.min(target, shuffled.length));
+  return shuffle(pool);
 }
 
 // ─── Intro Screen ─────────────────────────────────────────────────────────────
@@ -263,7 +264,12 @@ export default function WordTestPage() {
           workbook: s.workbook || '배당 교재',
           chapter: s.chapter || '',
           label: s.label,
-          words: (s.words || []).map(w => ({
+          words: (s.words || []).map((w: {
+            id: string; word: string; pos_abbr: string; korean: string;
+            context?: string; context_korean?: string;
+            synonyms: string | string[]; antonyms: string | string[];
+            is_key?: boolean; is_for_test?: boolean;
+          }) => ({
             id: w.id,
             word: w.word,
             posAbbr: w.pos_abbr,
@@ -272,6 +278,7 @@ export default function WordTestPage() {
             contextKorean: w.context_korean,
             synonyms: parseList(w.synonyms),
             antonyms: parseList(w.antonyms),
+            isForTest: w.is_for_test !== false, // default true if column not yet present
             isKey: !!w.is_key,
           }))
         }));

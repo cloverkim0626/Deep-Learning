@@ -625,221 +625,305 @@ function FolderTab({ wordSets, students }: {
 // ─── Smart AI Ingest ───────────────────────────────────────────────────────────
 type ReviewWord = {
   word: string; pos_abbr: string; korean: string; context: string; context_korean: string;
-  synonyms: string; antonyms: string; grammar_tip: string; is_key: boolean; _deleted?: boolean;
+  synonyms: string; antonyms: string; grammar_tip: string;
+  is_for_test: boolean; // ✓ 출제: 테스트에 포함 (유의어 OR 반의어)
+  is_key: boolean;      // ★ 핵심: 유의어+반의어 모두 출제 (자동으로 is_for_test=true)
+  _deleted?: boolean;
 };
 
-function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
-  const [rawText, setRawText] = useState("");
-  const [category, setCategory] = useState(Object.keys(TAXONOMY)[0]);
-  const [subCategory, setSubCategory] = useState("");
-  const [subSubCategory, setSubSubCategory] = useState("");
-  const [passageNumber, setPassageNumber] = useState("");
-  const [label, setLabel] = useState("");
-  const [isScanning, setIsScanning] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [preview, setPreview] = useState<{
-    category: string; sub_category: string; sub_sub_category: string;
-    passage_number: string; label: string; words: ReviewWord[]; sentences: unknown;
-  } | null>(null);
+type PassageEntry = {
+  id: string; rawText: string; category: string; subCategory: string;
+  subSubCategory: string; passageNumber: string; label: string;
+  status: "draft" | "scanning" | "ready" | "saving" | "saved";
+  words: ReviewWord[]; sentences: unknown;
+};
 
-  const subCats = Object.keys(TAXONOMY[category] || {});
-  const subSubCats = (TAXONOMY[category]?.[subCategory] || []);
-
-  const handleScan = async () => {
-    if (!rawText.trim() || !label.trim()) return;
-    setIsScanning(true); setPreview(null);
-    try {
-      const res = await fetch("/api/ai-ingest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawText, category, sub_category: subCategory, sub_sub_category: subSubCategory, passage_number: passageNumber, passageLabel: label }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setPreview({ ...data, words: (data.words || []).map((w: ReviewWord) => ({ ...w, _deleted: false })) });
-    } catch (err: unknown) {
-      alert("AI 스캔 실패: " + (err as Error).message);
-    } finally { setIsScanning(false); }
+function makeEntry(): PassageEntry {
+  return {
+    id: Math.random().toString(36).slice(2),
+    rawText: "", category: Object.keys(TAXONOMY)[0], subCategory: "",
+    subSubCategory: "", passageNumber: "", label: "",
+    status: "draft", words: [], sentences: null,
   };
+}
 
-  const handleSave = async () => {
-    if (!preview) return;
-    setIsSaving(true);
-    try {
-      const activeWords = preview.words.filter(w => !w._deleted);
-      await saveIngestedPassage({
-        workbook: preview.category, chapter: preview.sub_category,
-        label: preview.label, full_text: rawText, sentences: preview.sentences,
-        words: activeWords as { word: string; pos_abbr: string; korean: string; context: string; synonyms: string; antonyms: string; grammar_tip: string; is_key?: boolean }[],
-        category: preview.category, sub_category: preview.sub_category,
-        sub_sub_category: preview.sub_sub_category, passage_number: preview.passage_number,
-      });
-      alert(`저장 완료! ${activeWords.length}개 단어 등록됨.`);
-      setPreview(null); setRawText(""); setLabel("");
-      onComplete();
-    } catch (err: unknown) { alert("저장 실패: " + (err as Error).message); }
-    finally { setIsSaving(false); }
-  };
-
-  const updateReviewWord = (idx: number, field: keyof ReviewWord, val: string | boolean) => {
-    setPreview(prev => !prev ? null : ({
-      ...prev,
-      words: prev.words.map((w, i) => i === idx ? { ...w, [field]: val } : w)
-    }));
-  };
-
-  const activeCount = preview?.words.filter(w => !w._deleted).length ?? 0;
-
+// ── Word Review Right Panel ──────────────────────────────────────────────────
+function WordReviewPanel({ entry, onClose, onSave, onUpdateWord }: {
+  entry: PassageEntry; onClose: () => void; onSave: () => void;
+  onUpdateWord: (idx: number, field: keyof ReviewWord, val: string | boolean) => void;
+}) {
+  const activeCount = entry.words.filter(w => !w._deleted).length;
+  const checkedCount = entry.words.filter(w => !w._deleted && w.is_for_test).length;
+  const keyCount = entry.words.filter(w => !w._deleted && w.is_key).length;
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Entry Form */}
-      {!preview && (
-        <div className="glass rounded-[2.5rem] p-8 border border-foreground/5 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-2xl bg-foreground text-background flex items-center justify-center"><Sparkles size={18} strokeWidth={2} /></div>
-            <div>
-              <h3 className="text-[16px] font-bold text-foreground">AI 스마트 인제스트</h3>
-              <p className="text-[12px] text-accent font-medium">지문 원문을 넣으면 AI가 20개 단어를 추출합니다. 저장 전 검토 & 편집 가능.</p>
-            </div>
+    <div className="flex flex-col h-full">
+      <div className="px-5 py-4 border-b border-foreground/5 bg-accent-light/20 shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="text-[13px] font-black text-foreground truncate">{entry.label}</h3>
+            <p className="text-[10px] text-accent mt-0.5">{entry.category}{entry.subCategory ? ` · ${entry.subCategory}` : ""}{entry.passageNumber ? ` · ${entry.passageNumber}` : ""}</p>
           </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-foreground/5 text-accent shrink-0"><X size={16} /></button>
+        </div>
+        <div className="flex gap-2 mt-2.5 flex-wrap">
+          <span className="text-[10px] font-black px-2 py-0.5 bg-foreground/8 rounded-lg">전체 {activeCount}</span>
+          <span className="text-[10px] font-black px-2 py-0.5 bg-foreground text-background rounded-lg">출제 {checkedCount}</span>
+          <span className="text-[10px] font-black px-2 py-0.5 bg-amber-400 text-white rounded-lg">핵심 {keyCount}</span>
+        </div>
+        <p className="mt-1.5 text-[9px] text-accent/60 leading-snug">
+          ✓ <b>출제</b> 체크 = 테스트 포함 (유의어 OR 반의어)&nbsp;|&nbsp;★ <b>핵심</b> = 유의어+반의어 둘 다 출제
+        </p>
+      </div>
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+        {entry.words.map((w, idx) => (
+          <div key={idx} className={`rounded-xl border transition-all ${w._deleted ? "opacity-25 border-red-100" : w.is_for_test ? "border-foreground/10 bg-white shadow-sm" : "border-foreground/5 opacity-50"}`}>
+            <div className="flex items-center gap-1.5 px-3 py-2.5 flex-wrap">
+              <span className="w-5 h-5 rounded-md bg-foreground/10 text-foreground flex items-center justify-center text-[9px] font-black shrink-0">{idx + 1}</span>
+              <span className="text-[14px] font-black text-foreground serif">{w.word}</span>
+              <span className="text-[8px] text-accent bg-accent-light px-1.5 py-0.5 rounded font-bold">{w.pos_abbr}</span>
+              <span className="text-[10px] text-foreground/50 flex-1 truncate">{w.korean}</span>
+              <button
+                onClick={() => { const v = !w.is_for_test; onUpdateWord(idx, "is_for_test", v); if (!v) onUpdateWord(idx, "is_key", false); }}
+                disabled={!!w._deleted} title="출제 포함/제외"
+                className={`flex items-center gap-0.5 px-2 py-0.5 rounded-lg text-[9px] font-black border transition-all shrink-0 ${w.is_for_test && !w._deleted ? "bg-foreground text-background border-foreground" : "bg-white border-foreground/15 text-foreground/30"}`}
+              ><Check size={8} strokeWidth={3} /> 출제</button>
+              <button
+                onClick={() => { const v = !w.is_key; onUpdateWord(idx, "is_key", v); if (v) onUpdateWord(idx, "is_for_test", true); }}
+                disabled={!!w._deleted} title="유의어+반의어 모두 출제"
+                className={`px-2 py-0.5 rounded-lg text-[9px] font-black border transition-all shrink-0 ${w.is_key && !w._deleted ? "bg-amber-400 text-white border-amber-400" : "bg-white border-amber-200 text-amber-400"}`}
+              >★ 핵심</button>
+              {w._deleted
+                ? <button onClick={() => onUpdateWord(idx, "_deleted", false)} className="text-[9px] font-black text-blue-500 px-1.5 py-0.5 border border-blue-200 rounded-lg bg-blue-50">복원</button>
+                : <button onClick={() => onUpdateWord(idx, "_deleted", true)} className="p-1 text-red-200 hover:text-red-500 transition-all"><Trash2 size={11} /></button>
+              }
+            </div>
+            {!w._deleted && (
+              <div className="px-3 pb-2.5 space-y-1">
+                {([
+                  { key: "korean", label: "한글 의미" },
+                  { key: "synonyms", label: "유의어" },
+                  { key: "antonyms", label: "반의어" },
+                  { key: "grammar_tip", label: "팁" },
+                ] as { key: keyof ReviewWord; label: string }[]).map(f => (
+                  <div key={f.key} className="flex items-center gap-2">
+                    <label className="text-[8px] font-black text-accent uppercase shrink-0 w-12">{f.label}</label>
+                    <input value={(w[f.key] as string) || ""} onChange={e => onUpdateWord(idx, f.key, e.target.value)}
+                      className="flex-1 h-7 px-2 rounded-lg border border-foreground/8 bg-transparent text-[11px] outline-none focus:border-foreground/30" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="p-4 border-t border-foreground/5 shrink-0">
+        <button onClick={onSave} disabled={entry.status === "saving" || checkedCount === 0}
+          className="w-full h-12 bg-foreground text-background rounded-2xl font-black text-[13px] disabled:opacity-30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 shadow-xl">
+          <Save size={14} />
+          {entry.status === "saving" ? "저장 중..." : `출제 ${checkedCount}개 (핵심 ${keyCount}개) 저장`}
+        </button>
+      </div>
+    </div>
+  );
+}
 
-          {/* Category cascade */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+// ── Passage Entry Card ────────────────────────────────────────────────────────
+function PassageCard({ entry, idx, onUpdate, onScan, onOpenReview, onRemove, isReviewing }: {
+  entry: PassageEntry; idx: number; isReviewing: boolean;
+  onUpdate: (field: string, val: string) => void;
+  onScan: () => void; onOpenReview: () => void; onRemove: () => void;
+}) {
+  const subCats = Object.keys(TAXONOMY[entry.category] || {});
+  const subSubCats = TAXONOMY[entry.category]?.[entry.subCategory] || [];
+  const isDraft = entry.status === "draft" || entry.status === "scanning";
+  return (
+    <div className={`glass rounded-[2rem] border p-5 transition-all ${isReviewing ? "border-blue-300 ring-2 ring-blue-100" : entry.status === "saved" ? "border-success/30" : "border-foreground/5"}`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-6 h-6 rounded-md bg-foreground text-background flex items-center justify-center text-[10px] font-black shrink-0">{idx + 1}</span>
+          {entry.label && <span className="text-[13px] font-bold text-foreground truncate">{entry.label}</span>}
+          {entry.status === "scanning" && <span className="text-[10px] font-black text-accent animate-pulse ml-1">분석 중...</span>}
+          {entry.status === "ready" && <span className="text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-lg">{entry.words.length}개 추출 · 검토 필요</span>}
+          {entry.status === "saved" && <span className="text-[10px] font-black text-success bg-success/10 px-2 py-0.5 rounded-lg">✓ 저장 완료</span>}
+        </div>
+        <button onClick={onRemove} className="p-1.5 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"><X size={14} /></button>
+      </div>
+      {isDraft ? (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
             <div>
-              <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block">대분류 (교재명)</label>
-              <select value={category} onChange={e => { setCategory(e.target.value); setSubCategory(""); setSubSubCategory(""); }}
-                className="w-full h-11 px-3 rounded-xl border border-foreground/10 bg-white text-[12px] font-medium outline-none">
+              <label className="text-[9px] font-black text-accent uppercase tracking-widest mb-1 block">대분류</label>
+              <select value={entry.category} onChange={e => { onUpdate("category", e.target.value); onUpdate("subCategory", ""); onUpdate("subSubCategory", ""); }}
+                className="w-full h-9 px-2 rounded-xl border border-foreground/10 bg-white text-[11px] font-medium outline-none">
                 {Object.keys(TAXONOMY).map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block">중분류</label>
-              <select value={subCategory} onChange={e => { setSubCategory(e.target.value); setSubSubCategory(""); }}
-                className="w-full h-11 px-3 rounded-xl border border-foreground/10 bg-white text-[12px] font-medium outline-none">
+              <label className="text-[9px] font-black text-accent uppercase tracking-widest mb-1 block">중분류</label>
+              <select value={entry.subCategory} onChange={e => { onUpdate("subCategory", e.target.value); onUpdate("subSubCategory", ""); }}
+                className="w-full h-9 px-2 rounded-xl border border-foreground/10 bg-white text-[11px] font-medium outline-none">
                 <option value="">선택</option>
                 {subCats.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block">소분류</label>
-              <select value={subSubCategory} onChange={e => setSubSubCategory(e.target.value)}
-                className="w-full h-11 px-3 rounded-xl border border-foreground/10 bg-white text-[12px] font-medium outline-none">
+              <label className="text-[9px] font-black text-accent uppercase tracking-widest mb-1 block">소분류</label>
+              <select value={entry.subSubCategory} onChange={e => onUpdate("subSubCategory", e.target.value)}
+                className="w-full h-9 px-2 rounded-xl border border-foreground/10 bg-white text-[11px] font-medium outline-none">
                 <option value="">선택</option>
                 {subSubCats.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block">지문 번호</label>
-              <input value={passageNumber} onChange={e => setPassageNumber(e.target.value)} placeholder="예: 18번"
-                className="w-full h-11 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] font-medium outline-none" />
+              <label className="text-[9px] font-black text-accent uppercase tracking-widest mb-1 block">지문번호</label>
+              <input value={entry.passageNumber} onChange={e => onUpdate("passageNumber", e.target.value)} placeholder="예: 18번"
+                className="w-full h-9 px-2 rounded-xl border border-foreground/10 bg-transparent text-[11px] font-medium outline-none" />
             </div>
           </div>
-
-          <div className="mb-4">
-            <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block">지문 제목 / 키워드 *</label>
-            <input value={label} onChange={e => setLabel(e.target.value)} placeholder="예: The Power of Habit"
-              className="w-full h-11 px-4 rounded-xl border border-foreground/10 bg-transparent text-[13px] font-bold outline-none" />
-          </div>
-
-          <div className="mb-6">
-            <textarea value={rawText} onChange={e => setRawText(e.target.value)} placeholder="지문 원문을 이곳에 붙여넣으세요..."
-              className="w-full min-h-[200px] p-6 rounded-2xl border border-foreground/10 bg-transparent text-[14px] leading-relaxed font-serif outline-none" />
-          </div>
-
-          <button onClick={handleScan} disabled={isScanning || !rawText.trim() || !label.trim()}
-            className="w-full h-14 bg-foreground text-background rounded-2xl flex items-center justify-center gap-3 font-bold shadow-xl hover:-translate-y-0.5 disabled:opacity-20 transition-all">
-            {isScanning ? "AI가 20개 단어 추출 중..." : "AI 분석 시작 (20개 추출)"}
-            <Sparkles size={18} strokeWidth={2.5} />
+          <input value={entry.label} onChange={e => onUpdate("label", e.target.value)} placeholder="지문 제목/키워드 *"
+            className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] font-bold outline-none mb-2" />
+          <textarea value={entry.rawText} onChange={e => onUpdate("rawText", e.target.value)} placeholder="지문 원문을 붙여넣으세요..." rows={4}
+            className="w-full p-3 rounded-2xl border border-foreground/10 bg-transparent text-[12px] leading-relaxed font-serif outline-none resize-none mb-2" />
+          <button onClick={onScan} disabled={entry.status === "scanning" || !entry.rawText.trim() || !entry.label.trim()}
+            className="w-full h-10 bg-foreground text-background rounded-xl flex items-center justify-center gap-2 text-[12px] font-black disabled:opacity-20 hover:-translate-y-0.5 transition-all">
+            {entry.status === "scanning" ? "AI 추출 중..." : <><Sparkles size={13} /> AI 분석 (20개 추출)</>}
           </button>
-        </div>
-      )}
-
-      {/* Word Review Panel */}
-      {preview && (
-        <div className="space-y-4 animate-in fade-in duration-500">
-          {/* Header bar */}
-          <div className="glass rounded-[2rem] p-5 border border-foreground/5 sticky top-0 z-20 shadow-md">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div>
-                <h3 className="text-[15px] font-bold text-foreground">단어 검토 화면</h3>
-                <p className="text-[11px] text-accent mt-0.5">
-                  {preview.category} · {preview.sub_category} · {preview.sub_sub_category} · {preview.passage_number}
-                  {" · "}활성 {activeCount}개 / 전체 {preview.words.length}개
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => setPreview(null)}
-                  className="h-10 px-4 rounded-xl border border-foreground/10 text-[12px] font-black text-accent hover:text-foreground transition-all flex items-center gap-1.5">
-                  <ChevronLeft size={14} /> 다시 입력
-                </button>
-                <button onClick={handleSave} disabled={isSaving || activeCount === 0}
-                  className="h-10 px-5 bg-foreground text-background rounded-xl text-[12px] font-black disabled:opacity-30 hover:-translate-y-0.5 transition-all flex items-center gap-1.5">
-                  <Save size={13} />
-                  {isSaving ? "저장 중..." : `${activeCount}개 저장`}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Word cards */}
-          {preview.words.map((w, idx) => (
-            <div key={idx} className={`glass rounded-[1.8rem] border p-5 transition-all ${w._deleted ? "opacity-30 border-red-200 bg-red-50/30" : "border-foreground/5"}`}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="w-6 h-6 rounded-lg bg-foreground text-background flex items-center justify-center text-[10px] font-black shrink-0">{idx + 1}</span>
-                  <span className="text-[18px] font-black text-foreground serif">{w.word}</span>
-                  <span className="text-[10px] text-accent font-black bg-accent-light px-2 py-0.5 rounded-lg">{w.pos_abbr}</span>
-                  {/* is_key toggle */}
-                  <button
-                    onClick={() => updateReviewWord(idx, "is_key", !w.is_key)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black border transition-all ${w.is_key ? "bg-amber-400 text-white border-amber-400 shadow-sm" : "bg-white border-foreground/10 text-accent hover:border-amber-300"}`}
-                    title="핵심단어 체크 = 유의어+반의어 모두 출제"
-                  >
-                    {w.is_key ? "★ 핵심" : "☆ 핵심?"}
-                  </button>
-                </div>
-                <div>
-                  {w._deleted ? (
-                    <button onClick={() => updateReviewWord(idx, "_deleted", false)} className="px-3 py-1.5 text-[11px] font-black text-blue-600 bg-blue-50 border border-blue-200 rounded-xl">복원</button>
-                  ) : (
-                    <button onClick={() => updateReviewWord(idx, "_deleted", true)} className="p-2 text-red-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={14} /></button>
-                  )}
-                </div>
-              </div>
-              {!w._deleted && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {([
-                    { key: "korean", label: "한글 의미" },
-                    { key: "synonyms", label: "유의어 (콤마 구분)" },
-                    { key: "antonyms", label: "반의어 (콤마 구분)" },
-                    { key: "grammar_tip", label: "문법/학습 팁" },
-                    { key: "context", label: "예문" },
-                    { key: "context_korean", label: "예문 한글" },
-                  ] as { key: keyof ReviewWord; label: string }[]).map(field => (
-                    <div key={field.key} className={field.key === "context" || field.key === "context_korean" ? "md:col-span-2" : ""}>
-                      <label className="text-[9px] font-black text-accent uppercase tracking-widest mb-0.5 block">{field.label}</label>
-                      <input
-                        value={(w[field.key] as string) || ""}
-                        onChange={e => updateReviewWord(idx, field.key, e.target.value)}
-                        className="w-full h-9 px-3 rounded-xl border border-foreground/8 bg-transparent text-[12px] font-medium outline-none focus:border-foreground/30 transition-colors"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-
-          <button onClick={handleSave} disabled={isSaving || activeCount === 0}
-            className="w-full h-14 bg-foreground text-background rounded-2xl flex items-center justify-center gap-2 font-bold shadow-xl hover:-translate-y-0.5 disabled:opacity-20 transition-all">
-            <Save size={18} />
-            {isSaving ? "저장 중..." : `${activeCount}개 단어 최종 저장`}
+        </>
+      ) : entry.status === "saved" ? (
+        <p className="text-[12px] text-success font-bold flex items-center gap-1.5"><Check size={13} strokeWidth={3} /> {entry.words.filter(w => w.is_for_test && !w._deleted).length}개 단어 저장됨</p>
+      ) : (
+        <div className="flex gap-2">
+          <button onClick={onOpenReview}
+            className={`flex-1 h-10 rounded-xl text-[12px] font-black hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 ${isReviewing ? "bg-blue-100 text-blue-700 border border-blue-300" : "bg-blue-600 text-white"}`}>
+            <Edit2 size={13} /> {isReviewing ? "검토 패널 열려있음" : "단어 검토 & 체크 →"}
           </button>
+          <button onClick={() => onUpdate("status", "draft")} className="h-10 px-3 rounded-xl border border-foreground/10 text-[11px] font-black text-accent hover:text-foreground transition-all">재분석</button>
         </div>
       )}
     </div>
   );
 }
+
+// ── Main SmartAIIngest Component ─────────────────────────────────────────────
+function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
+  const [passages, setPassages] = useState<PassageEntry[]>([makeEntry()]);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const reviewEntry = passages.find(p => p.id === reviewingId) ?? null;
+
+  const updateEntry = (id: string, field: string, val: unknown) =>
+    setPassages(prev => prev.map(p => p.id === id ? { ...p, [field]: val } : p));
+
+  const updateReviewWord = (wordIdx: number, field: keyof ReviewWord, val: string | boolean) => {
+    setPassages(prev => prev.map(p => {
+      if (p.id !== reviewingId) return p;
+      return { ...p, words: p.words.map((w, wi) => wi === wordIdx ? { ...w, [field]: val } : w) };
+    }));
+  };
+
+  const handleScan = async (id: string) => {
+    const entry = passages.find(p => p.id === id);
+    if (!entry) return;
+    updateEntry(id, "status", "scanning");
+    try {
+      const res = await fetch("/api/ai-ingest", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rawText: entry.rawText, category: entry.category,
+          sub_category: entry.subCategory, sub_sub_category: entry.subSubCategory,
+          passage_number: entry.passageNumber, passageLabel: entry.label,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      const words: ReviewWord[] = (data.words || []).map((w: ReviewWord) => ({
+        ...w, is_for_test: true, is_key: !!w.is_key, _deleted: false,
+      }));
+      setPassages(prev => prev.map(p => p.id === id ? { ...p, status: "ready", words, sentences: data.sentences } : p));
+      setReviewingId(id);
+    } catch (err: unknown) {
+      alert("AI 분석 실패: " + (err as Error).message);
+      updateEntry(id, "status", "draft");
+    }
+  };
+
+  const handleSave = async (id: string) => {
+    const entry = passages.find(p => p.id === id);
+    if (!entry) return;
+    updateEntry(id, "status", "saving");
+    try {
+      const activeWords = entry.words.filter(w => !w._deleted);
+      await saveIngestedPassage({
+        workbook: entry.category, chapter: entry.subCategory, label: entry.label,
+        full_text: entry.rawText, sentences: entry.sentences,
+        words: activeWords.map(w => ({
+          word: w.word, pos_abbr: w.pos_abbr, korean: w.korean,
+          context: w.context, context_korean: w.context_korean,
+          synonyms: w.synonyms, antonyms: w.antonyms, grammar_tip: w.grammar_tip,
+          is_key: w.is_key, is_for_test: w.is_for_test,
+        })),
+        category: entry.category, sub_category: entry.subCategory,
+        sub_sub_category: entry.subSubCategory, passage_number: entry.passageNumber,
+      });
+      updateEntry(id, "status", "saved");
+      setReviewingId(null);
+      onComplete();
+    } catch (err: unknown) {
+      alert("저장 실패: " + (err as Error).message);
+      updateEntry(id, "status", "ready");
+    }
+  };
+
+  const addPassage = () => setPassages(prev => [...prev, makeEntry()]);
+  const removePassage = (id: string) => {
+    setPassages(prev => prev.length === 1 ? [makeEntry()] : prev.filter(p => p.id !== id));
+    if (reviewingId === id) setReviewingId(null);
+  };
+
+  return (
+    <div className="relative animate-in fade-in duration-500">
+      <div className={`space-y-4 transition-all duration-300 ${reviewEntry ? "mr-[416px]" : ""}`}>
+        <div className="glass rounded-[2.5rem] p-6 border border-foreground/5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-foreground text-background flex items-center justify-center"><Sparkles size={18} strokeWidth={2} /></div>
+            <div>
+              <h3 className="text-[16px] font-bold text-foreground">AI 다중 지문 인제스트</h3>
+              <p className="text-[12px] text-accent">여러 지문 동시 입력 · AI 20개 추출 · 오른쪽에서 출제 체크 후 저장</p>
+            </div>
+          </div>
+          <button onClick={addPassage} className="flex items-center gap-2 h-10 px-4 bg-foreground text-background rounded-xl text-[12px] font-black hover:-translate-y-0.5 transition-all shrink-0">
+            <Plus size={14} /> 지문 추가
+          </button>
+        </div>
+        {passages.map((entry, idx) => (
+          <PassageCard
+            key={entry.id} entry={entry} idx={idx} isReviewing={reviewingId === entry.id}
+            onUpdate={(field, val) => updateEntry(entry.id, field, val)}
+            onScan={() => handleScan(entry.id)}
+            onOpenReview={() => setReviewingId(entry.id)}
+            onRemove={() => removePassage(entry.id)}
+          />
+        ))}
+        <button onClick={addPassage} className="w-full h-14 rounded-[2rem] border-2 border-dashed border-foreground/10 flex items-center justify-center gap-2 text-accent hover:border-foreground/30 hover:text-foreground font-bold text-[13px] transition-all">
+          <Plus size={18} /> 지문 추가
+        </button>
+      </div>
+      {reviewEntry && (
+        <div className="fixed top-0 right-0 w-[400px] h-screen bg-background border-l border-foreground/10 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+          <WordReviewPanel
+            entry={reviewEntry}
+            onClose={() => setReviewingId(null)}
+            onSave={() => handleSave(reviewEntry.id)}
+            onUpdateWord={updateReviewWord}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
+
 
 // ─── Main Admin Page ───────────────────────────────────────────────────────────
 export default function AdminContentPage() {

@@ -69,7 +69,7 @@ export async function deleteWord(id: string) {
 export async function saveIngestedPassage(data: {
   workbook: string; chapter: string; label: string; full_text: string; sentences: unknown; words: {
     word: string; pos_abbr: string; korean: string; context?: string; context_korean?: string;
-    synonyms: string; antonyms: string; grammar_tip?: string; is_key?: boolean;
+    synonyms: string; antonyms: string; grammar_tip?: string; is_key?: boolean; is_for_test?: boolean;
   }[];
   category?: string; sub_category?: string; sub_sub_category?: string; passage_number?: string;
 }) {
@@ -103,6 +103,7 @@ export async function saveIngestedPassage(data: {
     antonyms: w.antonyms,
     grammar_tip: w.grammar_tip || '',
     is_key: w.is_key ?? false,
+    is_for_test: w.is_for_test ?? true,
   }));
 
   const { error: wordsError } = await supabase.from('words').insert(wordsToInsert);
