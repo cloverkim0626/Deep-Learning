@@ -1,71 +1,68 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 export async function POST(req: Request) {
   try {
-    const { rawText, workbook, chapter, passageLabel } = await req.json();
+    const { rawText, category, sub_category, sub_sub_category, passage_number, passageLabel } = await req.json();
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({ error: "Missing API Key" }, { status: 500 });
     }
 
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const prompt = `
-      You are the 'Parallax Adaptive Engine' - a world-class English education AI specializing in Korean CSAT (?섎뒫) and high-tier ?댁떊 (Internal Exam) preparation.
-      Your goal is to transform raw English text into a "diagnostic learning set" for top-performing students.
+You are the 'Parallax Adaptive Engine' — a world-class English education AI for Korean CSAT (수능) and 내신 preparation.
+Extract a structured learning set from the given passage.
 
-      ### CORE LOGIC (THE PARALLAX WAY):
-      1. **Structural Scrutiny**: Extract "The Killer Sentence" (the most complex one) for deep parsing.
-      2. **Contextual Nuance**: Vocab synonyms must be contextually interchangeable in THIS passage. Avoid generic thesaurus results.
-      3. **Strategic Traps**: For each vocab tip, explain common exam traps (?ㅻ떟 ?좊룄 ?ъ씤?? in Korean.
-      4. **Logical Cohesion**: Essay tasks must test "flow of ideas" (?쒖꽌 諛곗뿴, 臾몄옣 ?쎌엯), not just translation.
+### INPUT PASSAGE:
+"${rawText}"
 
-      ### INPUT DATA:
-      "${rawText}"
+### EXTRACTION RULES:
 
-      ### EXTRACTION REQUIREMENTS:
-      1. **Sentences**: Map the full passage to S01, S02, ... S[N].
+**VOCABULARY — Extract EXACTLY 20 words. No more, no less.**
 
-      2. **Vocab (10??0 items)**:
-         - Extract a MINIMUM of 10 and MAXIMUM of 20 vocabulary items.
-         - Prioritize: content words with high CSAT/?댁떊 relevance (nouns, verbs, adjectives, adverbs appearing in exam contexts).
-         - If the passage is lexically rich, extract up to 20. If sparse, at least 10.
-         - For each word provide ALL of the following fields:
-           * word        ??the vocabulary item as used in the passage
-           * pos_abbr    ??part of speech abbreviation (n, v, adj, adv, prep, etc.)
-           * korean      ??precise CONTEXTUAL meaning in Korean (not dictionary gloss)
-           * context     ??the EXACT full sentence from the passage where this word appears
-           * context_korean ??full Korean translation of that exact sentence
-           * synonyms    ??EXACTLY 3 high-level synonyms (comma-separated), each contextually interchangeable in the passage
-           * antonyms    ??EXACTLY 3 antonyms (comma-separated), at CSAT/?댁떊 vocabulary level
-           * grammar_tip ??exam-focused tip written in Korean 諛섎쭚泥?(how this word is tested)
-           * is_key      ??true if this is a CORE word central to the passage's main idea (key words get both synonym AND antonym questions); false otherwise
+Priority order for selection (must include all of these types):
+1. 🔴 HIGH-DIFFICULTY words: rare, academic, or C1/C2 CEFR-level vocab
+2. 🎯 CORE THEME words: words that capture the passage's central argument or topic
+3. 🔄 CONFUSABLE words: words commonly confused with similar ones in Korean CSAT
+4. ⚡ TESTABLE words: words ideal for synonym/antonym substitution questions
+5. 📌 Direction words: words that signal logical flow (contrast, concession, causation)
 
-      3. **Diagnostic Points**: 2?? logical essay tasks testing idea flow.
+For each word, provide ALL fields:
+- word: DICTIONARY BASE FORM (lemma/infinitive). If inflected in passage (e.g. "argues"→"argue", "arguments"→"argument"), always use base form.
+- pos_abbr: part of speech (n, v, adj, adv, prep, conj)
+- korean: precise CONTEXTUAL meaning in Korean (not generic dictionary gloss)
+- context: the EXACT full sentence from the passage where this word appears
+- context_korean: full Korean translation of that exact sentence
+- synonyms: EXACTLY 3 high-level synonyms (comma-separated), each contextually interchangeable IN THIS PASSAGE. Must be at CSAT/내신 exam level.
+- antonyms: EXACTLY 3 antonyms (comma-separated), at CSAT/내신 vocabulary level
+- grammar_tip: exam-focused tip in Korean 반말체 — how this word is tested, common traps, distinction from similar words
+- is_key: true if this is a CORE word that defines the passage's main idea AND is ideal for both synonym AND antonym questions. Mark the 5-8 most important words as true. Others false.
 
-      ### OUTPUT FORMAT (STRICT JSON ??no markdown, no code fences):
-      {
-        "sentences": { "S01": "...", "S02": "..." },
-        "words": [
-          {
-            "word": "...",
-            "pos_abbr": "...",
-            "korean": "...",
-            "context": "exact sentence from passage",
-            "context_korean": "?쒓? ?댁꽍",
-            "synonyms": "word1, word2, word3",
-            "antonyms": "word1, word2, word3",
-            "grammar_tip": "?섎뒫/?댁떊 異쒖젣 ?ъ씤??(?쒓뎅??",
-            "is_key": true
-          }
-        ],
-        "essayTasks": [
-          { "instruction": "...", "sample_answer": "..." }
-        ]
-      }
+**SENTENCES**: Map the full passage to S01, S02, ... S[N].
+**ESSAY TASKS**: 2-3 logical tasks testing idea flow (순서/빈칸/요약).
+
+### OUTPUT FORMAT (strict JSON, no markdown, no code fences):
+{
+  "sentences": { "S01": "...", "S02": "..." },
+  "words": [
+    {
+      "word": "...",
+      "pos_abbr": "...",
+      "korean": "...",
+      "context": "exact sentence from passage",
+      "context_korean": "한글 번역",
+      "synonyms": "word1, word2, word3",
+      "antonyms": "word1, word2, word3",
+      "grammar_tip": "수능/내신 출제 팁 (반말)",
+      "is_key": true
+    }
+  ],
+  "essayTasks": [
+    { "instruction": "...", "sample_answer": "..." }
+  ]
+}
     `;
 
     const response = await openai.chat.completions.create({
@@ -76,10 +73,12 @@ export async function POST(req: Request) {
     });
 
     const parsed = JSON.parse(response.choices[0].message.content || "{}");
-    
+
     return NextResponse.json({
-      workbook,
-      chapter,
+      category: category || '',
+      sub_category: sub_category || '',
+      sub_sub_category: sub_sub_category || '',
+      passage_number: passage_number || '',
       label: passageLabel,
       ...parsed
     });
@@ -87,4 +86,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
-

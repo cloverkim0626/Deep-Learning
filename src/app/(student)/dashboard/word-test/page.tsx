@@ -390,7 +390,7 @@ export default function WordTestPage() {
   // ─── Test Phase ──────────────────────────────────────────────────────────────
   const q = questions[currentIdx];
   return (
-    <div className="flex flex-col h-full px-6 py-8 pb-24">
+    <div className="flex flex-col overflow-y-auto custom-scrollbar px-6 py-8 pb-36">
       {/* Header: progress + quit */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-[12px] font-bold text-accent">{currentIdx + 1} / {questions.length}</span>
@@ -404,19 +404,18 @@ export default function WordTestPage() {
           </button>
         </div>
       </div>
-      <div className="h-[3px] bg-accent-light rounded-full mb-8 overflow-hidden">
+      <div className="h-[3px] bg-accent-light rounded-full mb-6 overflow-hidden">
         <div className="h-full bg-foreground transition-all duration-500" style={{ width: `${(currentIdx / questions.length) * 100}%` }} />
       </div>
 
       {/* Question Card */}
-      <div className="glass rounded-[2rem] border border-foreground/5 p-8 mb-4 text-center">
+      <div className="glass rounded-[2rem] border border-foreground/5 p-7 mb-5 text-center">
         <p className="text-[11px] font-bold text-accent uppercase tracking-widest mb-3">
           {q.mode === "synonym" ? "유의어를 골라봐" : "반의어를 골라봐"}
           {q.word.isKey && <span className="ml-2 text-amber-500">⭐ 핵심 단어</span>}
         </p>
         <h2 className="text-4xl text-foreground serif mb-1">{q.word.word}</h2>
         <p className="text-[13px] text-accent font-medium">{q.word.posAbbr}  {q.word.korean}</p>
-        {/* Context sentence */}
         {q.word.context && (
           <div className="mt-4 px-4 py-3 bg-accent-light/60 rounded-2xl text-left">
             <p className="text-[11px] text-foreground/70 font-medium italic leading-relaxed">{q.word.context}</p>
@@ -443,14 +442,14 @@ export default function WordTestPage() {
               key={idx}
               onClick={() => handleSelect(choice)}
               disabled={!!selected}
-              className={`w-full h-14 px-6 rounded-2xl border text-[14px] font-medium text-left flex items-center gap-4 transition-all ${style}`}
+              className={`w-full min-h-[56px] px-6 py-3 rounded-2xl border text-[14px] font-medium text-left flex items-center gap-4 transition-all ${style}`}
             >
               <span className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[11px] font-black shrink-0 opacity-50">
                 {["A", "B", "C", "D"][idx]}
               </span>
-              {choice}
-              {selected && isRight && <CheckCircle size={16} className="ml-auto text-success" />}
-              {selected && isSelected && !isRight && <XCircle size={16} className="ml-auto text-error" />}
+              <span className="flex-1 break-words">{choice}</span>
+              {selected && isRight && <CheckCircle size={16} className="ml-auto shrink-0 text-success" />}
+              {selected && isSelected && !isRight && <XCircle size={16} className="ml-auto shrink-0 text-error" />}
             </button>
           );
         })}

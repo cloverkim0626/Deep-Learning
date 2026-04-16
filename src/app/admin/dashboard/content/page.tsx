@@ -13,9 +13,29 @@ import {
 } from "@/lib/database-service";
 import { assignSetToStudents, getAllAssignments, removeAssignment } from "@/lib/assignment-service";
 
-// ─── Constants ─────────────────────────────────────────────────────────────────
-const WORKBOOKS = ["수능특강", "수능완성", "교과서 (고난도)", "기타 모의고사"];
-const CHAPTERS = Array.from({ length: 30 }, (_, i) => `${i + 1}강`);
+// ─── Taxonomy ──────────────────────────────────────────────────────────────────
+const TAXONOMY: Record<string, Record<string, string[]>> = {
+  "수능특강 영어": {
+    "Part1": ["1강","2강","3강","4강","5강","6강","7강","11강","12강","13강","14강","15강","16강"],
+    "Part2": ["21강","22강","23강","24강","25강","26강","27강","28강","29강","30강"],
+    "Part3": ["TEST1","TEST2","TEST3"],
+  },
+  "고3 평가원": {
+    "2025년": ["3월","6월","9월","11월"],
+    "2026년": ["3월","6월","9월"],
+  },
+  "고2 평가원": {
+    "2025년": ["3월","6월","9월"],
+    "2026년": ["3월","6월"],
+  },
+  "고1 평가원": {
+    "2025년": ["3월","6월","9월"],
+    "2026년": ["3월","6월"],
+  },
+  "기타": { "기타": [] },
+};
+const WORKBOOKS = [...Object.keys(TAXONOMY)];
+const CHAPTERS: string[] = [];
 
 
 // ─── Assignment View Tab ───────────────────────────────────────────────────────
@@ -603,26 +623,40 @@ function FolderTab({ wordSets, students }: {
 
 
 // ─── Smart AI Ingest ───────────────────────────────────────────────────────────
+type ReviewWord = {
+  word: string; pos_abbr: string; korean: string; context: string; context_korean: string;
+  synonyms: string; antonyms: string; grammar_tip: string; is_key: boolean; _deleted?: boolean;
+};
+
 function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
   const [rawText, setRawText] = useState("");
-  const [workbook, setWorkbook] = useState(WORKBOOKS[0]);
-  const [chapter, setChapter] = useState(CHAPTERS[0]);
+  const [category, setCategory] = useState(Object.keys(TAXONOMY)[0]);
+  const [subCategory, setSubCategory] = useState("");
+  const [subSubCategory, setSubSubCategory] = useState("");
+  const [passageNumber, setPassageNumber] = useState("");
   const [label, setLabel] = useState("");
   const [isScanning, setIsScanning] = useState(false);
-  const [preview, setPreview] = useState<{ workbook: string; chapter: string; label: string; words: unknown[]; sentences: unknown } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [preview, setPreview] = useState<{
+    category: string; sub_category: string; sub_sub_category: string;
+    passage_number: string; label: string; words: ReviewWord[]; sentences: unknown;
+  } | null>(null);
+
+  const subCats = Object.keys(TAXONOMY[category] || {});
+  const subSubCats = (TAXONOMY[category]?.[subCategory] || []);
 
   const handleScan = async () => {
     if (!rawText.trim() || !label.trim()) return;
-    setIsScanning(true);
+    setIsScanning(true); setPreview(null);
     try {
       const res = await fetch("/api/ai-ingest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawText, workbook, chapter, passageLabel: label }),
+        body: JSON.stringify({ rawText, category, sub_category: subCategory, sub_sub_category: subSubCategory, passage_number: passageNumber, passageLabel: label }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      setPreview(data);
+      setPreview({ ...data, words: (data.words || []).map((w: ReviewWord) => ({ ...w, _deleted: false })) });
     } catch (err: unknown) {
       alert("AI 스캔 실패: " + (err as Error).message);
     } finally { setIsScanning(false); }
@@ -630,64 +664,176 @@ function SmartAIIngest({ onComplete }: { onComplete: () => void }) {
 
   const handleSave = async () => {
     if (!preview) return;
+    setIsSaving(true);
     try {
+      const activeWords = preview.words.filter(w => !w._deleted);
       await saveIngestedPassage({
-        workbook: preview.workbook, chapter: preview.chapter, label: preview.label,
-        full_text: rawText, sentences: preview.sentences,
-        words: preview.words as { word: string; pos_abbr: string; korean: string; context: string; synonyms: string; antonyms: string; grammar_tip: string }[]
+        workbook: preview.category, chapter: preview.sub_category,
+        label: preview.label, full_text: rawText, sentences: preview.sentences,
+        words: activeWords as { word: string; pos_abbr: string; korean: string; context: string; synonyms: string; antonyms: string; grammar_tip: string; is_key?: boolean }[],
+        category: preview.category, sub_category: preview.sub_category,
+        sub_sub_category: preview.sub_sub_category, passage_number: preview.passage_number,
       });
-      alert("성공적으로 저장! 탐색기에서 배당하거나 편집하세요.");
+      alert(`저장 완료! ${activeWords.length}개 단어 등록됨.`);
       setPreview(null); setRawText(""); setLabel("");
       onComplete();
     } catch (err: unknown) { alert("저장 실패: " + (err as Error).message); }
+    finally { setIsSaving(false); }
   };
+
+  const updateReviewWord = (idx: number, field: keyof ReviewWord, val: string | boolean) => {
+    setPreview(prev => !prev ? null : ({
+      ...prev,
+      words: prev.words.map((w, i) => i === idx ? { ...w, [field]: val } : w)
+    }));
+  };
+
+  const activeCount = preview?.words.filter(w => !w._deleted).length ?? 0;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="glass rounded-[2.5rem] p-8 border border-foreground/5 shadow-sm">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-2xl bg-foreground text-background flex items-center justify-center"><Sparkles size={18} strokeWidth={2} /></div>
-          <div>
-            <h3 className="text-[16px] font-bold text-foreground">AI 스마트 인제스트</h3>
-            <p className="text-[12px] text-accent font-medium">지문 원문을 넣으면 AI가 모든 정보를 자동으로 추출합니다.</p>
+      {/* Entry Form */}
+      {!preview && (
+        <div className="glass rounded-[2.5rem] p-8 border border-foreground/5 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-2xl bg-foreground text-background flex items-center justify-center"><Sparkles size={18} strokeWidth={2} /></div>
+            <div>
+              <h3 className="text-[16px] font-bold text-foreground">AI 스마트 인제스트</h3>
+              <p className="text-[12px] text-accent font-medium">지문 원문을 넣으면 AI가 20개 단어를 추출합니다. 저장 전 검토 & 편집 가능.</p>
+            </div>
           </div>
+
+          {/* Category cascade */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div>
+              <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block">대분류 (교재명)</label>
+              <select value={category} onChange={e => { setCategory(e.target.value); setSubCategory(""); setSubSubCategory(""); }}
+                className="w-full h-11 px-3 rounded-xl border border-foreground/10 bg-white text-[12px] font-medium outline-none">
+                {Object.keys(TAXONOMY).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block">중분류</label>
+              <select value={subCategory} onChange={e => { setSubCategory(e.target.value); setSubSubCategory(""); }}
+                className="w-full h-11 px-3 rounded-xl border border-foreground/10 bg-white text-[12px] font-medium outline-none">
+                <option value="">선택</option>
+                {subCats.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block">소분류</label>
+              <select value={subSubCategory} onChange={e => setSubSubCategory(e.target.value)}
+                className="w-full h-11 px-3 rounded-xl border border-foreground/10 bg-white text-[12px] font-medium outline-none">
+                <option value="">선택</option>
+                {subSubCats.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block">지문 번호</label>
+              <input value={passageNumber} onChange={e => setPassageNumber(e.target.value)} placeholder="예: 18번"
+                className="w-full h-11 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] font-medium outline-none" />
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block">지문 제목 / 키워드 *</label>
+            <input value={label} onChange={e => setLabel(e.target.value)} placeholder="예: The Power of Habit"
+              className="w-full h-11 px-4 rounded-xl border border-foreground/10 bg-transparent text-[13px] font-bold outline-none" />
+          </div>
+
+          <div className="mb-6">
+            <textarea value={rawText} onChange={e => setRawText(e.target.value)} placeholder="지문 원문을 이곳에 붙여넣으세요..."
+              className="w-full min-h-[200px] p-6 rounded-2xl border border-foreground/10 bg-transparent text-[14px] leading-relaxed font-serif outline-none" />
+          </div>
+
+          <button onClick={handleScan} disabled={isScanning || !rawText.trim() || !label.trim()}
+            className="w-full h-14 bg-foreground text-background rounded-2xl flex items-center justify-center gap-3 font-bold shadow-xl hover:-translate-y-0.5 disabled:opacity-20 transition-all">
+            {isScanning ? "AI가 20개 단어 추출 중..." : "AI 분석 시작 (20개 추출)"}
+            <Sparkles size={18} strokeWidth={2.5} />
+          </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div>
-            <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block px-1">교재 선택</label>
-            <select value={workbook} onChange={e => setWorkbook(e.target.value)} className="w-full h-11 px-4 rounded-xl border border-foreground/10 bg-accent-light text-[13px] font-medium outline-none">
-              {WORKBOOKS.map(w => <option key={w} value={w}>{w}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block px-1">강/챕터</label>
-            <select value={chapter} onChange={e => setChapter(e.target.value)} className="w-full h-11 px-4 rounded-xl border border-foreground/10 bg-accent-light text-[13px] font-medium outline-none">
-              {CHAPTERS.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1.5 block px-1">지문 번호/라벨</label>
-            <input value={label} onChange={e => setLabel(e.target.value)} placeholder="예: 3번 지문"
-              className="w-full h-11 px-4 rounded-xl border border-foreground/10 bg-transparent text-[13px] font-medium outline-none" />
-          </div>
-        </div>
-        <div className="mb-6">
-          <textarea value={rawText} onChange={e => setRawText(e.target.value)} placeholder="지문 원문을 이곳에 붙여넣으세요..."
-            className="w-full min-h-[200px] p-6 rounded-2xl border border-foreground/10 bg-transparent text-[14px] leading-relaxed font-serif outline-none" />
-        </div>
-        <button onClick={handleScan} disabled={isScanning || !rawText.trim() || !label.trim()}
-          className="w-full h-14 bg-foreground text-background rounded-2xl flex items-center justify-center gap-3 font-bold shadow-xl hover:-translate-y-0.5 disabled:opacity-20 transition-all">
-          {isScanning ? "AI가 지문을 분석 중입니다..." : "지문 분석 및 데이터 추출 시작"}
-          <Sparkles size={18} strokeWidth={2.5} />
-        </button>
-      </div>
+      )}
+
+      {/* Word Review Panel */}
       {preview && (
-        <div className="glass rounded-[2rem] p-8 border border-success/20 bg-success/5 animate-in slide-in-from-bottom-5 duration-700">
-          <h4 className="text-[15px] font-bold text-success mb-4 flex items-center gap-2">
-            <Check size={18} strokeWidth={3} /> AI 분석 완료: {(preview.words as unknown[]).length}개 단어 추출됨
-          </h4>
-          <button onClick={handleSave} className="w-full h-14 bg-success text-white rounded-2xl flex items-center justify-center gap-2 font-bold shadow-lg hover:shadow-success/20 transition-all">
-            데이터 일괄 저장 및 배포 <ChevronRight size={18} />
+        <div className="space-y-4 animate-in fade-in duration-500">
+          {/* Header bar */}
+          <div className="glass rounded-[2rem] p-5 border border-foreground/5 sticky top-0 z-20 shadow-md">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 className="text-[15px] font-bold text-foreground">단어 검토 화면</h3>
+                <p className="text-[11px] text-accent mt-0.5">
+                  {preview.category} · {preview.sub_category} · {preview.sub_sub_category} · {preview.passage_number}
+                  {" · "}활성 {activeCount}개 / 전체 {preview.words.length}개
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setPreview(null)}
+                  className="h-10 px-4 rounded-xl border border-foreground/10 text-[12px] font-black text-accent hover:text-foreground transition-all flex items-center gap-1.5">
+                  <ChevronLeft size={14} /> 다시 입력
+                </button>
+                <button onClick={handleSave} disabled={isSaving || activeCount === 0}
+                  className="h-10 px-5 bg-foreground text-background rounded-xl text-[12px] font-black disabled:opacity-30 hover:-translate-y-0.5 transition-all flex items-center gap-1.5">
+                  <Save size={13} />
+                  {isSaving ? "저장 중..." : `${activeCount}개 저장`}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Word cards */}
+          {preview.words.map((w, idx) => (
+            <div key={idx} className={`glass rounded-[1.8rem] border p-5 transition-all ${w._deleted ? "opacity-30 border-red-200 bg-red-50/30" : "border-foreground/5"}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="w-6 h-6 rounded-lg bg-foreground text-background flex items-center justify-center text-[10px] font-black shrink-0">{idx + 1}</span>
+                  <span className="text-[18px] font-black text-foreground serif">{w.word}</span>
+                  <span className="text-[10px] text-accent font-black bg-accent-light px-2 py-0.5 rounded-lg">{w.pos_abbr}</span>
+                  {/* is_key toggle */}
+                  <button
+                    onClick={() => updateReviewWord(idx, "is_key", !w.is_key)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black border transition-all ${w.is_key ? "bg-amber-400 text-white border-amber-400 shadow-sm" : "bg-white border-foreground/10 text-accent hover:border-amber-300"}`}
+                    title="핵심단어 체크 = 유의어+반의어 모두 출제"
+                  >
+                    {w.is_key ? "★ 핵심" : "☆ 핵심?"}
+                  </button>
+                </div>
+                <div>
+                  {w._deleted ? (
+                    <button onClick={() => updateReviewWord(idx, "_deleted", false)} className="px-3 py-1.5 text-[11px] font-black text-blue-600 bg-blue-50 border border-blue-200 rounded-xl">복원</button>
+                  ) : (
+                    <button onClick={() => updateReviewWord(idx, "_deleted", true)} className="p-2 text-red-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={14} /></button>
+                  )}
+                </div>
+              </div>
+              {!w._deleted && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {([
+                    { key: "korean", label: "한글 의미" },
+                    { key: "synonyms", label: "유의어 (콤마 구분)" },
+                    { key: "antonyms", label: "반의어 (콤마 구분)" },
+                    { key: "grammar_tip", label: "문법/학습 팁" },
+                    { key: "context", label: "예문" },
+                    { key: "context_korean", label: "예문 한글" },
+                  ] as { key: keyof ReviewWord; label: string }[]).map(field => (
+                    <div key={field.key} className={field.key === "context" || field.key === "context_korean" ? "md:col-span-2" : ""}>
+                      <label className="text-[9px] font-black text-accent uppercase tracking-widest mb-0.5 block">{field.label}</label>
+                      <input
+                        value={(w[field.key] as string) || ""}
+                        onChange={e => updateReviewWord(idx, field.key, e.target.value)}
+                        className="w-full h-9 px-3 rounded-xl border border-foreground/8 bg-transparent text-[12px] font-medium outline-none focus:border-foreground/30 transition-colors"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+
+          <button onClick={handleSave} disabled={isSaving || activeCount === 0}
+            className="w-full h-14 bg-foreground text-background rounded-2xl flex items-center justify-center gap-2 font-bold shadow-xl hover:-translate-y-0.5 disabled:opacity-20 transition-all">
+            <Save size={18} />
+            {isSaving ? "저장 중..." : `${activeCount}개 단어 최종 저장`}
           </button>
         </div>
       )}

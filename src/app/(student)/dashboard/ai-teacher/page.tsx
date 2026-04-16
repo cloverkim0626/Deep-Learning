@@ -22,8 +22,9 @@ const OPENING_TEXT = `안녕! **Parallax AI 튜터**야. 고등학교 영어 전
 지금 공부 중인 지문이 있으면 위에서 선택하거나, 자유롭게 질문해도 돼!`;
 
 export default function AITeacherPage() {
-  const [assignments, setAssignments] = useState<{ id: string; label: string; workbook?: string; chapter?: string; full_text?: string }[]>([]);
+  const [assignments, setAssignments] = useState<{ id: string; label: string; workbook?: string; chapter?: string; category?: string; sub_category?: string; sub_sub_category?: string; passage_number?: string; full_text?: string }[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<string>("none");
+  const [filterCat, setFilterCat] = useState<string>("전체");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -69,8 +70,11 @@ export default function AITeacherPage() {
 
     // Load assignments
     getAssignmentsByStudent(name).then(data => {
-      setAssignments((data || []).filter(Boolean).map((s: { id: string; label: string; workbook?: string; chapter?: string; full_text?: string }) => ({
-        id: s.id, label: s.label, workbook: s.workbook, chapter: s.chapter, full_text: s.full_text
+      setAssignments((data || []).filter(Boolean).map((s: { id: string; label: string; workbook?: string; chapter?: string; category?: string; sub_category?: string; sub_sub_category?: string; passage_number?: string; full_text?: string }) => ({
+        id: s.id, label: s.label, workbook: s.workbook, chapter: s.chapter,
+        category: s.category || s.workbook, sub_category: s.sub_category || s.chapter,
+        sub_sub_category: s.sub_sub_category, passage_number: s.passage_number,
+        full_text: s.full_text
       })));
     }).catch(err => console.warn("Assignment load failed:", err));
 
@@ -199,28 +203,46 @@ export default function AITeacherPage() {
           <Sparkles size={18} strokeWidth={1.5} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex items-center gap-2 mb-2">
             <h1 className="text-[15px] text-foreground font-black">Parallax AI 튜터</h1>
             <span className="text-[9px] font-black text-accent/60 bg-accent-light px-2 py-0.5 rounded-md border border-foreground/5 uppercase tracking-widest">
               {messages.length > 1 ? `${messages.length}개 대화` : "새 대화"}
             </span>
           </div>
-          {/* Passage Selector */}
-          <div className="relative">
-            <select
-              value={selectedSetId}
-              onChange={e => setSelectedSetId(e.target.value)}
-              className="w-full bg-accent-light border border-foreground/5 text-accent text-[11px] font-bold rounded-xl px-3 py-1.5 appearance-none focus:outline-none cursor-pointer pr-8 hover:border-foreground/20 transition-all"
-            >
-              <option value="none">지문 없이 자유 질문</option>
-              {assignments.map(a => (
-                <option key={a.id} value={a.id}>
-                  {a.workbook ? `${a.workbook} · ${a.chapter || ""} · ` : ""}{a.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
-          </div>
+          {/* Hierarchical Passage Selector */}
+          {(() => {
+            const cats = ["전체", ...Array.from(new Set(assignments.map(a => a.category || a.workbook || "기타")))];
+            const filteredByCat = filterCat === "전체" ? assignments : assignments.filter(a => (a.category || a.workbook) === filterCat);
+            return (
+              <div className="space-y-2">
+                {/* Category chips */}
+                <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                  {cats.map(c => (
+                    <button key={c} onClick={() => { setFilterCat(c); setSelectedSetId("none"); }}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black whitespace-nowrap transition-all ${
+                        filterCat === c ? "bg-foreground text-background" : "bg-accent-light text-accent hover:text-foreground"
+                      }`}>{c}</button>
+                  ))}
+                </div>
+                {/* Passage dropdown */}
+                <div className="relative">
+                  <select
+                    value={selectedSetId}
+                    onChange={e => setSelectedSetId(e.target.value)}
+                    className="w-full bg-accent-light border border-foreground/5 text-accent text-[11px] font-bold rounded-xl px-3 py-1.5 appearance-none focus:outline-none cursor-pointer pr-8 hover:border-foreground/20 transition-all"
+                  >
+                    <option value="none">지문 없이 자유 질문</option>
+                    {filteredByCat.map(a => (
+                      <option key={a.id} value={a.id}>
+                        {[a.sub_category, a.sub_sub_category, a.passage_number].filter(Boolean).join(" · ") || a.chapter || ""}{" "}{a.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
+                </div>
+              </div>
+            );
+          })()}
         </div>
         <button
           onClick={handleClearChat}

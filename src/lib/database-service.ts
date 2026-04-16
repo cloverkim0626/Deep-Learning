@@ -66,43 +66,51 @@ export async function deleteWord(id: string) {
   if (error) throw error;
 }
 
-export async function saveIngestedPassage(data: { workbook: string, chapter: string, label: string, full_text: string, sentences: any, words: any[] }) {
-  // 1. Create the Word Set with hierarchy
+export async function saveIngestedPassage(data: {
+  workbook: string; chapter: string; label: string; full_text: string; sentences: unknown; words: {
+    word: string; pos_abbr: string; korean: string; context?: string; context_korean?: string;
+    synonyms: string; antonyms: string; grammar_tip?: string; is_key?: boolean;
+  }[];
+  category?: string; sub_category?: string; sub_sub_category?: string; passage_number?: string;
+}) {
   const { data: set, error: setError } = await supabase
     .from('word_sets')
-    .insert([{ 
-      workbook: data.workbook, 
-      chapter: data.chapter, 
-      label: data.label, 
-      full_text: data.full_text, 
+    .insert([{
+      workbook: data.workbook,
+      chapter: data.chapter,
+      label: data.label,
+      full_text: data.full_text,
       sentences: data.sentences,
-      status: 'published' 
+      status: 'published',
+      category: data.category || data.workbook || '',
+      sub_category: data.sub_category || data.chapter || '',
+      sub_sub_category: data.sub_sub_category || '',
+      passage_number: data.passage_number || '',
     }])
     .select()
     .single();
-  
+
   if (setError) throw setError;
 
-  // 2. Batch insert the extracted words
   const wordsToInsert = data.words.map(w => ({
     set_id: set.id,
     word: w.word,
     pos_abbr: w.pos_abbr,
     korean: w.korean,
-    context: w.context,
+    context: w.context || '',
+    context_korean: w.context_korean || '',
     synonyms: w.synonyms,
     antonyms: w.antonyms,
-    grammar_tip: w.grammar_tip
+    grammar_tip: w.grammar_tip || '',
+    is_key: w.is_key ?? false,
   }));
 
-  const { error: wordsError } = await supabase
-    .from('words')
-    .insert(wordsToInsert);
-  
+  const { error: wordsError } = await supabase.from('words').insert(wordsToInsert);
   if (wordsError) throw wordsError;
 
   return set;
 }
+
 
 // ─── Students ─────────────────────────────────────────────────────────────────
 export type StudentData = {
