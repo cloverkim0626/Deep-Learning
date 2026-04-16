@@ -50,7 +50,7 @@ type AssignmentRow = {
   created_at: string;
   status?: string | null; // 'active' | 'completed' | 'expired' | null
   completed_at?: string | null;
-  word_sets: { id: string; label: string; workbook: string; chapter: string; passage_number?: string } | null;
+  word_sets: { id: string; label: string; workbook: string; chapter: string } | null;
 };
 
 function AssignmentTab() {
@@ -178,7 +178,7 @@ function AssignmentTab() {
                         {statusBadge(row.status)}
                       </div>
                       <div className="text-[11px] text-accent">
-                        {[row.word_sets?.workbook, row.word_sets?.chapter, row.word_sets?.sub_sub_category, row.word_sets?.passage_number ? `${row.word_sets.passage_number}번` : ''].filter(Boolean).join(' · ')}
+                        {[row.word_sets?.workbook, row.word_sets?.chapter].filter(Boolean).join(' · ')}
                       </div>
                     </div>
                     <span className="text-[10px] text-accent/50 font-bold shrink-0">
