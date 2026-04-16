@@ -36,7 +36,7 @@ function speakWord(word: string) {
   window.speechSynthesis.speak(utt);
 }
 
-// ─── Bold Headword in Context ────────────────────────────────────────────────
+// ─── Bold Headword in Context (English) ───────────────────────────────────────
 function BoldWord({ text, word }: { text: string; word: string }) {
   if (!text || !word) return <>{text}</>;
   const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -47,6 +47,28 @@ function BoldWord({ text, word }: { text: string; word: string }) {
       {parts.map((part, i) =>
         regex.test(part)
           ? <strong key={i} className="font-black text-foreground not-italic">{part}</strong>
+          : part
+      )}
+    </>
+  );
+}
+
+// ─── Bold Korean meaning in context translation ─────────────────────────────
+// Highlights the Korean meaning of the headword within the Korean context sentence.
+// e.g. korean="모으다", contextKorean="매년 녹대들이 식량을 모으는다" → "바다"는 보통 짧으므로 suffixless match
+function BoldKorean({ text, korean }: { text: string; korean: string }) {
+  if (!text || !korean) return <>{text}</>;
+  // Take only the first 4 chars to avoid over-matching long definitions
+  const keyword = korean.split(/[,\s\/()]/)[0].trim().slice(0, 5);
+  if (!keyword) return <>{text}</>;
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escaped}[\uAC00-\uD7A3]*)`, 'g');
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part)
+          ? <strong key={i} className="font-black text-foreground">{part}</strong>
           : part
       )}
     </>
@@ -92,26 +114,44 @@ export default function VocabDashboard() {
 
       if (assignments && assignments.length > 0) {
         const formatted: WordSet[] = (assignments as {
-          id: string; workbook?: string; chapter?: string; passage_number?: string; sub_category?: string; label: string;
-          words?: { id: string; word: string; pos_abbr: string; korean: string; context?: string; context_korean?: string; synonyms: string | string[]; antonyms: string | string[]; grammar_tip?: string }[]
-        }[]).map(s => ({
-          id: s.id,
-          workbook: s.workbook || '배당된 교재',
-          chapter: s.chapter || s.sub_category || '',
-          passageNumber: s.passage_number || '',
-          label: s.label,
-          words: (s.words || []).map(w => ({
-            id: w.id,
-            word: w.word,
-            posAbbr: w.pos_abbr,
-            korean: w.korean,
-            context: w.context || '',
-            contextKorean: w.context_korean || '',
-            synonyms: typeof w.synonyms === 'string' ? w.synonyms.split(',').map(x => x.trim()).filter(Boolean) : (w.synonyms || []),
-            antonyms: typeof w.antonyms === 'string' ? w.antonyms.split(',').map(x => x.trim()).filter(Boolean) : (w.antonyms || []),
-            grammarTip: w.grammar_tip || ''
-          }))
-        }));
+          id: string;
+          workbook?: string;
+          chapter?: string;          // sub_category = 상위분류 (예: Part1)
+          sub_category?: string;     // same as chapter if stored separately
+          sub_sub_category?: string; // 하위분류 (예: 3강)
+          passage_number?: string;   // 지문 번호 (예: 2)
+          label: string;
+          words?: {
+            id: string; word: string; pos_abbr: string; korean: string;
+            context?: string; context_korean?: string;
+            synonyms: string | string[]; antonyms: string | string[];
+            grammar_tip?: string;
+          }[];
+        }[]).map(s => {
+          // Build hierarchy: workbook · chapter(=sub_cat) · sub_sub_cat · passage_number
+          // Displayed as e.g. "수능특강 영어 · Part1 · 3강 · 2번"
+          const chapterLabel = s.chapter || s.sub_category || '';
+          const lessonLabel  = s.sub_sub_category || '';  // e.g. "3강"
+          const passageLabel = s.passage_number || '';     // e.g. "2"
+          return {
+            id: s.id,
+            workbook: s.workbook || '배당된 교재',
+            chapter: [chapterLabel, lessonLabel].filter(Boolean).join(' '),  // "Part1 3강"
+            passageNumber: passageLabel ? `${passageLabel}번` : '',          // "2번"
+            label: s.label,
+            words: (s.words || []).map(w => ({
+              id: w.id,
+              word: w.word,
+              posAbbr: w.pos_abbr,
+              korean: w.korean,
+              context: w.context || '',
+              contextKorean: w.context_korean || '',
+              synonyms: typeof w.synonyms === 'string' ? w.synonyms.split(',').map(x => x.trim()).filter(Boolean) : (w.synonyms || []),
+              antonyms: typeof w.antonyms === 'string' ? w.antonyms.split(',').map(x => x.trim()).filter(Boolean) : (w.antonyms || []),
+              grammarTip: w.grammar_tip || ''
+            }))
+          };
+        });
         setWordSets(formatted);
       }
 
@@ -300,15 +340,15 @@ export default function VocabDashboard() {
 
           {currentWord ? (
             <div className="flex flex-col flex-1 min-h-0 gap-3">
-              {/* Flashcard */}
+              {/* Flashcard — front / back stacked, only one visible at a time */}
               <div
-                className="flex-1 min-h-0 relative preserve-3d"
+                className="flex-1 min-h-0 relative"
                 style={{ minHeight: '200px' }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
-                {/* Swipe hint: subtle directional fade on swipe */}
+                {/* Swipe overlay */}
                 {swipeDelta !== 0 && (
                   <div className={`absolute inset-0 z-20 rounded-[2.5rem] pointer-events-none transition-opacity ${
                     swipeDelta < -30 ? 'bg-gradient-to-r from-transparent to-foreground/10' :
@@ -316,14 +356,16 @@ export default function VocabDashboard() {
                   }`} />
                 )}
 
-                {/* Front — click = flip */}
+                {/* FRONT — word face */}
                 <div
-                  onClick={() => setIsFlipped(!isFlipped)}
+                  onClick={() => setIsFlipped(true)}
                   style={{ transform: `translateX(${swipeDelta * 0.08}px)` }}
-                  className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 p-8 flex flex-col items-center justify-center text-center shadow-xl transition-all duration-700 cursor-pointer select-none ${isFlipped ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 opacity-100"}`}
+                  className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 p-8 flex flex-col items-center justify-center text-center shadow-xl transition-all duration-500 cursor-pointer select-none ${
+                    isFlipped ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100'
+                  }`}
                 >
                   <button
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all mb-4 ${isSpeaking ? "bg-foreground text-background scale-110" : "bg-accent-light/60 text-accent hover:bg-foreground/10"}`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all mb-4 ${isSpeaking ? 'bg-foreground text-background scale-110' : 'bg-accent-light/60 text-accent hover:bg-foreground/10'}`}
                     title="발음 듣기"
                     onClick={(e) => { e.stopPropagation(); handleSpeak(e); }}
                   >
@@ -336,41 +378,60 @@ export default function VocabDashboard() {
                   <p className="text-[10px] text-accent/40 font-bold mt-3">← 스와이프 · 탭하면 뒤집기 →</p>
                 </div>
 
-                {/* Back — click = flip */}
+                {/* BACK — scrollable meaning panel */}
                 <div
-                  onClick={() => setIsFlipped(!isFlipped)}
+                  onClick={() => setIsFlipped(false)}
                   style={{ transform: `translateX(${swipeDelta * 0.08}px)` }}
-                  className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 p-7 flex flex-col justify-center shadow-xl transition-all duration-700 overflow-y-auto cursor-pointer select-none ${isFlipped ? "rotate-y-0 opacity-100" : "rotate-y-180 opacity-0 pointer-events-none"}`}
+                  className={`absolute inset-0 backface-hidden glass rounded-[2.5rem] border border-foreground/5 shadow-xl transition-all duration-500 cursor-pointer select-none overflow-hidden ${
+                    isFlipped ? 'opacity-100' : 'opacity-0 pointer-events-none scale-95'
+                  }`}
                 >
-                  <p className="text-[20px] font-bold text-foreground mb-3">{currentWord.korean}</p>
-                  {currentWord.context && (
-                    <div className="mb-4 border-l-2 border-foreground/10 pl-4">
-                      <p className="text-[12px] leading-relaxed text-foreground/70 serif italic"><BoldWord text={currentWord.context} word={currentWord.word} /></p>
-                      {currentWord.contextKorean && (
-                        <p className="text-[11px] text-accent mt-1">{currentWord.contextKorean}</p>
-                      )}
-                    </div>
-                  )}
-                  {currentWord.synonyms.length > 0 && (
-                    <div className="mb-2.5">
-                      <p className="text-[9px] font-black text-accent uppercase tracking-widest mb-1.5">유의어</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {currentWord.synonyms.map(s => (
-                          <span key={s} className="px-2.5 py-1 bg-foreground/5 rounded-lg text-[11px] font-black text-accent">{s}</span>
-                        ))}
+                  {/* Inner scrollable — stops click propagation to allow scrolling */}
+                  <div
+                    className="h-full overflow-y-auto custom-scrollbar p-7"
+                    onClick={e => e.stopPropagation()}
+                    onTouchStart={e => e.stopPropagation()}
+                    onTouchMove={e => e.stopPropagation()}
+                  >
+                    <p className="text-[20px] font-bold text-foreground mb-3">{currentWord.korean}</p>
+                    {currentWord.context && (
+                      <div className="mb-4 border-l-2 border-foreground/10 pl-4">
+                        <p className="text-[12px] leading-relaxed text-foreground/70 serif italic">
+                          <BoldWord text={currentWord.context} word={currentWord.word} />
+                        </p>
+                        {currentWord.contextKorean && (
+                          <p className="text-[11px] text-accent mt-1">
+                            <BoldKorean text={currentWord.contextKorean} korean={currentWord.korean} />
+                          </p>
+                        )}
                       </div>
-                    </div>
-                  )}
-                  {currentWord.antonyms.length > 0 && (
-                    <div>
-                      <p className="text-[9px] font-black text-accent uppercase tracking-widest mb-1.5">반의어</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {currentWord.antonyms.map(a => (
-                          <span key={a} className="px-2.5 py-1 bg-red-50 rounded-lg text-[11px] font-black text-red-400">{a}</span>
-                        ))}
+                    )}
+                    {currentWord.synonyms.length > 0 && (
+                      <div className="mb-2.5">
+                        <p className="text-[9px] font-black text-accent uppercase tracking-widest mb-1.5">유의어</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {currentWord.synonyms.map(s => (
+                            <span key={s} className="px-2.5 py-1 bg-foreground/5 rounded-lg text-[11px] font-black text-accent">{s}</span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                    {currentWord.antonyms.length > 0 && (
+                      <div>
+                        <p className="text-[9px] font-black text-accent uppercase tracking-widest mb-1.5">반의어</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {currentWord.antonyms.map(a => (
+                            <span key={a} className="px-2.5 py-1 bg-red-50 rounded-lg text-[11px] font-black text-red-400">{a}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Tap anywhere to flip back */}
+                    <p
+                      className="text-[10px] text-accent/30 font-bold mt-5 text-center cursor-pointer"
+                      onClick={() => setIsFlipped(false)}
+                    >탭하면 다시 뒤집기</p>
+                  </div>
                 </div>
               </div>
 

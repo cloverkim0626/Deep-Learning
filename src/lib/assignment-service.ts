@@ -32,9 +32,14 @@ export async function getAssignmentsByStudent(studentName: string) {
     .or('status.eq.active,status.is.null'); // backward compat: null = active
 
   if (error) throw error;
-  return data
-    .filter(d => d.word_sets) // skip orphan assignments
-    .map(d => ({ ...d.word_sets, passage_number: d.word_sets?.passage_number || '' }));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data as any[])
+    .filter((d: any) => d.word_sets)
+    .map((d: any) => ({
+      ...d.word_sets,
+      passage_number: d.word_sets?.passage_number || '',
+      sub_sub_category: d.word_sets?.sub_sub_category || '',
+    }));
 }
 
 /**
