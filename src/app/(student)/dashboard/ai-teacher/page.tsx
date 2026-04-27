@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Sparkles, ChevronDown, Loader2, MessageSquare, RotateCcw, BookOpen } from "lucide-react";
-import { getAssignmentsByStudent } from "@/lib/assignment-service";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { Send, Sparkles, Loader2, MessageSquare, RotateCcw, BookOpen, ChevronDown } from "lucide-react";
+import { getAllPassagesForTutor } from "@/lib/database-service";
 
 type Message = {
   id: string;
@@ -12,8 +12,19 @@ type Message = {
   timestamp: number;
 };
 
+type Passage = {
+  id: string;
+  label: string;
+  workbook: string | null;
+  chapter: string | null;
+  sub_category: string | null;
+  sub_sub_category: string | null;
+  passage_number: string | null;
+  full_text: string | null;
+};
+
 const STORAGE_KEY_PREFIX = "parallax_chat_";
-const MAX_HISTORY = 40; // Keep last 40 messages per student
+const MAX_HISTORY = 40;
 
 const OPENING_TEXT = `안녕! **Parallax AI 튜터**야. 고등학교 영어 전문 튜터로, 수능 영어와 내신 영어 모두 도와줄 수 있어.
 
@@ -22,17 +33,22 @@ const OPENING_TEXT = `안녕! **Parallax AI 튜터**야. 고등학교 영어 전
 지금 공부 중인 지문이 있으면 위에서 선택하거나, 자유롭게 질문해도 돼!`;
 
 export default function AITeacherPage() {
-  const [assignments, setAssignments] = useState<{ id: string; label: string; workbook?: string; chapter?: string; category?: string; sub_category?: string; sub_sub_category?: string; passage_number?: string; full_text?: string }[]>([]);
+  const [passages, setPassages] = useState<Passage[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<string>("none");
-  const [filterCat, setFilterCat] = useState<string>("전체");
+
+  // 3단계 필터
+  const [filterWorkbook, setFilterWorkbook] = useState<string>("전체");
+  const [filterMid, setFilterMid] = useState<string>("전체");
+  const [filterSub, setFilterSub] = useState<string>("전체");
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [studentName, setStudentName] = useState("학생");
   const [chatInitialized, setChatInitialized] = useState(false);
+  const [passagesLoading, setPassagesLoading] = useState(true);
 
-  // Get student name
   const getName = useCallback(() => {
     try {
       const saved = localStorage.getItem("stu_session");
@@ -41,7 +57,6 @@ export default function AITeacherPage() {
     return "학생";
   }, []);
 
-  // Load chat history from localStorage
   const loadHistory = useCallback((name: string) => {
     try {
       const key = STORAGE_KEY_PREFIX + name;
@@ -54,7 +69,6 @@ export default function AITeacherPage() {
     return null;
   }, []);
 
-  // Save chat history
   const saveHistory = useCallback((name: string, msgs: Message[]) => {
     try {
       const key = STORAGE_KEY_PREFIX + name;
@@ -63,22 +77,17 @@ export default function AITeacherPage() {
     } catch { /* noop */ }
   }, []);
 
-  // Initialize
   useEffect(() => {
     const name = getName();
     setStudentName(name);
 
-    // Load assignments
-    getAssignmentsByStudent(name).then(data => {
-      setAssignments((data || []).filter(Boolean).map((s: { id: string; label: string; workbook?: string; chapter?: string; category?: string; sub_category?: string; sub_sub_category?: string; passage_number?: string; full_text?: string }) => ({
-        id: s.id, label: s.label, workbook: s.workbook, chapter: s.chapter,
-        category: s.category || s.workbook, sub_category: s.sub_category || s.chapter,
-        sub_sub_category: s.sub_sub_category, passage_number: s.passage_number,
-        full_text: s.full_text
-      })));
-    }).catch(err => console.warn("Assignment load failed:", err));
+    // 전체 지문 로드 (배당 여부 무관)
+    setPassagesLoading(true);
+    getAllPassagesForTutor()
+      .then(data => setPassages(data as Passage[]))
+      .catch(err => console.warn("Passages load failed:", err))
+      .finally(() => setPassagesLoading(false));
 
-    // Load or initialize chat history
     const history = loadHistory(name);
     if (history && history.length > 0) {
       setMessages(history);
@@ -98,17 +107,59 @@ export default function AITeacherPage() {
     setChatInitialized(true);
   }, [getName, loadHistory]);
 
-  // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Save history whenever messages change
   useEffect(() => {
     if (chatInitialized && messages.length > 0 && studentName !== "학생") {
       saveHistory(studentName, messages);
     }
   }, [messages, chatInitialized, studentName, saveHistory]);
+
+  // ─── 필터 파생 데이터 ──────────────────────────────────────────────────────────
+  const workbooks = useMemo(() => {
+    const set = new Set(passages.map(p => p.workbook || "기타"));
+    return ["전체", ...Array.from(set).sort()];
+  }, [passages]);
+
+  const midCategories = useMemo(() => {
+    const base = filterWorkbook === "전체" ? passages : passages.filter(p => (p.workbook || "기타") === filterWorkbook);
+    const set = new Set(base.map(p => p.sub_category || p.chapter || "기타"));
+    return ["전체", ...Array.from(set).sort()];
+  }, [passages, filterWorkbook]);
+
+  const subCategories = useMemo(() => {
+    let base = filterWorkbook === "전체" ? passages : passages.filter(p => (p.workbook || "기타") === filterWorkbook);
+    if (filterMid !== "전체") base = base.filter(p => (p.sub_category || p.chapter || "기타") === filterMid);
+    const subs = [...new Set(base.map(p => p.sub_sub_category).filter(Boolean))] as string[];
+    return subs.length > 0 ? ["전체", ...subs.sort()] : [];
+  }, [passages, filterWorkbook, filterMid]);
+
+  const filteredPassages = useMemo(() => {
+    let base = passages;
+    if (filterWorkbook !== "전체") base = base.filter(p => (p.workbook || "기타") === filterWorkbook);
+    if (filterMid !== "전체") base = base.filter(p => (p.sub_category || p.chapter || "기타") === filterMid);
+    if (filterSub !== "전체") base = base.filter(p => p.sub_sub_category === filterSub);
+    return base;
+  }, [passages, filterWorkbook, filterMid, filterSub]);
+
+  // 상위 필터 변경 시 하위 필터 초기화
+  const changeWorkbook = (val: string) => {
+    setFilterWorkbook(val);
+    setFilterMid("전체");
+    setFilterSub("전체");
+    setSelectedSetId("none");
+  };
+  const changeMid = (val: string) => {
+    setFilterMid(val);
+    setFilterSub("전체");
+    setSelectedSetId("none");
+  };
+  const changeSub = (val: string) => {
+    setFilterSub(val);
+    setSelectedSetId("none");
+  };
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -122,13 +173,11 @@ export default function AITeacherPage() {
     setIsLoading(true);
 
     try {
-      // Build context
-      const selected = assignments.find(a => a.id === selectedSetId);
+      const selected = passages.find(a => a.id === selectedSetId);
       const passageContext = selected
-        ? `지문: ${selected.workbook || ""} ${selected.chapter || ""} ${selected.label}\n원문: ${selected.full_text || "(원문 없음)"}`
+        ? `지문: ${selected.workbook || ""} ${selected.sub_category || selected.chapter || ""} ${selected.label}\n원문: ${selected.full_text || "(원문 없음)"}`
         : "None (General English Question)";
 
-      // Build history for API (last 20 messages only for context window)
       const historyForAPI = newMessages.slice(-20).map(m => ({
         role: m.sender === "ai" ? "assistant" : "user",
         content: m.text
@@ -140,7 +189,7 @@ export default function AITeacherPage() {
         body: JSON.stringify({
           passage: passageContext,
           message: text.trim(),
-          history: historyForAPI.slice(0, -1) // exclude the current message (already in message field)
+          history: historyForAPI.slice(0, -1)
         }),
       });
 
@@ -192,72 +241,91 @@ export default function AITeacherPage() {
     try { localStorage.removeItem(STORAGE_KEY_PREFIX + studentName); } catch { /* noop */ }
   };
 
-  const selectedSet = assignments.find(a => a.id === selectedSetId);
+  const selectedSet = passages.find(a => a.id === selectedSetId);
   const lastAIMsg = [...messages].reverse().find(m => m.sender === "ai");
+
+  const SelectBox = ({ value, onChange, children, className = "" }: {
+    value: string; onChange: (v: string) => void; children: React.ReactNode; className?: string;
+  }) => (
+    <div className={`relative ${className}`}>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="w-full bg-accent-light border border-foreground/5 text-accent text-[10px] font-bold rounded-lg px-2.5 py-1.5 appearance-none focus:outline-none cursor-pointer pr-6 hover:border-foreground/20 transition-all"
+      >
+        {children}
+      </select>
+      <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full max-w-2xl mx-auto w-full relative bg-background">
       {/* Header */}
-      <div className="flex items-center gap-4 px-6 pt-8 pb-5 shrink-0 z-20 bg-background/80 backdrop-blur-md sticky top-0 border-b border-foreground/5">
-        <div className="w-10 h-10 rounded-[1rem] bg-foreground text-background flex items-center justify-center shadow-xl shrink-0">
-          <Sparkles size={18} strokeWidth={1.5} />
+      <div className="flex items-start gap-3 px-5 pt-6 pb-4 shrink-0 z-20 bg-background/80 backdrop-blur-md sticky top-0 border-b border-foreground/5">
+        <div className="w-9 h-9 rounded-[0.8rem] bg-foreground text-background flex items-center justify-center shadow-xl shrink-0 mt-0.5">
+          <Sparkles size={16} strokeWidth={1.5} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <h1 className="text-[15px] text-foreground font-black">Parallax AI 튜터</h1>
+          <div className="flex items-center gap-2 mb-2.5">
+            <h1 className="text-[14px] text-foreground font-black">Parallax AI 튜터</h1>
             <span className="text-[9px] font-black text-accent/60 bg-accent-light px-2 py-0.5 rounded-md border border-foreground/5 uppercase tracking-widest">
               {messages.length > 1 ? `${messages.length}개 대화` : "새 대화"}
             </span>
+            {passagesLoading && <span className="text-[9px] text-accent/40 font-bold">지문 로딩 중...</span>}
           </div>
-          {/* Hierarchical Passage Selector */}
-          {(() => {
-            const cats = ["전체", ...Array.from(new Set(assignments.map(a => a.category || a.workbook || "기타")))];
-            const filteredByCat = filterCat === "전체" ? assignments : assignments.filter(a => (a.category || a.workbook) === filterCat);
-            return (
-              <div className="space-y-2">
-                {/* Category chips */}
-                <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                  {cats.map(c => (
-                    <button key={c} onClick={() => { setFilterCat(c); setSelectedSetId("none"); }}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black whitespace-nowrap transition-all ${
-                        filterCat === c ? "bg-foreground text-background" : "bg-accent-light text-accent hover:text-foreground"
-                      }`}>{c}</button>
-                  ))}
-                </div>
-                {/* Passage dropdown */}
-                <div className="relative">
-                  <select
-                    value={selectedSetId}
-                    onChange={e => setSelectedSetId(e.target.value)}
-                    className="w-full bg-accent-light border border-foreground/5 text-accent text-[11px] font-bold rounded-xl px-3 py-1.5 appearance-none focus:outline-none cursor-pointer pr-8 hover:border-foreground/20 transition-all"
-                  >
-                    <option value="none">지문 없이 자유 질문</option>
-                    {filteredByCat.map(a => (
-                      <option key={a.id} value={a.id}>
-                        {[a.sub_category, a.sub_sub_category, a.passage_number].filter(Boolean).join(" · ") || a.chapter || ""}{" "}{a.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
-                </div>
-              </div>
-            );
-          })()}
+
+          {/* ── 3단계 필터 ── */}
+          <div className="space-y-1.5">
+            {/* Row 1: 교재 + 중분류 */}
+            <div className="grid grid-cols-2 gap-1.5">
+              <SelectBox value={filterWorkbook} onChange={changeWorkbook}>
+                {workbooks.map(w => <option key={w} value={w}>{w === "전체" ? "📚 교재 전체" : w}</option>)}
+              </SelectBox>
+              <SelectBox value={filterMid} onChange={changeMid}>
+                {midCategories.map(c => <option key={c} value={c}>{c === "전체" ? "📂 단원 전체" : c}</option>)}
+              </SelectBox>
+            </div>
+            {/* Row 2: 소분류 (있을 때만) */}
+            {subCategories.length > 0 && (
+              <SelectBox value={filterSub} onChange={changeSub}>
+                {subCategories.map(c => <option key={c} value={c}>{c === "전체" ? "📁 소단원 전체" : c}</option>)}
+              </SelectBox>
+            )}
+            {/* Row 3: 지문 선택 */}
+            <div className="relative">
+              <select
+                value={selectedSetId}
+                onChange={e => setSelectedSetId(e.target.value)}
+                className="w-full bg-foreground/5 border border-foreground/10 text-foreground text-[11px] font-bold rounded-xl px-3 py-2 appearance-none focus:outline-none cursor-pointer pr-8 hover:border-foreground/20 transition-all"
+              >
+                <option value="none">지문 없이 자유 질문</option>
+                {filteredPassages.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {[a.sub_sub_category, a.passage_number ? `${a.passage_number}번` : ""].filter(Boolean).join(" · ")}{" "}{a.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
+            </div>
+          </div>
         </div>
         <button
           onClick={handleClearChat}
-          className="p-2 rounded-xl text-accent hover:text-error hover:bg-error/5 transition-all"
+          className="p-2 rounded-xl text-accent hover:text-error hover:bg-error/5 transition-all shrink-0 mt-0.5"
           title="대화 초기화"
         >
-          <RotateCcw size={16} />
+          <RotateCcw size={15} />
         </button>
       </div>
 
       {/* Context Badge */}
       {selectedSet && (
-        <div className="mx-6 mt-4 mb-0 px-4 py-2.5 bg-foreground/5 rounded-2xl border border-foreground/5 flex items-center gap-2 animate-in fade-in duration-300">
+        <div className="mx-5 mt-3 mb-0 px-4 py-2.5 bg-foreground/5 rounded-2xl border border-foreground/5 flex items-center gap-2 animate-in fade-in duration-300">
           <BookOpen size={13} className="text-accent shrink-0" />
-          <span className="text-[12px] font-bold text-foreground truncate">{selectedSet.workbook} · {selectedSet.chapter} · {selectedSet.label}</span>
+          <span className="text-[12px] font-bold text-foreground truncate">
+            {[selectedSet.workbook, selectedSet.sub_category || selectedSet.chapter, selectedSet.label].filter(Boolean).join(" · ")}
+          </span>
         </div>
       )}
 
@@ -267,7 +335,6 @@ export default function AITeacherPage() {
           const isLastAI = msg === lastAIMsg && msg.sender === "ai";
           return (
             <div key={msg.id} className="animate-in fade-in slide-in-from-bottom-2 duration-400">
-              {/* Date separator for first message of the day */}
               {idx > 0 && msg.timestamp - messages[idx - 1].timestamp > 3600000 && (
                 <div className="text-center text-[10px] font-bold text-accent/40 my-3">
                   {new Date(msg.timestamp).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
@@ -290,7 +357,6 @@ export default function AITeacherPage() {
                 </div>
               </div>
 
-              {/* Follow-up options — only on last AI message */}
               {isLastAI && msg.options && msg.options.length > 0 && (
                 <div className="flex flex-col gap-1.5 mt-4 ml-9 pr-6 animate-in slide-in-from-left-4 duration-500">
                   {msg.options.map((opt, optIdx) => (

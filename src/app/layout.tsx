@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Serif_KR } from "next/font/google";
+import { Inter, Noto_Serif_KR, Gaegu } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -10,7 +10,13 @@ const inter = Inter({
 const notoSerifKR = Noto_Serif_KR({
   variable: "--font-noto-serif",
   weight: ["300", "400", "700"],
-  subsets: ["latin"], // Noto Serif KR handles Korean intrinsically if loaded, Next.js 'latin' subset is standard
+  subsets: ["latin"],
+});
+
+const gaegu = Gaegu({
+  variable: "--font-gaegu",
+  weight: ["300", "400", "700"],
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -26,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${inter.variable} ${notoSerifKR.variable} h-full antialiased`}
+      className={`${inter.variable} ${notoSerifKR.variable} ${gaegu.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground transition-colors duration-700">
         <div className="fixed inset-0 pointer-events-none z-[-1] opacity-40 dark:opacity-20 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent-light via-transparent to-transparent"></div>

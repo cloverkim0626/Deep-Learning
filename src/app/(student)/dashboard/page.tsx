@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ChevronDown, Trophy, AlertCircle,
   Sparkles, Clock, Calendar, FilterX, Volume2, Star,
   CheckCircle, XCircle
 } from "lucide-react";
-import { getAssignmentsByStudent, getWrongAnswers, logWrongAnswer, type TimeFilter } from "@/lib/assignment-service";
+import { getAssignmentsByStudent, getWrongAnswers, logWrongAnswer, deleteWrongAnswer, type TimeFilter } from "@/lib/assignment-service";
 import { getTestSessionsByStudent } from "@/lib/database-service";
+
 
 type Word = {
   id: string; word: string; posAbbr: string; korean: string;
@@ -44,6 +46,20 @@ function speakWord(word: string) {
   utt.lang = "en-US";
   utt.rate = 0.85;
   window.speechSynthesis.speak(utt);
+}
+
+// ─── POS full name ────────────────────────────────────────────────────────────
+const POS_FULL: Record<string, string> = {
+  n: 'noun', v: 'verb', adj: 'adjective', adv: 'adverb',
+  prep: 'preposition', conj: 'conjunction', pron: 'pronoun',
+  interj: 'interjection', det: 'determiner', aux: 'auxiliary verb',
+  vt: 'transitive verb', vi: 'intransitive verb',
+  noun: 'noun', verb: 'verb', adjective: 'adjective', adverb: 'adverb',
+};
+function expandPOS(abbr: string): string {
+  if (!abbr) return '';
+  const key = abbr.toLowerCase().trim();
+  return POS_FULL[key] || abbr;
 }
 
 // ─── Bold Headword in Context (English) ───────────────────────────────────────
@@ -108,7 +124,14 @@ export default function VocabDashboard() {
   const [swipeDelta, setSwipeDelta] = useState(0);
   // Remaining tests count
   const [completedSetIds, setCompletedSetIds] = useState<Set<string>>(new Set());
+  const [vocabPassedIds, setVocabPassedIds] = useState<Set<string>>(new Set());
+  const [synPassedIds, setSynPassedIds] = useState<Set<string>>(new Set());
   const [starredIds, setStarredIds] = useState<Set<string>>(new Set());
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  // Etymology
+  const [etymology, setEtymology] = useState<{part: string; meaning: string; type: string}[]>([]);
+  const etymCacheRef = useRef<Map<string, {part: string; meaning: string; type: string}[]>>(new Map());
 
   const getStudentName = useCallback((): string => {
     try {
@@ -117,6 +140,29 @@ export default function VocabDashboard() {
     } catch { /* noop */ }
     return '학생';
   }, []);
+
+  // Fetch etymology when current word changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const currentSet = wordSets[setIdx];
+    const currentWord = currentSet?.words[wordIdx];
+    if (!currentWord) { setEtymology([]); return; }
+    if (etymCacheRef.current.has(currentWord.id)) {
+      setEtymology(etymCacheRef.current.get(currentWord.id)!);
+      return;
+    }
+    setEtymology([]);
+    fetch(`/api/etymology?word=${encodeURIComponent(currentWord.word)}&id=${currentWord.id}`)
+      .then(r => r.json())
+      .then(data => {
+        const parts = data.parts || [];
+        etymCacheRef.current.set(currentWord.id, parts);
+        setEtymology(parts);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setIdx, wordIdx, wordSets.length]);
+
 
   const loadLibrary = useCallback(async () => {
     setIsLoading(true);
@@ -175,15 +221,23 @@ export default function VocabDashboard() {
         };
       });
 
-      // 정렬: gateway(지문번호 없음) 먼저, 강 오름차순, 같은 강내 지문번호 오름차순
+      // 정렬: 최신 배당 순(assigned_at 내림차순) → gateway 먼저 → 강 오름차순 → 지문번호 오름차순
       const parseLessonNum = (lesson: string) => {
         const m = lesson.match(/(\d+)/);
         return m ? parseInt(m[1], 10) : 0;
       };
       formatted.sort((a, b) => {
+        // 1차: 배당 날짜 최신순 (없으면 맨 뒤)
+        const aDate = a.assigned_at ? new Date(a.assigned_at).getTime() : 0;
+        const bDate = b.assigned_at ? new Date(b.assigned_at).getTime() : 0;
+        if (aDate !== bDate) return bDate - aDate; // 최신이 위
+
+        // 2차(같은 날짜 내): gateway 먼저
         const aIsGateway = !a._rawPassage;
         const bIsGateway = !b._rawPassage;
         if (aIsGateway !== bIsGateway) return aIsGateway ? -1 : 1;
+
+        // 3차: 강 번호 오름차순, 지문번호 오름차순
         const lessonDiff = parseLessonNum(a._rawLesson ?? '') - parseLessonNum(b._rawLesson ?? '');
         if (lessonDiff !== 0) return lessonDiff;
         return parseInt(a._rawPassage || '0', 10) - parseInt(b._rawPassage || '0', 10);
@@ -192,13 +246,33 @@ export default function VocabDashboard() {
         setWordSets(formatted);
       }
 
-      // Only COMPLETED sessions count as tested (completed_at not null)
-      const doneIds = new Set<string>(
-        (sessions as { set_id?: string; completed_at?: string | null }[])
-          .filter(s => s.completed_at)
-          .map(s => s.set_id)
-          .filter(Boolean) as string[]
-      );
+      const st = sessions as { set_id?: string; completed_at?: string | null; correct_count?: number; total_questions?: number; test_type?: string }[];
+
+      // 유의어/반의어 계열 판정 (vocab_drill, vocab 제외)
+      const isSynType = (t?: string) => t === 'synonym' || t === 'antonym' || t === 'card_game';
+
+      // 뜻고르기 PASS (90% 이상)
+      setVocabPassedIds(new Set(
+        st.filter(s => s.completed_at && s.set_id && s.test_type === 'vocab')
+          .filter(s => s.total_questions && s.total_questions > 0 ? (s.correct_count ?? 0) / s.total_questions >= 0.9 : false)
+          .map(s => s.set_id as string)
+      ));
+      // 유반의어 PASS (90% 이상) — vocab, vocab_drill 제외
+      setSynPassedIds(new Set(
+        st.filter(s => s.completed_at && s.set_id && isSynType(s.test_type))
+          .filter(s => s.total_questions && s.total_questions > 0 ? (s.correct_count ?? 0) / s.total_questions >= 0.9 : false)
+          .map(s => s.set_id as string)
+      ));
+      // 두 시험 모두 통과한 세트만 '완료'
+      const vocabSet = new Set<string>();
+      const synSet = new Set<string>();
+      st.filter(s => s.completed_at && s.set_id && s.test_type === 'vocab')
+        .filter(s => s.total_questions && s.total_questions > 0 ? (s.correct_count ?? 0) / s.total_questions >= 0.9 : false)
+        .forEach(s => vocabSet.add(s.set_id as string));
+      st.filter(s => s.completed_at && s.set_id && isSynType(s.test_type))
+        .filter(s => s.total_questions && s.total_questions > 0 ? (s.correct_count ?? 0) / s.total_questions >= 0.9 : false)
+        .forEach(s => synSet.add(s.set_id as string));
+      const doneIds = new Set<string>([...vocabSet].filter(id => synSet.has(id)));
       setCompletedSetIds(doneIds);
     } catch (err) {
       console.warn('라이브러리 로딩 실패:', err);
@@ -221,7 +295,27 @@ export default function VocabDashboard() {
     }
   }, [getStudentName]);
 
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteId || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await deleteWrongAnswer(confirmDeleteId);
+      setWrongWords(prev => prev.filter(w => w.id !== confirmDeleteId));
+    } catch (err) { console.error('오답 삭제 실패:', err); }
+    finally { setIsDeleting(false); setConfirmDeleteId(null); }
+  };
+
+
   useEffect(() => { loadLibrary(); }, [loadLibrary]);
+  // 라이브러리 페이지 (/dashboard) 로 돌아올 때마다 최신 PASS 정보 재로드
+  const pathname = usePathname();
+  useEffect(() => { if (pathname === '/dashboard') loadLibrary(); }, [pathname, loadLibrary]);
+  // 탭 전환 후 돌아올 때도 갱신
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') loadLibrary(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadLibrary]);
 
   useEffect(() => {
     if (activeTab === 'wrong') {
@@ -379,12 +473,29 @@ export default function VocabDashboard() {
                         <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${b.cls}`}>{b.label}</span>
                       ) : null; })()}
                     </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <span className="text-[10px] text-accent/50">{s.words.length}개 단어</span>
                       {completedSetIds.has(s.id) ? (
-                        <span className="text-[9px] font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full tracking-widest">PASS ✓</span>
+                        <span className="inline-flex items-center px-2 py-[2px] rounded-full text-[8.5px] font-black tracking-wide"
+                          style={{ background: 'rgba(220,38,38,0.08)', color: '#b91c1c', boxShadow: 'inset 0 0 0 1px rgba(220,38,38,0.25)', fontFamily: 'Georgia, serif', transform: 'rotate(-1deg)', letterSpacing: '0.05em' }}>
+                          ✱ ALL PASS
+                        </span>
                       ) : (
-                        <span className="text-[9px] text-accent/40 font-bold">미응시</span>
+                        <>
+                          {vocabPassedIds.has(s.id) && (
+                            <span className="inline-flex items-center gap-0.5 px-2 py-[2px] rounded-full bg-teal-600 text-white text-[8.5px] font-black tracking-wide">
+                              ✱ PASS <span className="opacity-75 text-[7.5px]">뜻고르기</span>
+                            </span>
+                          )}
+                          {synPassedIds.has(s.id) && (
+                            <span className="inline-flex items-center gap-0.5 px-2 py-[2px] rounded-full bg-blue-600 text-white text-[8.5px] font-black tracking-wide">
+                              ✱ PASS <span className="opacity-75 text-[7.5px]">유반의어</span>
+                            </span>
+                          )}
+                          {!vocabPassedIds.has(s.id) && !synPassedIds.has(s.id) && (
+                            <span className="text-[9px] text-accent/40 font-bold">미응시</span>
+                          )}
+                        </>
                       )}
                     </div>
                   </button>
@@ -423,7 +534,7 @@ export default function VocabDashboard() {
                   {/* FRONT */}
                   <div
                     onClick={() => setIsFlipped(true)}
-                    className="absolute inset-0 glass rounded-[2.5rem] border border-foreground/5 p-8 flex flex-col items-center justify-center text-center shadow-xl cursor-pointer select-none"
+                    className="absolute inset-0 glass rounded-[2.5rem] border border-foreground/5 shadow-xl cursor-pointer select-none overflow-hidden"
                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' } as React.CSSProperties}
                   >
                     {/* 진행상황 — 좌상단 */}
@@ -445,18 +556,51 @@ export default function VocabDashboard() {
                       <Star size={16} strokeWidth={2} fill={starredIds.has(currentWord.id) ? 'currentColor' : 'none'} />
                     </button>
 
-                    <button
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all mb-4 ${isSpeaking ? 'bg-foreground text-background scale-110' : 'bg-accent-light/60 text-accent hover:bg-foreground/10'}`}
-                      title="발음 듣기"
-                      onClick={(e) => { e.stopPropagation(); handleSpeak(e); }}
-                    >
-                      <Volume2 size={16} strokeWidth={2} />
-                    </button>
-                    <h2 className="text-[42px] serif font-bold text-foreground mb-3">{currentWord.word}</h2>
-                    <p className="text-[14px] text-accent font-black tracking-widest flex items-center gap-2">
-                      <Sparkles size={13} className="opacity-50" /> {currentWord.posAbbr}
-                    </p>
-                    <p className="text-[10px] text-accent/40 font-bold mt-3">← 스와이프 · 탭하면 뒤집기 →</p>
+                    {/* ── 스피커 버튼 — 독립 고정 (상단) ── */}
+                    <div className="absolute inset-x-0 flex justify-center" style={{ top: '13%' }}>
+                      <button
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isSpeaking ? 'bg-foreground text-background scale-110' : 'bg-accent-light/60 text-accent hover:bg-foreground/10'}`}
+                        title="발음 듣기"
+                        onClick={(e) => { e.stopPropagation(); handleSpeak(e); }}
+                      >
+                        <Volume2 size={16} strokeWidth={2} />
+                      </button>
+                    </div>
+
+                    {/* ── 영단어 + 품사 — POS 위, 단어 아래 ── */}
+                    <div className="absolute inset-x-0 flex flex-col items-center" style={{ top: '35%' }}>
+                      <p className="text-[13px] text-accent/70 font-semibold tracking-[0.22em] flex items-center gap-1.5 mb-3">
+                        <Sparkles size={11} className="opacity-35" /> {expandPOS(currentWord.posAbbr)}
+                      </p>
+                      <h2 className={`serif font-bold text-foreground leading-none text-center px-4 ${currentWord.word.length >= 14 ? 'text-[34px]' : 'text-[42px]'}`}>
+                        {currentWord.word}
+                      </h2>
+                    </div>
+
+                    {/* ── 어원 — 세련된 볼드 산세리프 ── */}
+                    <div className="absolute inset-x-5 flex flex-col items-center justify-start" style={{ top: '67%', bottom: '32px' }}>
+                      {etymology.length > 0 && (
+                        <div className="text-center">
+                          <p className="text-[7.5px] font-black text-purple-600/50 uppercase tracking-[0.35em] mb-2.5">ETYMOLOGY</p>
+                          <div className="flex items-start justify-center flex-wrap gap-x-3 gap-y-2">
+                            {etymology.map((p, i) => (
+                              <span key={i} className="flex items-start gap-3">
+                                <span className="flex flex-col items-center">
+                                  <span className="text-[19px] font-semibold text-purple-800/90 tracking-tight leading-tight" style={{ fontFamily: "'Inter', 'Outfit', system-ui, sans-serif" }}>{p.part}</span>
+                                  <span className="text-[10px] text-purple-500/65 font-semibold mt-0.5">({p.meaning})</span>
+                                </span>
+                                {i < etymology.length - 1 && (
+                                  <span className="text-purple-400/45 font-light text-[18px] leading-none mt-1">+</span>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 하단 힌트 */}
+                    <p className="absolute bottom-4 inset-x-0 text-center text-[10px] text-accent/30 font-bold">탭하면 뒤집기</p>
                   </div>
 
                   {/* BACK */}
@@ -470,7 +614,19 @@ export default function VocabDashboard() {
                     } as React.CSSProperties}
                   >
                     <div className="h-full overflow-y-auto custom-scrollbar p-7">
-                      <p className="text-[20px] font-bold text-foreground mb-1">{currentWord.korean}</p>
+                      {/* 뜻 + 괄호 해설 분리 표시 */}
+                      {(() => {
+                        const m = currentWord.korean.match(/^([^(]+?)\s*\((.+)\)\s*$/);
+                        if (m) {
+                          return (
+                            <div className="flex items-start gap-2 mb-1">
+                              <p className="text-[20px] font-bold text-foreground shrink-0">{m[1].trim()}</p>
+                              <p className="text-[12px] text-accent/70 font-medium leading-snug mt-1.5">{m[2].trim()}</p>
+                            </div>
+                          );
+                        }
+                        return <p className="text-[20px] font-bold text-foreground mb-1">{currentWord.korean}</p>;
+                      })()}
                       {currentWord.context && (
                         <div className="mb-4 border-l-2 border-foreground/10 pl-4">
                           <p className="text-[12px] leading-relaxed text-foreground/70 serif italic">
@@ -579,8 +735,8 @@ export default function VocabDashboard() {
               {wrongWords.map(item => (
                 <div key={item.id} className="glass rounded-[2rem] border border-foreground/5 overflow-hidden">
                   {/* 표제어 행 */}
-                  <div className="p-5 flex items-center justify-between">
-                    <div>
+                  <div className="p-5 flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
                       <div className="text-[16px] font-bold text-foreground flex items-center gap-2">
                         {item.words?.word}
                         <button
@@ -592,8 +748,8 @@ export default function VocabDashboard() {
                         {/* 유/반의어 배지 */}
                         {item.question_type && item.question_type !== 'vocab' && (
                           <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
-                            item.question_type === 'synonym' 
-                              ? 'bg-sky-100 text-sky-600' 
+                            item.question_type === 'synonym'
+                              ? 'bg-sky-100 text-sky-600'
                               : 'bg-rose-100 text-rose-600'
                           }`}>
                             {item.question_type === 'synonym' ? '유의어' : '반의어'}
@@ -602,9 +758,17 @@ export default function VocabDashboard() {
                       </div>
                       <div className="text-[12px] text-accent font-medium mt-0.5">{item.words?.korean}</div>
                     </div>
-                    <span className="text-[10px] font-black bg-red-500 text-white px-3 py-1 rounded-full uppercase tracking-tighter shrink-0">
-                      오답 {item.wrong_count}회
-                    </span>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <span className="text-[10px] font-black bg-red-500 text-white px-3 py-1 rounded-full uppercase tracking-tighter">
+                        오답 {item.wrong_count}회
+                      </span>
+                      <button
+                        onClick={() => setConfirmDeleteId(item.id)}
+                        className="text-[10px] font-black px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-500 hover:text-white transition-all"
+                      >
+                        ✓ 암기완료
+                      </button>
+                    </div>
                   </div>
                   {/* 내 답 / 정답 행 */}
                   {(item.selected_answer || item.correct_answer) && (
@@ -624,6 +788,7 @@ export default function VocabDashboard() {
                   )}
                 </div>
               ))}
+
               {wrongWords.length === 0 && (
                 <div className="p-16 text-center text-accent font-bold opacity-40 serif">
                   {timeFilter === 'all' ? '모든 단어를 완벽히 학습했습니다! 🎉' : `${TIME_FILTERS.find(f => f.value === timeFilter)?.label} 이내 오답이 없습니다.`}
@@ -631,6 +796,30 @@ export default function VocabDashboard() {
               )}
             </div>
           )}
+        </div>
+
+      )}
+
+      {/* 암기완료 확인 모달 */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={() => setConfirmDeleteId(null)} />
+          <div className="relative bg-background rounded-[2.5rem] p-7 shadow-2xl w-full max-w-xs text-center animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="text-emerald-500" size={28} strokeWidth={2} />
+            </div>
+            <h3 className="text-[17px] font-black text-foreground mb-2">정말 외웠나요? 🧠</h3>
+            <p className="text-[12px] text-accent leading-relaxed mb-6">
+              이 단어를 오답 노트에서 삭제합니다.<br />
+              나중에 다시 틀리면 자동으로 추가돼요.
+            </p>
+            <div className="flex gap-2.5">
+              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 py-3 rounded-2xl bg-foreground/5 text-accent font-bold text-[13px] hover:bg-foreground/10 transition-all">취소</button>
+              <button onClick={handleConfirmDelete} disabled={isDeleting} className="flex-1 py-3 rounded-2xl bg-emerald-500 text-white font-black text-[13px] hover:bg-emerald-600 active:scale-95 transition-all disabled:opacity-50">
+                {isDeleting ? '삭제 중...' : '✓ 암기완료!'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

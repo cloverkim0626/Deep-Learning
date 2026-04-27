@@ -4,12 +4,13 @@ import { supabase } from './supabase';
  * Assign a specific Word Set (Passage) to a list of students
  * students: array of { name, class } objects
  */
-export async function assignSetToStudents(setId: string, students: { name: string; class: string }[]) {
+export async function assignSetToStudents(setId: string, students: { name: string; class: string }[], dueDate?: string | null) {
   const inserts = students.map(s => ({
     student_name: s.name,
     student_class: s.class,
     set_id: setId,
     status: 'active',
+    due_date: dueDate || null,
   }));
 
   const { error } = await supabase
@@ -135,6 +136,32 @@ export async function getWrongAnswers(studentName: string, timeFilter: TimeFilte
 }
 
 /**
+ * Delete a wrong answer record (student marked it as memorized)
+ */
+export async function deleteWrongAnswer(id: string) {
+  const { error } = await supabase
+    .from('wrong_answers')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
+ * Delete wrong answers for a student by word IDs (One More! drill pass)
+ */
+export async function deleteWrongAnswersByWordIds(studentName: string, wordIds: string[]) {
+  if (!wordIds.length) return { success: true };
+  const { error } = await supabase
+    .from('wrong_answers')
+    .delete()
+    .eq('student_id', studentName)
+    .in('word_id', wordIds);
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
  * Get all assignments grouped by student (for admin view)
  * Includes status field for filtering
  */
@@ -142,7 +169,7 @@ export async function getAllAssignments() {
   // Step 1: set_assignments 전체 조회 (join 없이)
   const { data: assignments, error: aErr } = await supabase
     .from('set_assignments')
-    .select('id, student_name, student_class, set_id, status, completed_at, created_at')
+    .select('id, student_name, student_class, set_id, status, completed_at, created_at, due_date')
     .order('student_name', { ascending: true })
     .order('created_at', { ascending: false });
 
@@ -157,7 +184,7 @@ export async function getAllAssignments() {
   const setIds = [...new Set(assignments.map((a: Record<string, unknown>) => a.set_id as string))];
   const { data: wordSets, error: wErr } = await supabase
     .from('word_sets')
-    .select('id, label, workbook, chapter')
+    .select('id, label, workbook, chapter, passage_number, sub_sub_category')
     .in('id', setIds);
 
   if (wErr) {
@@ -166,9 +193,9 @@ export async function getAllAssignments() {
   }
 
   // Step 3: 수동 merge
-  const wsMap: Record<string, { id: string; label: string; workbook: string; chapter: string }> = {};
+  const wsMap: Record<string, { id: string; label: string; workbook: string; chapter: string; passage_number?: string; sub_sub_category?: string }> = {};
   (wordSets || []).forEach((ws: Record<string, unknown>) => {
-    wsMap[ws.id as string] = ws as { id: string; label: string; workbook: string; chapter: string };
+    wsMap[ws.id as string] = ws as { id: string; label: string; workbook: string; chapter: string; passage_number?: string; sub_sub_category?: string };
   });
 
   return (assignments as Record<string, unknown>[]).map((row) => ({
@@ -214,4 +241,60 @@ export async function getAssignedStudentsForSet(setId: string): Promise<string[]
     .or('status.eq.active,status.is.null');
   if (error) throw error;
   return (data || []).map(d => d.student_name);
+}
+
+/**
+ * 학생이 특정 set_id에서 유의어+단어뜻 모두 90%+ 통과한 경우
+ * set_assignments.status를 'completed'로 자동 업데이트
+ */
+export async function autoCompleteAssignmentIfAllPassed(
+  studentName: string,
+  setId: string
+): Promise<boolean> {
+  try {
+    // 1. 해당 학생-set_id 활성 배당 조회
+    const { data: assignment } = await supabase
+      .from('set_assignments')
+      .select('id, status')
+      .eq('student_name', studentName)
+      .eq('set_id', setId)
+      .or('status.eq.active,status.is.null')
+      .single();
+
+    if (!assignment) return false;
+
+    // 2. 해당 set_id의 통과 세션 조회 (14일 이내)
+    const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: sessions } = await supabase
+      .from('test_sessions')
+      .select('test_type, correct_count, total_questions')
+      .eq('student_name', studentName)
+      .eq('set_id', setId)
+      .not('completed_at', 'is', null)
+      .gte('created_at', since);
+
+    if (!sessions || sessions.length === 0) return false;
+
+    const isSynPass = (s: { test_type: string; correct_count: number; total_questions: number }) =>
+      ['synonym', 'synonym_drill', 'card_game'].includes(s.test_type) &&
+      s.total_questions > 0 && s.correct_count / s.total_questions >= 0.9;
+    const isVocabPass = (s: { test_type: string; correct_count: number; total_questions: number }) =>
+      ['vocab', 'vocab_drill'].includes(s.test_type) &&
+      s.total_questions > 0 && s.correct_count / s.total_questions >= 0.9;
+
+    const synPassed = sessions.some(isSynPass);
+    const vocabPassed = sessions.some(isVocabPass);
+
+    if (!synPassed || !vocabPassed) return false;
+
+    // 3. 자동 완료 처리
+    await supabase
+      .from('set_assignments')
+      .update({ status: 'completed', completed_at: new Date().toISOString() })
+      .eq('id', assignment.id);
+
+    return true;
+  } catch {
+    return false;
+  }
 }

@@ -1,0 +1,183 @@
+﻿import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+export async function POST(req: NextRequest) {
+  try {
+    const {
+      essay_sentences,
+      full_text,
+      question_prompt,
+      extra_condition,
+      used_fragments,   // string[] ???대? ?ъ슜??臾몄옣/?뺣떟 議곌컖??(以묐났 諛⑹?)
+    } = await req.json();
+
+
+    if (!question_prompt) {
+      return NextResponse.json({ error: "question_prompt required" }, { status: 400 });
+    }
+
+    // ?? 吏臾?援ъ꽦 ??????????????????????????????????????????????????????????????
+    // passageStr: 臾몄젣 ?앹꽦???ъ슜 (踰덊샇 + ?쒓뎅???ы븿)
+    // cleanPassage: passage_with_blank 異쒕젰???먮Ц 洹몃?濡?(踰덊샇/?쒓뎅???놁쓬)
+    let passageStr = "";
+    let cleanPassage = "";
+    if (essay_sentences && essay_sentences.length > 0) {
+      const sents = essay_sentences as { idx: number; text: string; korean: string }[];
+      // AI媛 吏臾??꾩껜瑜??ш뎄?깊븷 ???덈룄濡??쒖닔 ?곷Ц 臾몄옣留?癒쇱? ?쒓났
+      cleanPassage = sents.map(s => s.text).join(" ");
+      // 踰덊샇 + ?쒓뎅?대뒗 ?좏깮 留λ씫?⑹쑝濡?蹂꾨룄 ?쒓났
+      passageStr = sents.map(s => `[${s.idx}] ${s.text}  (?쒓뎅?? ${s.korean})`).join("\n");
+    } else if (full_text) {
+      cleanPassage = full_text;
+      passageStr = full_text;
+    } else {
+      return NextResponse.json({ error: "No passage content provided" }, { status: 400 });
+    }
+
+    // ?? ?꾨＼?꾪듃 議고빀 ?????????????????????????????????????????????????????????
+    let filled = question_prompt
+      .replace(/\{passage\}/g, passageStr)
+      .replace(/\{sentence\}/g, passageStr)
+      .replace(/\{extra_condition\}/g, extra_condition || "?놁쓬");
+
+    const hasPlaceholder =
+      question_prompt.includes("{passage}") ||
+      question_prompt.includes("{sentence}");
+
+    if (!hasPlaceholder) {
+      filled = `## 吏臾?\n${passageStr}\\n\\n---\\n\\n${question_prompt}`;
+    }
+
+    // ?? passage_with_blank ?뺥솗??蹂댁옣 ???먮Ц 二쇱엯 ??????????????????????????????
+    // AI媛 passage_with_blank 異쒕젰 ??諛섎뱶???꾨옒 ?먮Ц??湲곕컲?쇰줈 ?댁빞 ?⑥쓣 紐낆떆
+    const sentenceCount = cleanPassage.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0).length;
+    const passageIntegrityBlock =
+      `\n\n## ??PASSAGE INTEGRITY REQUIREMENT\n` +
+      `The original passage has approximately ${sentenceCount} sentences.\n` +
+      `When you output passage_with_blank, you MUST include ALL sentences of the original passage.\n` +
+      `The ONLY change allowed: replace selected_fragment with exactly six underscores: ______\n` +
+      `Do NOT abbreviate, truncate, summarize, or omit any part of the passage.\n` +
+      `Use this exact passage text as your source:\n` +
+      `"""\n${cleanPassage}\n"""\n`;
+
+    filled = filled + passageIntegrityBlock;
+
+    // ?? 鍮꾩쨷蹂?exclusion 二쇱엯 ?????????????????????????????????????????????????
+    // used_fragments: ?댁쟾 ?몄텧?먯꽌 ?대? 異쒖젣??'?꾩껜 ?먮Ц 臾몄옣' ???꾩쟾 ?ъ궗??湲덉?
+    if (Array.isArray(used_fragments) && used_fragments.length > 0) {
+      const sentenceList = used_fragments
+        .filter(Boolean)
+        .map((f: string, i: number) => `  ${i + 1}. "${f}"`)
+        .join("\n");
+
+      const exclusionBlock =
+        `## ??ALREADY-USED SENTENCES ??ABSOLUTE PROHIBITION\n` +
+        `The following sentences have ALREADY been used to create questions in this set.\n` +
+        `You MUST NOT select any of these sentences, or any sentence that shares 3 or more consecutive words with them.\n` +
+        `You MUST choose a COMPLETELY DIFFERENT sentence from a different part of the passage.\n` +
+        `Violation of this rule will produce a completely useless duplicate question.\n\n` +
+        `FORBIDDEN SENTENCES:\n${sentenceList}\n\n` +
+        `REQUIRED: Pick a sentence that shares NO substantial phrasing with the above.\n`;
+
+      filled = `${exclusionBlock}\n---\n\n${filled}`;
+    }
+
+
+    // ?? OpenAI ?몄텧 ??????????????????????????????????????????????????????????
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "system", content: filled }],
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+    });
+
+    const parsed = JSON.parse(response.choices[0].message.content || "{}");
+
+    // ?? 臾몄젣 ?좏삎 媛먯? ????????????????????????????????????????????????????????
+    // ?곗꽑?쒖쐞: parsed.question_type 紐낆떆 > chunks 議댁옱 ?щ?
+    const questionType: string =
+      parsed.question_type
+        ? String(parsed.question_type)                              // ?꾨＼?꾪듃媛 紐낆떆???좏삎
+        : Array.isArray(parsed.chunks) && parsed.chunks.length > 0
+          ? "諛곗뿴"
+          : "?쒖닠??;
+
+    // ?? selected_sentence 蹂듭썝 ?????????????????????????????????????????????
+    let selectedSentence: { idx: number; text: string; korean: string } | null = null;
+    const rawText =
+      (typeof parsed.selected_sentence === "string" ? parsed.selected_sentence : null)
+      ?? parsed.blank_position_sentence   // 鍮덉뭏???꾩슜 ?꾨뱶
+      ?? parsed.correct_sentence          // 諛곗뿴???꾩껜 臾몄옣
+      ?? parsed.selected_text
+      ?? null;
+
+    if (rawText) {
+      // essay_sentences媛 ?덉쑝硫?留ㅼ묶 ?쒕룄, ?놁쑝硫?rawText 洹몃?濡??ъ슜
+      const found = Array.isArray(essay_sentences) && essay_sentences.length > 0
+        ? (essay_sentences as { idx: number; text: string; korean: string }[])
+            .find(s => s.text.trim() === rawText.trim())
+        : undefined;
+      selectedSentence = found ?? { idx: 0, text: rawText, korean: "" };
+    }
+
+    // ?? ?좏삎蹂??묐떟 ???????????????????????????????????????????????????????????
+
+    // ??諛곗뿴??    if (questionType === "諛곗뿴") {
+      return NextResponse.json({
+        question_type:                  "諛곗뿴",
+        question_text:                  parsed.question_text || "?ㅼ쓬 吏臾몄쓽 鍮덉뭏???ㅼ뼱媛?留먯쓣 二쇱뼱吏??⑥뼱(?닿뎄)瑜?紐⑤몢 ?ъ슜?섏뿬 ?щ컮瑜??쒖꽌濡?諛곗뿴?섏떆??",
+        // 吏臾??꾩껜 ??諛곗뿴 ???臾몄옣? ______?쇰줈 ?④꺼???덉쓬
+        passage_with_blank:             parsed.passage_with_blank ?? null,
+        blank_position_sentence:        parsed.blank_position_sentence ?? rawText ?? "",
+        // ?뚰듃蹂닿린 ?꾩슜 ???숈깮??踰꾪듉 ?대┃ ?꾩뿏 蹂????놁쓬
+        blank_position_sentence_korean: parsed.blank_position_sentence_korean ?? "",
+        selected_fragment:              parsed.selected_fragment ?? rawText ?? "",
+        chunks:                         parsed.chunks,
+        correct_order:                  parsed.correct_order,
+        correct_sentence:               rawText ?? parsed.correct_sentence ?? "",
+        conditions:                     parsed.conditions ?? [],
+        difficulty:                     parsed.difficulty ?? "",
+        grammar_point:                  parsed.grammar_point ?? "",
+        distractor_analysis:            parsed.distractor_analysis ?? "",
+        // selected_sentence???대? 李몄“?⑸쭔 ??UI?먯꽌 吏곸젒 異쒕젰 湲덉?
+        selected_sentence:              selectedSentence,
+      });
+    }
+
+
+    // ??鍮덉뭏??(question_type === "鍮덉뭏" or passage_with_blank 議댁옱)
+    if (questionType === "鍮덉뭏" || parsed.passage_with_blank) {
+      return NextResponse.json({
+        question_type:        "鍮덉뭏",
+        question_text:        parsed.question_instruction || "臾몃㎘???ㅼ쓬 湲??鍮덉뭏???ㅼ뼱媛??곸젅??留먯쓣 二쇱뼱吏?<議곌굔>??留욊쾶 ?곗떆??",
+        passage_with_blank:   parsed.passage_with_blank ?? "",
+        correct_answer:       parsed.correct_answer ?? "",
+        total_words:          parsed.total_words ?? 0,
+        given_words:          parsed.given_words ?? [],
+        given_words_display:  parsed.given_words_display ?? (parsed.given_words ?? []).join(" / "),
+        given_words_count:    parsed.given_words_count ?? (parsed.given_words ?? []).length,
+        find_words:           parsed.find_words ?? [],
+        find_words_count:     parsed.find_words_count ?? (parsed.find_words ?? []).length,
+        multi_word_notes:     parsed.multi_word_notes ?? [],
+        conditions:           parsed.conditions ?? [],
+        difficulty:           parsed.difficulty ?? "",
+        selection_reason:     parsed.selection_reason ?? "",
+        distractor_analysis:  parsed.distractor_analysis ?? "",
+        selected_sentence:    selectedSentence,
+      });
+    }
+
+    // ???쇰컲 ?쒖닠??    return NextResponse.json({
+      question_type:  "?쒖닠??,
+      question_text:  parsed.question_text || "",
+      selected_sentence: selectedSentence,
+    });
+
+  } catch (e: unknown) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+  }
+}
+
+

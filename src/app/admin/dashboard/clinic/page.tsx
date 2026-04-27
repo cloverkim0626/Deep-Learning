@@ -25,6 +25,8 @@ export default function AdminClinicPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "waiting" | "in-progress" | "completed">("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; student: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadQueue = useCallback(async () => {
     try {
@@ -55,13 +57,17 @@ export default function AdminClinicPage() {
     }
   };
 
-  const handleDelete = async (id: string, studentName: string) => {
-    if (!confirm(`${studentName} 학생의 클리닉 접수를 삭제할까요?`)) return;
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return;
+    setDeleting(true);
     try {
-      await deleteClinicEntry(id);
+      await deleteClinicEntry(deleteConfirm.id);
       await loadQueue();
+      setDeleteConfirm(null);
     } catch (err: unknown) {
       alert("삭제 실패: " + (err as Error).message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -81,7 +87,6 @@ export default function AdminClinicPage() {
     return "bg-success/5 text-success border-success/20";
   };
 
-  // Total completed time stats
   const completedItems = queue.filter(q => q.status === "completed" && q.started_at && q.completed_at);
   const totalMinutes = completedItems.reduce((acc, q) => {
     const dur = getDurationMinutes(q.started_at, q.completed_at);
@@ -176,7 +181,6 @@ export default function AdminClinicPage() {
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border ${statusColor(item.status)}`}>
                           {statusLabel(item.status)}
                         </span>
-                        {/* Duration badge */}
                         {duration !== null && (
                           <span className="text-[10px] font-bold text-success bg-success/5 border border-success/10 px-2 py-0.5 rounded-lg flex items-center gap-1">
                             <Timer size={10} /> {duration}분
@@ -211,7 +215,6 @@ export default function AdminClinicPage() {
                       <p className="text-[14px] text-foreground font-medium leading-relaxed">{item.topic}</p>
                     </div>
 
-                    {/* Time records */}
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div className="bg-accent-light rounded-xl px-3 py-3">
                         <p className="text-[9px] font-black text-accent uppercase tracking-widest mb-1">접수</p>
@@ -237,7 +240,6 @@ export default function AdminClinicPage() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex gap-3 flex-wrap">
                       {item.status === "waiting" && (
                         <button
@@ -266,9 +268,8 @@ export default function AdminClinicPage() {
                           대기로 되돌리기
                         </button>
                       )}
-                      {/* Delete button — always visible */}
                       <button
-                        onClick={() => handleDelete(item.id, item.student_name)}
+                        onClick={() => setDeleteConfirm({ id: item.id, student: item.student_name })}
                         className="h-11 px-4 bg-error/8 text-error text-[12px] font-black rounded-xl border border-error/15 hover:bg-error hover:text-white transition-all flex items-center gap-1.5"
                       >
                         <Trash2 size={13} strokeWidth={2.5} /> 삭제
@@ -279,6 +280,32 @@ export default function AdminClinicPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* 삭제 확인 모달 */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="glass w-full max-w-sm rounded-[2rem] border border-red-100 shadow-2xl overflow-hidden">
+            <div className="p-7 border-b border-red-50">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
+                <Trash2 size={20} className="text-red-500" />
+              </div>
+              <h3 className="text-[16px] font-black text-foreground">클리닉 접수 삭제</h3>
+              <p className="text-[13px] font-bold text-foreground mt-3 bg-red-50 px-4 py-3 rounded-xl">{deleteConfirm.student} 학생</p>
+              <p className="text-[11px] text-accent/70 mt-3">이 클리닉 접수를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+            </div>
+            <div className="p-5 flex gap-3">
+              <button onClick={() => setDeleteConfirm(null)}
+                className="flex-1 h-11 rounded-xl border border-foreground/10 text-[13px] font-black text-accent hover:text-foreground transition-all">
+                취소
+              </button>
+              <button onClick={handleDeleteConfirm} disabled={deleting}
+                className="flex-1 h-11 rounded-xl bg-red-500 text-white text-[13px] font-black hover:bg-red-600 transition-all disabled:opacity-40">
+                {deleting ? "삭제 중..." : "삭제 확인"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

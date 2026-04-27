@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Users, BookOpen, MessageSquare, LogOut, BarChart2, MessageCircle } from "lucide-react";
+import { Users, BookOpen, MessageSquare, LogOut, BarChart2, MessageCircle, PenTool, GraduationCap } from "lucide-react";
 
 export default function AdminDashboardLayout({
   children,
@@ -27,6 +27,9 @@ export default function AdminDashboardLayout({
           </Link>
         </div>
         <nav className="flex-1 p-6 flex flex-col gap-2">
+           <Link href="/admin/dashboard/classes" className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-semibold text-foreground/70 hover:text-foreground hover:bg-accent-light transition-all">
+             <GraduationCap size={18} strokeWidth={1.5} /> 수업 관리
+           </Link>
            <Link href="/admin/dashboard/students" className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-semibold text-foreground/70 hover:text-foreground hover:bg-accent-light transition-all">
              <Users size={18} strokeWidth={1.5} /> 수강생 관리
            </Link>
@@ -41,6 +44,9 @@ export default function AdminDashboardLayout({
            </Link>
            <Link href="/admin/dashboard/qna" className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-semibold text-accent hover:text-foreground hover:bg-accent-light transition-all">
              <MessageCircle size={18} strokeWidth={1.5} /> Q&amp;A 답변 관리
+           </Link>
+           <Link href="/admin/dashboard/essay-prompts" className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-semibold text-accent hover:text-foreground hover:bg-accent-light transition-all">
+             <PenTool size={18} strokeWidth={1.5} /> 프롬프트 관리
            </Link>
         </nav>
         <div className="p-6 border-t border-foreground/5 shrink-0">
