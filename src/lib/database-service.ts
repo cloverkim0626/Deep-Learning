@@ -473,6 +473,42 @@ export async function deleteQnaAnswer(answerId: string) {
   if (error) throw error;
 }
 
+// ─── Q&A Hearts ───────────────────────────────────────────────────────────────
+/** 주어진 target_id 목록의 하트 현황을 반환 { [target_id]: string[] } */
+export async function getQnaHearts(targetIds: string[]): Promise<Record<string, string[]>> {
+  if (!targetIds.length) return {};
+  const { data, error } = await supabase
+    .from('qna_hearts')
+    .select('target_id, author_name')
+    .in('target_id', targetIds);
+  if (error) { console.warn('getQnaHearts error:', error.message); return {}; }
+  const result: Record<string, string[]> = {};
+  for (const row of data ?? []) {
+    if (!result[row.target_id]) result[row.target_id] = [];
+    result[row.target_id].push(row.author_name);
+  }
+  return result;
+}
+
+/** 하트 토글 — 이미 누른 경우 취소, 안 누른 경우 추가 */
+export async function toggleQnaHeart(
+  targetId: string,
+  targetType: 'post' | 'answer',
+  authorName: string,
+  currentLiked: boolean
+): Promise<void> {
+  if (currentLiked) {
+    await supabase.from('qna_hearts')
+      .delete()
+      .eq('target_id', targetId)
+      .eq('author_name', authorName);
+  } else {
+    await supabase.from('qna_hearts')
+      .upsert([{ target_id: targetId, target_type: targetType, author_name: authorName }],
+              { onConflict: 'target_id,author_name' });
+  }
+}
+
 // ─── Essay Prompt Templates ───────────────────────────────────────────────────
 export async function getEssayPromptTemplates() {
   const { data, error } = await supabase

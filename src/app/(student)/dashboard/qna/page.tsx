@@ -6,6 +6,7 @@ import {
   getQnaPosts, createQnaPost, addQnaAnswer,
   deleteQnaPost, updateQnaPost,
   updateQnaAnswer, deleteQnaAnswer,
+  getQnaHearts, toggleQnaHeart,
 } from "@/lib/database-service";
 
 type Answer = { id: string; author: string; isTeacher: boolean; text: string; time: string; };
@@ -13,9 +14,7 @@ type Post = {
   id: string; author: string; passage: string; question: string;
   status: "pending" | "answered"; answers: Answer[]; showAnswers: boolean; createdAt: string;
 };
-
-// 하트 리액션 state — id(post or answer) → 누른 사람 목록
-type Hearts = Record<string, string[]>;
+type Hearts = Record<string, string[]>; // target_id → [author_name, ...]
 
 const TAXONOMY: Record<string, Record<string, string[]>> = {
   "수능특강 영어": {
@@ -35,15 +34,7 @@ const KTALK = {
   otherBubble:   { bg: "#FFFFFF", text: "#222222" },
   teacherBubble: { bg: "#FFF8CC", text: "#4a3800" },
 };
-
 const BUBBLE_RADIUS = "18px";
-
-// 하트 토글 헬퍼
-function toggleHeart(prev: Hearts, id: string, who: string): Hearts {
-  const cur = prev[id] || [];
-  const already = cur.includes(who);
-  return { ...prev, [id]: already ? cur.filter(u => u !== who) : [...cur, who] };
-}
 
 export default function QnAPage() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -69,18 +60,9 @@ export default function QnAPage() {
   const [editingAnswerText, setEditingAnswerText] = useState("");
   const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null);
 
-  // 하트 state — localStorage('qna_hearts')에 영구 저장 (브라우저 공유)
-  const [hearts, setHearts] = useState<Hearts>(() => {
-    try {
-      const raw = localStorage.getItem("qna_hearts");
-      return raw ? (JSON.parse(raw) as Hearts) : {};
-    } catch { return {}; }
-  });
-
-  // localStorage 동기화: hearts 변경될 때마다 저장
-  useEffect(() => {
-    try { localStorage.setItem("qna_hearts", JSON.stringify(hearts)); } catch { /* noop */ }
-  }, [hearts]);
+  // ── Supabase 기반 하트 state ──
+  const [hearts, setHearts] = useState<Hearts>({});
+  const [heartLoading, setHeartLoading] = useState<string | null>(null); // 낙관적 업데이트 중 중복 방지
 
   useEffect(() => {
     try {
@@ -109,6 +91,11 @@ export default function QnAPage() {
           showAnswers: false,
         }));
         setPosts(formatted);
+
+        // 하트 데이터 로드
+        const allIds = formatted.flatMap(p => [p.id, ...p.answers.map(a => a.id)]);
+        const h = await getQnaHearts(allIds);
+        setHearts(h);
       }
     } catch (err) { console.warn("Q&A load failed:", err); }
     finally { setIsLoading(false); }
@@ -119,6 +106,34 @@ export default function QnAPage() {
   const isMyPost = (a: string) => a === studentName;
   const resetModal = () => { setStep(1); setSelWorkbook(""); setSelChapter(""); setSelPassage(""); setQuestion(""); };
   const toggleAnswers = (id: string) => setPosts(prev => prev.map(p => p.id === id ? { ...p, showAnswers: !p.showAnswers } : p));
+
+  // ── 하트 토글 (낙관적 업데이트) ──
+  const handleHeart = async (targetId: string, targetType: "post" | "answer") => {
+    if (heartLoading === targetId) return;
+    const likers = hearts[targetId] || [];
+    const liked = likers.includes(studentName);
+    // 낙관적 업데이트
+    setHearts(prev => ({
+      ...prev,
+      [targetId]: liked
+        ? (prev[targetId] || []).filter(u => u !== studentName)
+        : [...(prev[targetId] || []), studentName],
+    }));
+    setHeartLoading(targetId);
+    try {
+      await toggleQnaHeart(targetId, targetType, studentName, liked);
+    } catch {
+      // 실패 시 롤백
+      setHearts(prev => ({
+        ...prev,
+        [targetId]: liked
+          ? [...(prev[targetId] || []), studentName]
+          : (prev[targetId] || []).filter(u => u !== studentName),
+      }));
+    } finally {
+      setHeartLoading(null);
+    }
+  };
 
   const handlePostQuestion = async () => {
     if (!question.trim()) return;
@@ -175,26 +190,24 @@ export default function QnAPage() {
     finally { setDeletingAnswerId(null); }
   };
 
-  // ── 하트 버튼 컴포넌트 (인라인) ──
-  const HeartBtn = ({ id, big = false }: { id: string; big?: boolean }) => {
-    const likers = hearts[id] || [];
+  // ── 하트 버튼 컴포넌트 — 항상 박스로 표시, 0도 표시 ──
+  const HeartBtn = ({ targetId, targetType }: { targetId: string; targetType: "post" | "answer" }) => {
+    const likers = hearts[targetId] || [];
     const liked = likers.includes(studentName);
     const count = likers.length;
     return (
       <button
-        onClick={e => { e.stopPropagation(); setHearts(prev => toggleHeart(prev, id, studentName)); }}
-        className="flex items-center gap-0.5 transition-all hover:scale-115 active:scale-90 select-none"
-        style={{ fontSize: big ? 15 : 13, lineHeight: 1 }}
-        title="하트"
+        onClick={e => { e.stopPropagation(); handleHeart(targetId, targetType); }}
+        className="flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:scale-105 active:scale-95 select-none"
+        style={{
+          background: liked ? "rgba(210,50,80,0.12)" : "rgba(0,0,0,0.07)",
+          border: liked ? "1px solid rgba(210,50,80,0.3)" : "1px solid rgba(0,0,0,0.10)",
+          color: liked ? "#c0203a" : "rgba(40,40,40,0.6)",
+          fontSize: 10, fontWeight: 700, lineHeight: 1,
+        }}
       >
-        <span style={{ filter: liked ? "none" : "grayscale(1) opacity(0.45)" }}>
-          {liked ? "❤️" : "🤍"}
-        </span>
-        {count > 0 && (
-          <span style={{ fontSize: big ? 11 : 9, fontWeight: 800, color: liked ? "#d0304a" : "rgba(0,0,0,0.35)", marginLeft: 1 }}>
-            {count}
-          </span>
-        )}
+        <span style={{ fontSize: 13 }}>{liked ? "❤️" : "🤍"}</span>
+        <span>{count}</span>
       </button>
     );
   };
@@ -240,9 +253,6 @@ export default function QnAPage() {
         ) : posts.map(post => {
           const isMine = isMyPost(post.author);
           const isEditingThisPost = editingPostId === post.id;
-          const postLikers = hearts[post.id] || [];
-          const postLiked = postLikers.includes(studentName);
-          const postLikeCount = postLikers.length;
 
           let myBubble = KTALK.myBubbleA;
           if (isMine) {
@@ -280,7 +290,7 @@ export default function QnAPage() {
                     </span>
                   </div>
 
-                  {/* ── 말풍선 (하트는 말풍선 내 오른쪽 하단) ── */}
+                  {/* 말풍선 */}
                   <div
                     className="w-full px-4 pt-3 pb-2"
                     style={{
@@ -309,9 +319,8 @@ export default function QnAPage() {
                       </p>
                     )}
 
-                    {/* 말풍선 하단 — 상태배지 왼쪽 / 하트 + 댓글 오른쪽 */}
+                    {/* 말풍선 하단 */}
                     <div className="flex items-center justify-between mt-2">
-                      {/* 상태 배지 */}
                       <span
                         className="text-[9px] font-black px-2 py-0.5 rounded-full"
                         style={post.status === "answered"
@@ -322,25 +331,17 @@ export default function QnAPage() {
                         {post.status === "answered" ? "✓ 답변완료" : "○ 대기중"}
                       </span>
 
-                      {/* 오른쪽: 하트 + 댓글 버튼 */}
-                      <div className="flex items-center gap-2">
-                        {/* 하트 */}
-                        <button
-                          onClick={e => { e.stopPropagation(); setHearts(prev => toggleHeart(prev, post.id, studentName)); }}
-                          className="flex items-center gap-0.5 transition-all hover:scale-110 active:scale-90 select-none"
-                          style={{ fontSize: 14, lineHeight: 1 }}
-                        >
-                          <span>{postLiked ? "❤️" : "🤍"}</span>
-                          <span style={{ fontSize: 10, fontWeight: 800, color: postLiked ? "#d0304a" : "rgba(40,40,40,0.55)", marginLeft: 1, minWidth: 8 }}>
-                            {postLikeCount > 0 ? postLikeCount : ""}
-                          </span>
-                        </button>
-
-                        {/* 댓글 토글 버튼 — 오른쪽 하단 이동 */}
+                      {/* 오른쪽: 하트 박스 + 댓글 박스 */}
+                      <div className="flex items-center gap-1.5">
+                        <HeartBtn targetId={post.id} targetType="post" />
                         <button
                           onClick={e => { e.stopPropagation(); toggleAnswers(post.id); }}
                           className="flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:scale-105"
-                          style={{ background: post.showAnswers ? "rgba(30,80,120,0.18)" : "rgba(0,0,0,0.07)", color: "#1a5070", fontSize: 10, fontWeight: 700 }}
+                          style={{
+                            background: post.showAnswers ? "rgba(30,80,120,0.18)" : "rgba(0,0,0,0.07)",
+                            border: post.showAnswers ? "1px solid rgba(30,80,120,0.28)" : "1px solid rgba(0,0,0,0.10)",
+                            color: "#1a5070", fontSize: 10, fontWeight: 700,
+                          }}
                         >
                           <MessageCircle size={11} strokeWidth={2.5} />
                           {post.answers.length}
@@ -355,7 +356,6 @@ export default function QnAPage() {
                     <span className="text-[10px]" style={{ color: "rgba(20,50,70,0.5)" }}>
                       {new Date(post.createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
-
                     {isMine && !isEditingThisPost && (
                       <>
                         <button onClick={e => { e.stopPropagation(); handleStartEditPost(post); }} title="수정"
@@ -393,7 +393,6 @@ export default function QnAPage() {
               {/* ── 댓글 섹션 ── */}
               {post.showAnswers && (
                 <div className="mt-2 pl-11 animate-in fade-in slide-in-from-top-2 duration-300">
-
                   <div className="flex flex-col gap-2 items-end">
                     {post.answers.length === 0 && (
                       <p className="w-full text-center py-2 text-[11px] font-semibold" style={{ color: "rgba(20,50,70,0.4)" }}>
@@ -405,17 +404,13 @@ export default function QnAPage() {
                       const isMe = ans.author === studentName;
                       const isEditingThis = editingAnswerId === ans.id;
                       const isDeletingThis = deletingAnswerId === ans.id;
-                      const ansLikers = hearts[ans.id] || [];
-                      const ansLiked = ansLikers.includes(studentName);
-                      const ansLikeCount = ansLikers.length;
-
                       const bubbleBg = ans.isTeacher ? KTALK.teacherBubble.bg : isMe ? "#D4F0FF" : KTALK.otherBubble.bg;
                       const bubbleColor = ans.isTeacher ? KTALK.teacherBubble.text : isMe ? "#0d2d3f" : "#222222";
 
                       return (
                         <div key={ans.id} className="flex flex-col items-end" style={{ width: "90%" }}>
 
-                          {/* 이름 행 — 프로필 아이콘 + 이름 (한 번만) */}
+                          {/* 이름 행 */}
                           <div className="flex items-center gap-1.5 mb-1 pr-0.5 self-end">
                             {ans.isTeacher && (
                               <span
@@ -425,7 +420,6 @@ export default function QnAPage() {
                                 ⭐ 선생님
                               </span>
                             )}
-                            {/* 프로필 아이콘 */}
                             <div
                               className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-black"
                               style={ans.isTeacher
@@ -435,10 +429,8 @@ export default function QnAPage() {
                                   : { background: "rgba(255,255,255,0.7)", color: "#3a5a6a", border: "1px solid rgba(255,255,255,0.9)" }
                               }
                             >
-                              {/* 선생님은 T아이콘 없이, 이름 레이블이 ⭐ 선생님으로 충분 */}
                               {ans.isTeacher ? "🏫" : isMe ? studentName[0] : <User size={10} />}
                             </div>
-                            {/* 이름 — 선생님이면 "선생님" 한 번만, 학생이면 닉네임 */}
                             <span className="text-[10px] font-bold" style={{ color: ans.isTeacher ? "#7a5a00" : "rgba(20,50,70,0.65)" }}>
                               {ans.isTeacher ? "선생님" : isMe ? `나 (${studentName})` : "익명"}
                             </span>
@@ -448,8 +440,7 @@ export default function QnAPage() {
                           <div
                             className="w-full px-4 pt-3 pb-2"
                             style={{
-                              background: bubbleBg,
-                              color: bubbleColor,
+                              background: bubbleBg, color: bubbleColor,
                               borderRadius: BUBBLE_RADIUS,
                               boxShadow: ans.isTeacher
                                 ? "0 2px 10px rgba(255,210,0,0.2), 0 1px 3px rgba(0,0,0,0.08)"
@@ -479,18 +470,9 @@ export default function QnAPage() {
                               </p>
                             )}
 
-                            {/* 말풍선 오른쪽 하단 — 하트 */}
+                            {/* 하트 박스 — 오른쪽 하단 */}
                             <div className="flex justify-end mt-1.5">
-                              <button
-                                onClick={e => { e.stopPropagation(); setHearts(prev => toggleHeart(prev, ans.id, studentName)); }}
-                                className="flex items-center gap-0.5 transition-all hover:scale-110 active:scale-90 select-none"
-                                style={{ fontSize: 13, lineHeight: 1 }}
-                              >
-                                <span>{ansLiked ? "❤️" : "🤍"}</span>
-                                <span style={{ fontSize: 9, fontWeight: 800, color: ansLiked ? "#d0304a" : "rgba(40,40,40,0.55)", marginLeft: 1, minWidth: 7 }}>
-                                  {ansLikeCount > 0 ? ansLikeCount : ""}
-                                </span>
-                              </button>
+                              <HeartBtn targetId={ans.id} targetType="answer" />
                             </div>
                           </div>
 
@@ -532,7 +514,7 @@ export default function QnAPage() {
                     })}
                   </div>
 
-                  {/* ── 댓글 입력창 ── */}
+                  {/* 댓글 입력창 */}
                   <div
                     className="flex items-center gap-2 mt-3 px-3 py-2 rounded-2xl"
                     style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.8)" }}
