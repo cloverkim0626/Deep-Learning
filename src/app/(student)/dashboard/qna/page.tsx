@@ -14,6 +14,9 @@ type Post = {
   status: "pending" | "answered"; answers: Answer[]; showAnswers: boolean; createdAt: string;
 };
 
+// 이모지 리액션 타입
+type Reactions = Record<string, Record<string, string[]>>; // ansId -> emoji -> [who]
+
 const TAXONOMY: Record<string, Record<string, string[]>> = {
   "수능특강 영어": {
     "Part1": ["1강","2강","3강","4강","5강","6강","7강","11강","12강","13강","14강","15강","16강"],
@@ -26,13 +29,18 @@ const TAXONOMY: Record<string, Record<string, string[]>> = {
 };
 const QNA_TOP_OPTIONS = [...Object.keys(TAXONOMY), "교재 없음 (기타 자료)", "기타 문의"];
 
-// ── 카카오톡 색상 팔레트 ──
+const REACTION_EMOJIS = ["❤️", "😂", "👍", "😮", "😢"];
+
+// 카카오톡 색상 팔레트
 const KTALK = {
-  myBubbleA:     { bg: "#B8E4F9", text: "#0d2d3f" },   // 하늘색
-  myBubbleB:     { bg: "#FFD6E0", text: "#3f0d1a" },   // 핑크색
+  myBubbleA:     { bg: "#B8E4F9", text: "#0d2d3f" },
+  myBubbleB:     { bg: "#FFD6E0", text: "#3f0d1a" },
   otherBubble:   { bg: "#FFFFFF", text: "#222222" },
-  teacherBubble: { bg: "#FFD700", text: "#3a2800" },   // 강렬한 진한 노란색
+  teacherBubble: { bg: "#FFF8CC", text: "#4a3800" },  // 연한 노란색
 };
+
+// 공통 둥근 말풍선 radius (모든 면 균일)
+const BUBBLE_RADIUS = "18px";
 
 export default function QnAPage() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -57,6 +65,11 @@ export default function QnAPage() {
   const [editingAnswerId, setEditingAnswerId] = useState<string | null>(null);
   const [editingAnswerText, setEditingAnswerText] = useState("");
   const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null);
+
+  // 이모지 리액션 state — { [answerId]: { [emoji]: [user, ...] } }
+  const [reactions, setReactions] = useState<Reactions>({});
+  // 리액션 피커 열린 댓글 ID
+  const [reactionPickerId, setReactionPickerId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -95,6 +108,17 @@ export default function QnAPage() {
   const isMyPost = (a: string) => a === studentName;
   const resetModal = () => { setStep(1); setSelWorkbook(""); setSelChapter(""); setSelPassage(""); setQuestion(""); };
   const toggleAnswers = (id: string) => setPosts(prev => prev.map(p => p.id === id ? { ...p, showAnswers: !p.showAnswers } : p));
+
+  // 이모지 리액션 토글
+  const toggleReaction = (answerId: string, emoji: string) => {
+    setReactions(prev => {
+      const cur = prev[answerId]?.[emoji] || [];
+      const already = cur.includes(studentName);
+      const next = already ? cur.filter(u => u !== studentName) : [...cur, studentName];
+      return { ...prev, [answerId]: { ...(prev[answerId] || {}), [emoji]: next } };
+    });
+    setReactionPickerId(null);
+  };
 
   const handlePostQuestion = async () => {
     if (!question.trim()) return;
@@ -154,8 +178,11 @@ export default function QnAPage() {
   let myPostCount = 0;
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-500" style={{ background: "linear-gradient(180deg, #a8c5d4 0%, #b8d0dc 100%)" }}>
-
+    <div
+      className="flex flex-col h-full animate-in fade-in duration-500"
+      style={{ background: "linear-gradient(180deg, #a8c5d4 0%, #b8d0dc 100%)" }}
+      onClick={() => setReactionPickerId(null)}
+    >
       {/* ── 헤더 ── */}
       <div
         className="px-5 pt-10 pb-4 shrink-0 flex items-center justify-between shadow-sm"
@@ -166,7 +193,7 @@ export default function QnAPage() {
           <p className="text-[12px] mt-0.5 font-semibold" style={{ color: "rgba(20,50,70,0.65)" }}>학습 중 궁금한 점을 자유롭게 질문하세요 💬</p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={e => { e.stopPropagation(); setShowModal(true); }}
           className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all outline-none"
           style={{ background: "#FEE500", color: "#3A1D1D" }}
         >
@@ -203,31 +230,25 @@ export default function QnAPage() {
             <div key={post.id} className="flex flex-col items-stretch mb-2">
 
               {/* ── 질문 말풍선 행 ── */}
-              <div className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
+              <div className={`flex items-start gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
 
-                {/* 아바타 */}
-                {!isMine ? (
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 self-end mb-1"
-                    style={{ background: "rgba(255,255,255,0.6)", border: "1.5px solid rgba(255,255,255,0.8)", color: "#4a6a7a" }}
-                  >
-                    <User size={16} />
-                  </div>
-                ) : (
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 self-end mb-1 text-[13px] font-black"
-                    style={{ background: "#FEE500", color: "#3A1D1D" }}
-                  >
-                    {studentName[0]}
-                  </div>
-                )}
+                {/* 아바타 — 이름 옆(위쪽)에 고정 */}
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-5 text-[13px] font-black"
+                  style={isMine
+                    ? { background: "#FEE500", color: "#3A1D1D" }
+                    : { background: "rgba(255,255,255,0.65)", border: "1.5px solid rgba(255,255,255,0.85)", color: "#4a6a7a" }
+                  }
+                >
+                  {isMine ? studentName[0] : <User size={16} />}
+                </div>
 
                 {/* 말풍선 묶음 */}
                 <div className={`flex flex-col ${isMine ? "items-end" : "items-start"} gap-1`} style={{ width: "80%" }}>
 
                   {/* 이름 + 지문 */}
-                  <div className={`flex items-center gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
-                    <span className="text-[11px] font-bold" style={{ color: "rgba(20,50,70,0.75)" }}>
+                  <div className={`flex items-center gap-1.5 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
+                    <span className="text-[11px] font-bold" style={{ color: "rgba(20,50,70,0.8)" }}>
                       {isMine ? `나 (${studentName})` : "익명"}
                     </span>
                     <span
@@ -238,13 +259,13 @@ export default function QnAPage() {
                     </span>
                   </div>
 
-                  {/* 말풍선 — 가로 100%で固定 */}
+                  {/* 말풍선 */}
                   <div
-                    className="w-full px-4 py-3 shadow-sm"
+                    className="w-full px-4 py-3"
                     style={{
                       background: isMine ? myBubble.bg : KTALK.otherBubble.bg,
                       color: isMine ? myBubble.text : KTALK.otherBubble.text,
-                      borderRadius: isMine ? "20px 4px 20px 20px" : "4px 20px 20px 20px",
+                      borderRadius: BUBBLE_RADIUS,
                       boxShadow: "0 1px 4px rgba(0,0,0,0.13)",
                     }}
                   >
@@ -256,7 +277,7 @@ export default function QnAPage() {
                         style={{
                           width: "100%", background: "rgba(255,255,255,0.55)",
                           border: "1px solid rgba(0,0,0,0.12)", color: "#1a2a36",
-                          borderRadius: 8, padding: "6px 10px",
+                          borderRadius: 10, padding: "6px 10px",
                           resize: "vertical" as const, fontSize: 15, lineHeight: 1.6, outline: "none",
                         }}
                         onKeyDown={e => { if (e.key === "Escape") handleCancelEditPost(); }}
@@ -288,11 +309,10 @@ export default function QnAPage() {
                       {new Date(post.createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
 
-                    {/* 댓글 펼치기 버튼 */}
                     <button
-                      onClick={() => toggleAnswers(post.id)}
+                      onClick={e => { e.stopPropagation(); toggleAnswers(post.id); }}
                       className="flex items-center gap-1 px-2.5 py-1 rounded-full transition-all hover:scale-105"
-                      style={{ background: post.showAnswers ? "rgba(30,80,120,0.18)" : "rgba(255,255,255,0.5)", color: "#1a5070", fontSize: 10, fontWeight: 700, border: "1px solid rgba(30,80,120,0.2)" }}
+                      style={{ background: post.showAnswers ? "rgba(30,80,120,0.2)" : "rgba(255,255,255,0.52)", color: "#1a5070", fontSize: 10, fontWeight: 700, border: "1px solid rgba(30,80,120,0.18)" }}
                     >
                       <MessageCircle size={11} strokeWidth={2.5} />
                       댓글 {post.answers.length}
@@ -301,30 +321,30 @@ export default function QnAPage() {
 
                     {isMine && !isEditingThisPost && (
                       <>
-                        <button onClick={() => handleStartEditPost(post)} title="수정"
+                        <button onClick={e => { e.stopPropagation(); handleStartEditPost(post); }} title="수정"
                           className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/50 transition-all"
-                          style={{ color: "rgba(20,50,70,0.45)" }}>
+                          style={{ color: "rgba(20,50,70,0.42)" }}>
                           <Pencil size={11} />
                         </button>
-                        <button onClick={() => handleDeletePost(post.id)} title="삭제"
+                        <button onClick={e => { e.stopPropagation(); handleDeletePost(post.id); }} title="삭제"
                           disabled={deletingPostId === post.id}
                           className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-200/60 transition-all disabled:opacity-30"
-                          style={{ color: "rgba(180,60,60,0.7)" }}>
+                          style={{ color: "rgba(180,60,60,0.65)" }}>
                           {deletingPostId === post.id ? <span className="text-[9px] animate-pulse">…</span> : <Trash2 size={11} />}
                         </button>
                       </>
                     )}
                     {isMine && isEditingThisPost && (
                       <>
-                        <button onClick={() => handleSaveEditPost(post.id)} title="저장"
+                        <button onClick={e => { e.stopPropagation(); handleSaveEditPost(post.id); }} title="저장"
                           disabled={savingPostId === post.id}
                           className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-green-200/60 transition-all disabled:opacity-30"
                           style={{ color: "#1a7a2a" }}>
                           {savingPostId === post.id ? <span className="text-[9px] animate-pulse">…</span> : <Check size={12} />}
                         </button>
-                        <button onClick={handleCancelEditPost} title="취소"
+                        <button onClick={e => { e.stopPropagation(); handleCancelEditPost(); }} title="취소"
                           className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/50 transition-all"
-                          style={{ color: "rgba(20,50,70,0.45)" }}>
+                          style={{ color: "rgba(20,50,70,0.42)" }}>
                           <X size={12} />
                         </button>
                       </>
@@ -333,26 +353,14 @@ export default function QnAPage() {
                 </div>
               </div>
 
-              {/* ── 댓글 섹션 — 항상 오른쪽 정렬 ── */}
+              {/* ── 댓글 섹션 ── */}
               {post.showAnswers && (
-                <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
-
-                  {/* 댓글 구분선 라벨 */}
-                  <div className="flex items-center gap-2 mb-3 px-1">
-                    <div style={{ flex: 1, height: 1, background: "rgba(20,60,90,0.15)" }} />
-                    <span
-                      className="text-[10px] font-black tracking-wider px-3 py-1 rounded-full flex items-center gap-1"
-                      style={{ background: "rgba(255,255,255,0.55)", color: "rgba(20,60,90,0.65)", border: "1px solid rgba(255,255,255,0.8)" }}
-                    >
-                      💬 댓글 {post.answers.length}개
-                    </span>
-                    <div style={{ flex: 1, height: 1, background: "rgba(20,60,90,0.15)" }} />
-                  </div>
+                <div className="mt-2 pl-11 animate-in fade-in slide-in-from-top-2 duration-300">
 
                   {/* 댓글 말풍선들 — 모두 오른쪽 정렬 */}
                   <div className="flex flex-col gap-2 items-end">
                     {post.answers.length === 0 && (
-                      <p className="w-full text-center py-2 text-[11px] font-semibold" style={{ color: "rgba(20,50,70,0.45)" }}>
+                      <p className="w-full text-center py-2 text-[11px] font-semibold" style={{ color: "rgba(20,50,70,0.4)" }}>
                         아직 댓글이 없어요 🌱
                       </p>
                     )}
@@ -361,40 +369,53 @@ export default function QnAPage() {
                       const isMe = ans.author === studentName;
                       const isEditingThis = editingAnswerId === ans.id;
                       const isDeletingThis = deletingAnswerId === ans.id;
+                      const ansReactions = reactions[ans.id] || {};
+                      const isPickerOpen = reactionPickerId === ans.id;
 
-                      // 선생님 말풍선: 진한 노란색 + 왼쪽 강조 바
                       const bubbleBg = ans.isTeacher ? KTALK.teacherBubble.bg : isMe ? "#D4F0FF" : KTALK.otherBubble.bg;
                       const bubbleColor = ans.isTeacher ? KTALK.teacherBubble.text : isMe ? "#0d2d3f" : "#222222";
 
                       return (
-                        <div key={ans.id} className="flex flex-col items-end" style={{ width: "85%" }}>
+                        <div key={ans.id} className="flex flex-col items-end relative" style={{ width: "90%" }}>
 
-                          {/* 이름 행 */}
-                          <div className="flex items-center gap-1.5 mb-1 pr-1">
+                          {/* 이름 행 — 프로필 아이콘 + 이름 */}
+                          <div className="flex items-center gap-1.5 mb-1 pr-0.5 self-end">
                             {ans.isTeacher && (
                               <span
-                                className="text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse"
-                                style={{ background: "#FFD700", color: "#3a2800", boxShadow: "0 0 6px rgba(255,200,0,0.6)" }}
+                                className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                                style={{ background: "#FFD700", color: "#3a2800", boxShadow: "0 0 5px rgba(255,200,0,0.5)" }}
                               >
                                 ⭐ 선생님
                               </span>
                             )}
-                            <span className="text-[10px] font-bold" style={{ color: ans.isTeacher ? "#8a6000" : "rgba(20,50,70,0.6)" }}>
-                              {ans.isTeacher ? "선생님 답변" : isMe ? `나 (${studentName})` : "익명"}
+                            {/* 프로필 아이콘 (이름 바로 왼쪽) */}
+                            <div
+                              className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-black"
+                              style={ans.isTeacher
+                                ? { background: "#FEE500", color: "#3A1D1D" }
+                                : isMe
+                                  ? { background: "#FEE500", color: "#3A1D1D" }
+                                  : { background: "rgba(255,255,255,0.7)", color: "#3a5a6a", border: "1px solid rgba(255,255,255,0.9)" }
+                              }
+                            >
+                              {ans.isTeacher ? "T" : isMe ? studentName[0] : <User size={10} />}
+                            </div>
+                            <span className="text-[10px] font-bold" style={{ color: ans.isTeacher ? "#7a5a00" : "rgba(20,50,70,0.65)" }}>
+                              {ans.isTeacher ? "선생님" : isMe ? `나 (${studentName})` : "익명"}
                             </span>
                           </div>
 
-                          {/* 말풍선 — 고정 100%폭 */}
+                          {/* 말풍선 — 모든 모서리 균일하게 둥글게 */}
                           <div
-                            className="w-full px-4 py-3 shadow-sm"
+                            className="w-full px-4 py-3 relative"
                             style={{
                               background: bubbleBg,
                               color: bubbleColor,
-                              borderRadius: "4px 20px 20px 20px",
+                              borderRadius: BUBBLE_RADIUS,   // ← 모두 균일
                               boxShadow: ans.isTeacher
-                                ? "0 2px 12px rgba(255,200,0,0.35), 0 1px 4px rgba(0,0,0,0.10)"
-                                : "0 1px 4px rgba(0,0,0,0.10)",
-                              borderLeft: ans.isTeacher ? "4px solid #FF9900" : "none",
+                                ? "0 2px 10px rgba(255,210,0,0.25), 0 1px 3px rgba(0,0,0,0.08)"
+                                : "0 1px 3px rgba(0,0,0,0.09)",
+                              borderLeft: ans.isTeacher ? "3px solid #FFD700" : "none",
                             }}
                           >
                             {isEditingThis ? (
@@ -405,7 +426,7 @@ export default function QnAPage() {
                                 style={{
                                   width: "100%", background: "rgba(255,255,255,0.65)",
                                   border: "1px solid rgba(0,0,0,0.1)", color: "#1a2a36",
-                                  borderRadius: 6, padding: "4px 8px",
+                                  borderRadius: 8, padding: "4px 8px",
                                   resize: "vertical" as const, fontSize: 13, outline: "none",
                                 }}
                                 onKeyDown={e => {
@@ -414,40 +435,94 @@ export default function QnAPage() {
                                 }}
                               />
                             ) : (
-                              <p style={{ fontSize: 13, lineHeight: 1.65, fontWeight: ans.isTeacher ? 700 : 500, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                              <p style={{ fontSize: 13, lineHeight: 1.65, fontWeight: ans.isTeacher ? 600 : 500, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                                 {ans.text}
                               </p>
                             )}
+
+                            {/* 이모지 리액션 표시 */}
+                            {Object.entries(ansReactions).filter(([, users]) => users.length > 0).length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {Object.entries(ansReactions).filter(([, users]) => users.length > 0).map(([emoji, users]) => (
+                                  <button
+                                    key={emoji}
+                                    onClick={e => { e.stopPropagation(); toggleReaction(ans.id, emoji); }}
+                                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full transition-all hover:scale-110 active:scale-95"
+                                    style={{
+                                      background: users.includes(studentName) ? "rgba(30,100,180,0.18)" : "rgba(0,0,0,0.06)",
+                                      border: users.includes(studentName) ? "1px solid rgba(30,100,180,0.3)" : "1px solid rgba(0,0,0,0.08)",
+                                      fontSize: 12,
+                                    }}
+                                  >
+                                    <span>{emoji}</span>
+                                    <span style={{ fontSize: 10, fontWeight: 700, color: users.includes(studentName) ? "#1a5caa" : "#555" }}>{users.length}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
 
-                          {/* 시간 + 수정/삭제 */}
-                          <div className="flex items-center gap-1 mt-0.5 pr-1">
+                          {/* 시간 + 이모지 버튼 + 수정/삭제 */}
+                          <div className="flex items-center gap-1 mt-0.5 pr-0.5 relative">
                             <span className="text-[9px]" style={{ color: "rgba(20,50,70,0.42)" }}>{ans.time}</span>
+
+                            {/* 이모지 리액션 추가 버튼 */}
+                            <button
+                              onClick={e => { e.stopPropagation(); setReactionPickerId(isPickerOpen ? null : ans.id); }}
+                              className="text-[13px] leading-none px-1 py-0.5 rounded-full hover:bg-white/50 transition-all hover:scale-110"
+                              title="리액션 추가"
+                            >
+                              🙂
+                            </button>
+
+                            {/* 이모지 피커 팝업 */}
+                            {isPickerOpen && (
+                              <div
+                                className="absolute bottom-7 right-0 flex gap-1 px-3 py-2 rounded-2xl shadow-lg z-10 animate-in fade-in zoom-in-95 duration-150"
+                                style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(8px)", border: "1px solid rgba(200,200,200,0.5)" }}
+                                onClick={e => e.stopPropagation()}
+                              >
+                                {REACTION_EMOJIS.map(emoji => {
+                                  const picked = (ansReactions[emoji] || []).includes(studentName);
+                                  return (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => toggleReaction(ans.id, emoji)}
+                                      className="text-[22px] transition-all hover:scale-125 active:scale-95 leading-none"
+                                      style={{ filter: picked ? "drop-shadow(0 0 4px rgba(30,100,220,0.5))" : "none" }}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+
                             {isMe && !ans.isTeacher && !isEditingThis && (
                               <>
-                                <button onClick={() => handleStartEditAnswer(ans)} title="수정"
+                                <button onClick={e => { e.stopPropagation(); handleStartEditAnswer(ans); }} title="수정"
                                   className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/50 transition-all"
-                                  style={{ color: "rgba(20,50,70,0.4)" }}>
+                                  style={{ color: "rgba(20,50,70,0.38)" }}>
                                   <Pencil size={9} />
                                 </button>
-                                <button onClick={() => handleDeleteAnswer(ans.id)} title="삭제"
+                                <button onClick={e => { e.stopPropagation(); handleDeleteAnswer(ans.id); }} title="삭제"
                                   disabled={isDeletingThis}
                                   className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-200/60 transition-all disabled:opacity-30"
-                                  style={{ color: "rgba(180,60,60,0.6)" }}>
+                                  style={{ color: "rgba(180,60,60,0.58)" }}>
                                   {isDeletingThis ? <span className="text-[8px] animate-pulse">…</span> : <Trash2 size={9} />}
                                 </button>
                               </>
                             )}
                             {isMe && !ans.isTeacher && isEditingThis && (
                               <>
-                                <button onClick={() => handleSaveEditAnswer(ans.id)} title="저장"
+                                <button onClick={e => { e.stopPropagation(); handleSaveEditAnswer(ans.id); }} title="저장"
                                   className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-green-200/60 transition-all"
                                   style={{ color: "#1a7a2a" }}>
                                   <Check size={10} />
                                 </button>
-                                <button onClick={handleCancelEditAnswer} title="취소"
+                                <button onClick={e => { e.stopPropagation(); handleCancelEditAnswer(); }} title="취소"
                                   className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/50 transition-all"
-                                  style={{ color: "rgba(20,50,70,0.4)" }}>
+                                  style={{ color: "rgba(20,50,70,0.38)" }}>
                                   <X size={10} />
                                 </button>
                               </>
@@ -460,10 +535,11 @@ export default function QnAPage() {
 
                   {/* ── 댓글 입력창 ── */}
                   <div
-                    className="flex items-center gap-2 mt-4 px-3 py-2 rounded-2xl"
+                    className="flex items-center gap-2 mt-3 px-3 py-2 rounded-2xl"
                     style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.8)" }}
+                    onClick={e => e.stopPropagation()}
                   >
-                    <MessageCircle size={14} strokeWidth={2} style={{ color: "rgba(20,60,90,0.4)", flexShrink: 0 }} />
+                    <MessageCircle size={14} strokeWidth={2} style={{ color: "rgba(20,60,90,0.38)", flexShrink: 0 }} />
                     <input
                       value={commentInput[post.id] || ""}
                       onChange={e => setCommentInput(prev => ({ ...prev, [post.id]: e.target.value }))}
@@ -473,7 +549,7 @@ export default function QnAPage() {
                       style={{ color: "#1a2a36" }}
                     />
                     <button
-                      onClick={() => handlePostComment(post.id)}
+                      onClick={e => { e.stopPropagation(); handlePostComment(post.id); }}
                       disabled={submittingCommentId === post.id}
                       className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 disabled:opacity-40 transition-all"
                       style={{ background: "#FEE500", color: "#3A1D1D" }}
