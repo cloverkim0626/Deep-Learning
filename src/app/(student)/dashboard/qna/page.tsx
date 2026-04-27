@@ -212,7 +212,7 @@ export default function QnAPage() {
     );
   };
 
-  let myPostCount = 0;
+  let myPostCount = 0; // 미사용 — 단일색으로 통일
 
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-500" style={{ background: "linear-gradient(180deg, #a8c5d4 0%, #b8d0dc 100%)" }}>
@@ -254,11 +254,8 @@ export default function QnAPage() {
           const isMine = isMyPost(post.author);
           const isEditingThisPost = editingPostId === post.id;
 
-          let myBubble = KTALK.myBubbleA;
-          if (isMine) {
-            myBubble = myPostCount % 2 === 0 ? KTALK.myBubbleA : KTALK.myBubbleB;
-            myPostCount++;
-          }
+          let myBubble = KTALK.myBubbleA; // 항상 하늘색으로 통일
+          if (isMine) { myPostCount++; } // count는 유지(오류 방지)
 
           return (
             <div key={post.id} className="flex flex-col items-stretch mb-2">
