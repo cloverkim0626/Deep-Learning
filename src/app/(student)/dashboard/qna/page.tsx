@@ -69,8 +69,18 @@ export default function QnAPage() {
   const [editingAnswerText, setEditingAnswerText] = useState("");
   const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null);
 
-  // 하트 state (post & answer 공용, key = post.id or answer.id)
-  const [hearts, setHearts] = useState<Hearts>({});
+  // 하트 state — localStorage('qna_hearts')에 영구 저장 (브라우저 공유)
+  const [hearts, setHearts] = useState<Hearts>(() => {
+    try {
+      const raw = localStorage.getItem("qna_hearts");
+      return raw ? (JSON.parse(raw) as Hearts) : {};
+    } catch { return {}; }
+  });
+
+  // localStorage 동기화: hearts 변경될 때마다 저장
+  useEffect(() => {
+    try { localStorage.setItem("qna_hearts", JSON.stringify(hearts)); } catch { /* noop */ }
+  }, [hearts]);
 
   useEffect(() => {
     try {
