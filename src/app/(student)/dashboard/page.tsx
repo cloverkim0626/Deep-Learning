@@ -577,20 +577,48 @@ export default function VocabDashboard() {
                       </h2>
                     </div>
 
-                    {/* ── 어원 — 세련된 볼드 산세리프 ── */}
+                    {/* ── 어원 — 반짝이는 골드 금장 ── */}
                     <div className="absolute inset-x-5 flex flex-col items-center justify-start" style={{ top: '67%', bottom: '32px' }}>
                       {etymology.length > 0 && (
                         <div className="text-center">
-                          <p className="text-[7.5px] font-black text-purple-600/50 uppercase tracking-[0.35em] mb-2.5">ETYMOLOGY</p>
+                          {/* ETYMOLOGY 라벨 — 골드 shimmer */}
+                          <p
+                            className="text-[7.5px] font-black uppercase tracking-[0.45em] mb-2.5"
+                            style={{
+                              background: "linear-gradient(90deg, #b8861a 0%, #f5d060 30%, #ffe87a 50%, #f5d060 70%, #b8861a 100%)",
+                              WebkitBackgroundClip: "text",
+                              WebkitTextFillColor: "transparent",
+                              backgroundClip: "text",
+                            }}
+                          >✦ ETYMOLOGY ✦</p>
+
                           <div className="flex items-start justify-center flex-wrap gap-x-3 gap-y-2">
                             {etymology.map((p, i) => (
                               <span key={i} className="flex items-start gap-3">
                                 <span className="flex flex-col items-center">
-                                  <span className="text-[19px] font-semibold text-purple-800/90 tracking-tight leading-tight" style={{ fontFamily: "'Inter', 'Outfit', system-ui, sans-serif" }}>{p.part}</span>
-                                  <span className="text-[10px] text-purple-500/65 font-semibold mt-0.5">({p.meaning})</span>
+                                  {/* 어원 파트 — 빛나는 골드 텍스트 */}
+                                  <span
+                                    className="text-[21px] font-black tracking-tight leading-tight"
+                                    style={{
+                                      fontFamily: "'Inter', 'Outfit', system-ui, sans-serif",
+                                      background: "linear-gradient(160deg, #ffe066 0%, #f5c400 25%, #ffe87a 50%, #d4a800 75%, #ffe066 100%)",
+                                      WebkitBackgroundClip: "text",
+                                      WebkitTextFillColor: "transparent",
+                                      backgroundClip: "text",
+                                      filter: "drop-shadow(0 1px 3px rgba(220,170,0,0.45))",
+                                    }}
+                                  >{p.part}</span>
+                                  {/* 뜻 — 따뜻한 앰버 골드 */}
+                                  <span
+                                    className="text-[10px] font-bold mt-0.5"
+                                    style={{ color: "#c4920a" }}
+                                  >({p.meaning})</span>
                                 </span>
                                 {i < etymology.length - 1 && (
-                                  <span className="text-purple-400/45 font-light text-[18px] leading-none mt-1">+</span>
+                                  <span
+                                    className="font-black text-[18px] leading-none mt-1"
+                                    style={{ color: "#e8be30", opacity: 0.7 }}
+                                  >+</span>
                                 )}
                               </span>
                             ))}
