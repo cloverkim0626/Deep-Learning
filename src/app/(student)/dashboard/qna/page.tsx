@@ -320,14 +320,10 @@ export default function QnAPage() {
                           className="flex items-center gap-0.5 transition-all hover:scale-110 active:scale-90 select-none"
                           style={{ fontSize: 14, lineHeight: 1 }}
                         >
-                          <span style={{ filter: postLiked ? "none" : "grayscale(1) opacity(0.4)" }}>
-                            {postLiked ? "❤️" : "🤍"}
+                          <span>{postLiked ? "❤️" : "🤍"}</span>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: postLiked ? "#d0304a" : "rgba(40,40,40,0.55)", marginLeft: 1, minWidth: 8 }}>
+                            {postLikeCount > 0 ? postLikeCount : ""}
                           </span>
-                          {postLikeCount > 0 && (
-                            <span style={{ fontSize: 10, fontWeight: 800, color: postLiked ? "#d0304a" : "rgba(0,0,0,0.35)", marginLeft: 1 }}>
-                              {postLikeCount}
-                            </span>
-                          )}
                         </button>
 
                         {/* 댓글 토글 버튼 — 오른쪽 하단 이동 */}
@@ -480,14 +476,10 @@ export default function QnAPage() {
                                 className="flex items-center gap-0.5 transition-all hover:scale-110 active:scale-90 select-none"
                                 style={{ fontSize: 13, lineHeight: 1 }}
                               >
-                                <span style={{ filter: ansLiked ? "none" : "grayscale(1) opacity(0.35)" }}>
-                                  {ansLiked ? "❤️" : "🤍"}
+                                <span>{ansLiked ? "❤️" : "🤍"}</span>
+                                <span style={{ fontSize: 9, fontWeight: 800, color: ansLiked ? "#d0304a" : "rgba(40,40,40,0.55)", marginLeft: 1, minWidth: 7 }}>
+                                  {ansLikeCount > 0 ? ansLikeCount : ""}
                                 </span>
-                                {ansLikeCount > 0 && (
-                                  <span style={{ fontSize: 9, fontWeight: 800, color: ansLiked ? "#d0304a" : "rgba(0,0,0,0.3)", marginLeft: 1 }}>
-                                    {ansLikeCount}
-                                  </span>
-                                )}
                               </button>
                             </div>
                           </div>
