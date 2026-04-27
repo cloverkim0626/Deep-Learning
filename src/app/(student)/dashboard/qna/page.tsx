@@ -254,7 +254,7 @@ export default function QnAPage() {
             <div key={post.id} className="flex flex-col items-stretch mb-2">
 
               {/* ── 질문 말풍선 행 ── */}
-              <div className={`flex items-start gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
+              <div className="flex items-start gap-2 flex-row">
 
                 {/* 아바타 */}
                 <div
@@ -268,10 +268,10 @@ export default function QnAPage() {
                 </div>
 
                 {/* 말풍선 묶음 */}
-                <div className={`flex flex-col ${isMine ? "items-end" : "items-start"} gap-1`} style={{ width: "80%" }}>
+                <div className="flex flex-col items-start gap-1" style={{ width: "80%" }}>
 
                   {/* 이름 + 지문 */}
-                  <div className={`flex items-center gap-1.5 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
+                  <div className="flex items-center gap-1.5 flex-row">
                     <span className="text-[11px] font-bold" style={{ color: "rgba(20,50,70,0.8)" }}>
                       {isMine ? `나 (${studentName})` : "익명"}
                     </span>
@@ -351,7 +351,7 @@ export default function QnAPage() {
                   </div>
 
                   {/* 시간 + 수정/삭제 */}
-                  <div className={`flex items-center gap-1.5 flex-wrap ${isMine ? "flex-row-reverse" : "flex-row"}`}>
+                  <div className="flex items-center gap-1.5 flex-wrap flex-row">
                     <span className="text-[10px]" style={{ color: "rgba(20,50,70,0.5)" }}>
                       {new Date(post.createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
