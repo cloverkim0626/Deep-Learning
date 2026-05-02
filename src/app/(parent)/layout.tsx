@@ -11,8 +11,8 @@ type Period = 'today' | 'week' | 'month';
 type RankEntry = { name: string; displayName: string; score: number; rank: number };
 type HofEntry = { rank: number; name: string; displayName: string; score: number; month: number; year: number };
 
-const PERIOD_LABELS: Record<Period, string> = { today: '?ㅻ뒛', week: '?대쾲 二?, month: '?대쾲 ?? };
-const MONTH_LABELS: Record<number, string> = { 1:'1??,2:'2??,3:'3??,4:'4??,5:'5??,6:'6??,7:'7??,8:'8??,9:'9??,10:'10??,11:'11??,12:'12?? };
+const PERIOD_LABELS: Record<Period, string> = { today: '오늘', week: '이번 주', month: '이번 달' };
+const MONTH_LABELS: Record<number, string> = { 1:'1월',2:'2월',3:'3월',4:'4월',5:'5월',6:'6월',7:'7월',8:'8월',9:'9월',10:'10월',11:'11월',12:'12월' };
 
 function getMedalStyle(rank: number) {
   if (rank === 1) return { bg: 'from-yellow-400 to-amber-300', text: 'text-yellow-900', icon: '?쪍', glow: '0 0 20px rgba(251,191,36,0.5)' };
@@ -71,8 +71,8 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
       supabase.from("parent_qna_answers").select("id,text,created_at,is_teacher").eq("is_teacher", true).gt("created_at", lastSeen).order("created_at", { ascending: false }),
     ]);
     const items = [
-      ...(notices || []).map((n: any) => ({ id: n.id, text: `?뱽 ??怨듭?: ${n.title}`, time: n.created_at })),
-      ...(answers || []).map((a: any) => ({ id: a.id, text: `?뮠 ?좎깮???듦????щ졇?듬땲??, time: a.created_at })),
+      ...(notices || []).map((n: any) => ({ id: n.id, text: `새 공지사항: ${n.title}`, time: n.created_at })),
+      ...(answers || []).map((a: any) => ({ id: a.id, text: `선생님이 답변을 남겼습니다`, time: a.created_at })),
     ].sort((a, b) => b.time.localeCompare(a.time));
     setNotifications(items);
     setHasNew(items.length > 0);
@@ -94,10 +94,10 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
   const handleChangePw = async () => {
     if (!session) return;
     const { data: acc } = await supabase.from("parent_accounts").select("password").eq("student_name", session.studentName).eq("class_name", session.className).maybeSingle();
-    if (!acc || acc.password !== curPw) { setPwErr("?꾩옱 鍮꾨?踰덊샇媛 ?щ컮瑜댁? ?딆뒿?덈떎."); return; }
-    if (newPw.length < 4) { setPwErr("??鍮꾨?踰덊샇??4?먮━ ?댁긽?댁뼱???⑸땲??"); return; }
+    if (!acc || acc.password !== curPw) { setPwErr("현재 비밀번호가 올바르지 않습니다."); return; }
+    if (newPw.length < 4) { setPwErr("새 비밀번호는 4자리 이상이어야 합니다."); return; }
     await supabase.from("parent_accounts").update({ password: newPw }).eq("student_name", session.studentName).eq("class_name", session.className);
-    setPwModal(false); setCurPw(""); setNewPw(""); setPwErr(""); alert("鍮꾨?踰덊샇媛 蹂寃쎈릺?덉뒿?덈떎.");
+    setPwModal(false); setCurPw(""); setNewPw(""); setPwErr(""); alert("비밀번호가 변경되었습니다.");
   };
 
   const handleLogout = () => { sessionStorage.removeItem("parentSession"); router.push("/"); };
@@ -305,7 +305,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
                           {entry.displayName.slice(0, 1)}
                         </div>
                         <p className={`text-[11px] font-black ${c.text} truncate`}>{entry.displayName}</p>
-                        <p className={`text-[9px] font-bold ${c.text} opacity-70 mt-0.5`}>{entry.score}??/p>
+                        <p className={`text-[9px] font-bold ${c.text} opacity-70 mt-0.5`}>{entry.score}점</p>
                       </div>
                     );
                   })}
@@ -318,27 +318,26 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
               </div>
             )}
 
-            {/* ???먮? ?쒖쐞 諛곕꼫 */}
             {ranking.find(r => r.name === session.studentName) && (
               <div className="mx-5 mb-3 px-5 py-3.5 rounded-2xl bg-slate-800 text-white flex items-center gap-3 shrink-0">
                 <Flame size={18} className="text-orange-300" />
                 <div>
-                  <p className="text-[10px] font-black opacity-50 uppercase tracking-widest">???먮? ?쒖쐞</p>
+                  <p className="text-[10px] font-black opacity-50 uppercase tracking-widest">나의 순위</p>
                   <p className="text-[15px] font-black">
-                    {ranking.find(r => r.name === session.studentName)?.rank}??쨌 {ranking.find(r => r.name === session.studentName)?.score}??                  </p>
+                    {ranking.find(r => r.name === session.studentName)?.rank}위 · {ranking.find(r => r.name === session.studentName)?.score}점
+                  </p>
                 </div>
               </div>
             )}
 
-            {/* ??궧 由ъ뒪??*/}
             <div className="flex-1 overflow-y-auto px-5 pb-6 space-y-2">
               {lbLoading ? (
                 Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 rounded-2xl bg-slate-100 animate-pulse" />)
               ) : ranking.length === 0 ? (
                 <div className="py-16 text-center">
                   <Trophy size={32} className="text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-400 font-bold">?꾩쭅 湲곕줉???놁뒿?덈떎.</p>
-                  <p className="text-slate-300 text-[11px] font-medium mt-1">?뚯뒪?몃? ?꾨즺?섎㈃ ?쒖쐞??諛섏쁺?⑸땲??</p>
+                  <p className="text-slate-400 font-bold">아직 기록이 없습니다.</p>
+                  <p className="text-slate-300 text-[11px] font-medium mt-1">테스트를 완료하면 순위가 생길 거예요.</p>
                 </div>
               ) : ranking.map(entry => {
                 const medal = getMedalStyle(entry.rank);
@@ -363,9 +362,9 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-black text-slate-800 truncate">
                         {entry.displayName || entry.name}
-                        {isChild && <span className="text-[10px] font-black text-sky-500 ml-1.5">???먮?</span>}
+                        {isChild && <span className="text-[10px] font-black text-sky-500 ml-1.5">나의 자녀</span>}
                       </p>
-                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">?뺣떟 {entry.score}?⑥뼱</p>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">누적 {entry.score}점</p>
                     </div>
                     {ranking[0] && (
                       <div className="w-20 shrink-0">
@@ -384,17 +383,16 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
         </div>
       )}
 
-      {/* ?? ?뚮엺 紐⑤떖 ?? */}
       {showBell && (
         <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setShowBell(false)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="relative w-full max-w-md bg-white rounded-t-3xl shadow-2xl p-6 animate-in slide-in-from-bottom-4 duration-300" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[18px] font-black text-slate-800">?뵒 ?뚮┝</h3>
+              <h3 className="text-[18px] font-black text-slate-800">앱 알림</h3>
               <button onClick={() => setShowBell(false)} className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500"><X size={14} /></button>
             </div>
             {notifications.length === 0 ? (
-              <p className="text-center text-slate-300 py-8 text-[13px]">???뚮┝???놁뒿?덈떎</p>
+              <p className="text-center text-slate-300 py-8 text-[13px]">알림이 없습니다</p>
             ) : (
               <div className="space-y-2 max-h-[50vh] overflow-y-auto">
                 {notifications.map(n => (
@@ -409,47 +407,45 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
         </div>
       )}
 
-      {/* ?? ?ㅼ젙 紐⑤떖 ?? */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setShowSettings(false)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="relative w-full max-w-md bg-white rounded-t-3xl shadow-2xl p-6 animate-in slide-in-from-bottom-4 duration-300" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[18px] font-black text-slate-800">?ㅼ젙</h3>
+              <h3 className="text-[18px] font-black text-slate-800">설정</h3>
               <button onClick={() => setShowSettings(false)} className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500"><X size={14} /></button>
             </div>
             <div className="space-y-3">
               <div className="rounded-2xl p-4" style={{ background: AURORA.light, border: `1px solid ${AURORA.border}` }}>
-                <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: AURORA.primary }}>?꾩옱 怨꾩젙</p>
-                <p className="text-[16px] font-black text-slate-800">{session.studentName} ?숇?紐?/p>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: AURORA.primary }}>현재 계정</p>
+                <p className="text-[16px] font-black text-slate-800">{session.studentName} 학부모님</p>
                 <p className="text-[12px] text-slate-500">{session.className}</p>
               </div>
-              <button onClick={() => { setShowSettings(false); setPwModal(true); }} className="w-full h-12 rounded-2xl text-[14px] font-bold text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all">?뵎 鍮꾨?踰덊샇 蹂寃?/button>
-              <button onClick={handleLogout} className="w-full h-12 rounded-2xl text-[14px] font-bold text-rose-600 border border-rose-100 hover:bg-rose-50 transition-all">濡쒓렇?꾩썐</button>
+              <button onClick={() => { setShowSettings(false); setPwModal(true); }} className="w-full h-12 rounded-2xl text-[14px] font-bold text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all">비밀번호 변경</button>
+              <button onClick={handleLogout} className="w-full h-12 rounded-2xl text-[14px] font-bold text-rose-600 border border-rose-100 hover:bg-rose-50 transition-all">로그아웃</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ?? 鍮꾨?踰덊샇 蹂寃?紐⑤떖 ?? */}
       {pwModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-6" onClick={() => { setPwModal(false); setPwErr(""); }}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <h3 className="text-[17px] font-black text-slate-800 mb-5">鍮꾨?踰덊샇 蹂寃?/h3>
+            <h3 className="text-[17px] font-black text-slate-800 mb-5">비밀번호 변경</h3>
             <div className="space-y-3">
               <div className="relative">
-                <input type={showCur ? "text" : "password"} value={curPw} onChange={e => { setCurPw(e.target.value); setPwErr(""); }} placeholder="?꾩옱 鍮꾨?踰덊샇" className="w-full h-12 px-4 pr-10 rounded-xl border border-slate-200 text-[14px] outline-none focus:border-sky-400" />
+                <input type={showCur ? "text" : "password"} value={curPw} onChange={e => { setCurPw(e.target.value); setPwErr(""); }} placeholder="현재 비밀번호" className="w-full h-12 px-4 pr-10 rounded-xl border border-slate-200 text-[14px] outline-none focus:border-sky-400" />
                 <button onClick={() => setShowCur(v => !v)} className="absolute right-3 top-3.5 text-slate-400">{showCur ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
               </div>
               <div className="relative">
-                <input type={showNew ? "text" : "password"} value={newPw} onChange={e => { setNewPw(e.target.value); setPwErr(""); }} placeholder="??鍮꾨?踰덊샇 (4???댁긽)" className="w-full h-12 px-4 pr-10 rounded-xl border border-slate-200 text-[14px] outline-none focus:border-sky-400" />
+                <input type={showNew ? "text" : "password"} value={newPw} onChange={e => { setNewPw(e.target.value); setPwErr(""); }} placeholder="새 비밀번호 (4자리 이상)" className="w-full h-12 px-4 pr-10 rounded-xl border border-slate-200 text-[14px] outline-none focus:border-sky-400" />
                 <button onClick={() => setShowNew(v => !v)} className="absolute right-3 top-3.5 text-slate-400">{showNew ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
               </div>
               {pwErr && <p className="text-[12px] text-rose-500">{pwErr}</p>}
               <div className="flex gap-2 pt-1">
-                <button onClick={() => { setPwModal(false); setPwErr(""); }} className="flex-1 h-11 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-500">痍⑥냼</button>
-                <button onClick={handleChangePw} className="flex-1 h-11 rounded-xl text-[13px] font-black text-white transition-all" style={{ background: `linear-gradient(135deg,${AURORA.primary} 0%,${AURORA.accent} 100%)` }}>蹂寃?/button>
+                <button onClick={() => { setPwModal(false); setPwErr(""); }} className="flex-1 h-11 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-500">취소</button>
+                <button onClick={handleChangePw} className="flex-1 h-11 rounded-xl text-[13px] font-black text-white transition-all" style={{ background: `linear-gradient(135deg,${AURORA.primary} 0%,${AURORA.accent} 100%)` }}>변경</button>
               </div>
             </div>
           </div>
