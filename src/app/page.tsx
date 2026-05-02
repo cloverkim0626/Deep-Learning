@@ -38,28 +38,6 @@ export default function Home() {
 
       {/* Deep Sea Animated Background */}
       <style>{`
-        /* ── 실제 기포: 구면 하이라이트 + 경로 흔들림 ── */
-        @keyframes bubbleFloat {
-          0%   { transform: translateY(0px)   translateX(0px);   opacity:0; }
-          8%   { opacity: var(--op); }
-          50%  { transform: translateY(-50vh)  translateX(var(--d1)); opacity: var(--op); }
-          92%  { opacity: calc(var(--op)*0.4); }
-          100% { transform: translateY(-108vh) translateX(var(--d2)); opacity:0; }
-        }
-        .real-bubble {
-          position:absolute; border-radius:50%;
-          /* 유리구슬: 왼쪽 상단 하이라이트 + 오른쪽 하단 반사 */
-          background:
-            radial-gradient(circle at 30% 28%, rgba(220,245,255,0.92) 0%, rgba(180,230,255,0.0) 38%),
-            radial-gradient(circle at 68% 72%, rgba(80,160,220,0.18) 0%, transparent 40%),
-            radial-gradient(circle at 50% 50%, rgba(40,120,200,0.06) 0%, transparent 100%);
-          border: 1px solid rgba(160,220,255,0.35);
-          box-shadow:
-            inset 0 0 4px rgba(100,180,255,0.2),
-            0 0 6px rgba(80,160,255,0.08);
-          animation: bubbleFloat var(--dur) var(--delay) infinite cubic-bezier(0.45,0,0.55,1);
-        }
-
         /* ── 메인 심해 빛줄기 (god-ray) ── */
         @keyframes godRayPulse {
           0%,100% { opacity:0.07; transform:rotate(var(--ra)) scaleX(1);   }
@@ -75,7 +53,6 @@ export default function Home() {
           transform-origin: top center;
           animation: godRayPulse var(--pd) ease-in-out infinite;
         }
-
         /* ── 보조 가느다란 광선들 ── */
         @keyframes thinRay {
           0%,100% { opacity:0.03; }
@@ -89,19 +66,16 @@ export default function Home() {
           animation: thinRay var(--td) ease-in-out infinite alternate;
           filter: blur(6px);
         }
-
-        /* ── 발광 심해 생명체 ── */
-        @keyframes creatureDrift {
-          0%   { transform:translateX(-120px) translateY(0px) scaleX(1);   opacity:0; }
-          8%   { opacity:var(--cop); }
-          45%  { transform:translateX(var(--cx)) translateY(var(--cy)) scaleX(1);   opacity:var(--cop); }
-          55%  { transform:translateX(var(--cx)) translateY(var(--cy)) scaleX(-1);  opacity:var(--cop); }
-          92%  { opacity:calc(var(--cop)*0.3); }
-          100% { transform:translateX(calc(100vw + 120px)) translateY(calc(var(--cy)*0.6)) scaleX(-1); opacity:0; }
+        /* ── 물결 요동 (수류 흐름) ── */
+        @keyframes waterSwell1 {
+          0%,100% { transform:scaleX(1)   scaleY(1)   translateX(0);    opacity:0.06; }
+          33%     { transform:scaleX(1.04) scaleY(0.97) translateX(8px);  opacity:0.10; }
+          66%     { transform:scaleX(0.97) scaleY(1.03) translateX(-5px); opacity:0.07; }
         }
-        .creature {
-          position:absolute;
-          animation: creatureDrift var(--cd) var(--cdelay) infinite linear;
+        @keyframes waterSwell2 {
+          0%,100% { transform:scaleX(1)   scaleY(1)   translateX(0);    opacity:0.04; }
+          40%     { transform:scaleX(0.96) scaleY(1.04) translateX(-10px);opacity:0.08; }
+          70%     { transform:scaleX(1.03) scaleY(0.98) translateX(6px);  opacity:0.05; }
         }
       `}</style>
 
@@ -109,7 +83,6 @@ export default function Home() {
         style={{background:'linear-gradient(180deg,#020d1a 0%,#041325 25%,#031020 60%,#050e18 100%)'}}>
 
         {/* ══ 메인 GOD-RAY: 수면에서 내려오는 한 줄기 빛 ══ */}
-        {/* 넓은 원뿔형 빛 */}
         <div className="god-ray" style={{
           width:'340px', height:'100%', marginLeft:'-170px',
           background:'linear-gradient(180deg, rgba(100,200,255,0.18) 0%, rgba(60,160,240,0.06) 35%, rgba(20,80,160,0.02) 65%, transparent 100%)',
@@ -131,7 +104,7 @@ export default function Home() {
           filter:'blur(8px)',
           animation:'causticsShimmer 3.8s ease-in-out infinite',
         }} />
-        {/* 코스틱 패턴 (caustics: 빛이 물에 굴절되는 패턴) */}
+        {/* 코스틱 패턴 */}
         {[{x:'46%',w:'12px',h:'55%',d:'4.1s'},{x:'52%',w:'8px',h:'48%',d:'3.3s'},{x:'49%',w:'5px',h:'40%',d:'5.2s'}].map((c,i)=>(
           <div key={i} style={{
             position:'absolute', top:0, left:c.x, width:c.w, height:c.h,
@@ -147,62 +120,31 @@ export default function Home() {
           <div key={i} className="thin-ray" style={{left:t.l,transform:`rotate(${t.r})`,'--td':t.td} as React.CSSProperties} />
         ))}
 
-        {/* ══ 실제 기포 ══ */}
-        {[
-          {l:'7%', s:9, dur:'13s',del:'0s',  d1:'8px',  d2:'-5px', op:0.75},
-          {l:'15%',s:5, dur:'17s',del:'3.2s',d1:'-6px', d2:'10px', op:0.65},
-          {l:'27%',s:12,dur:'11s',del:'1.5s',d1:'14px', d2:'4px',  op:0.55},
-          {l:'38%',s:4, dur:'19s',del:'5.1s',d1:'-4px', d2:'-9px', op:0.7},
-          {l:'52%',s:7, dur:'14s',del:'0.7s',d1:'10px', d2:'-6px', op:0.6},
-          {l:'63%',s:5, dur:'16s',del:'4.3s',d1:'-8px', d2:'12px', op:0.65},
-          {l:'71%',s:10,dur:'12s',del:'2.8s',d1:'6px',  d2:'-4px', op:0.5},
-          {l:'80%',s:4, dur:'20s',del:'6.0s',d1:'-5px', d2:'7px',  op:0.7},
-          {l:'88%',s:7, dur:'15s',del:'1.1s',d1:'9px',  d2:'-3px', op:0.55},
-          {l:'23%',s:3, dur:'22s',del:'8.0s',d1:'-3px', d2:'5px',  op:0.8},
-        ].map((b,i)=>(
-          <div key={i} className="real-bubble" style={{
-            left:b.l, bottom:'-16px',
-            width:b.s+'px', height:b.s+'px',
-            '--dur':b.dur,'--delay':b.del,'--d1':b.d1,'--d2':b.d2,'--op':b.op,
-          } as React.CSSProperties} />
-        ))}
-
-        {/* ══ 발광 심해 생명체 ══ */}
-        {[
-          {top:'28%',cd:'32s',cdelay:'0s',   cx:'40vw', cy:'-12px', cop:0.55, color:'#7dd3fc', r:8, ry:3},
-          {top:'52%',cd:'45s',cdelay:'8s',   cx:'55vw', cy:'8px',   cop:0.4,  color:'#a5f3fc', r:5, ry:2},
-          {top:'38%',cd:'60s',cdelay:'18s',  cx:'48vw', cy:'-5px',  cop:0.35, color:'#93c5fd', r:11,ry:4},
-          {top:'65%',cd:'38s',cdelay:'25s',  cx:'35vw', cy:'15px',  cop:0.45, color:'#6ee7b7', r:6, ry:2},
-          {top:'20%',cd:'52s',cdelay:'33s',  cx:'52vw', cy:'-8px',  cop:0.3,  color:'#c4b5fd', r:4, ry:1.5},
-        ].map((c,i)=>(
-          <div key={i} className="creature" style={{
-            top:c.top,'--cd':c.cd,'--cdelay':c.cdelay,
-            '--cx':c.cx,'--cy':c.cy,'--cop':c.cop,
-          } as React.CSSProperties}>
-            {/* 몸통 */}
-            <div style={{
-              width:c.r*2+'px', height:c.ry*2+'px', borderRadius:'50%',
-              background:`radial-gradient(ellipse at 40% 40%, ${c.color} 0%, transparent 70%)`,
-              boxShadow:`0 0 ${c.r+4}px ${c.r/2}px ${c.color}55, 0 0 ${c.r*2}px ${c.color}22`,
-              position:'relative',
-            }}>
-              {/* 꼬리 */}
-              <div style={{
-                position:'absolute', right:-(c.r*0.8)+'px', top:'50%',
-                transform:'translateY(-50%)',
-                width:c.r*0.9+'px', height:c.ry*1.2+'px',
-                borderRadius:'0 50% 50% 0',
-                background:`${c.color}44`,
-                clipPath:'polygon(0 30%, 100% 0%, 100% 100%, 0 70%)',
-              }} />
-            </div>
-          </div>
-        ))}
+        {/* ══ 물결 요동: 심해 수류 흐름 ══ */}
+        <div style={{
+          position:'absolute', inset:0,
+          background:'radial-gradient(ellipse 120% 40% at 30% 55%, rgba(0,100,200,0.07) 0%, transparent 60%)',
+          animation:'waterSwell1 12s ease-in-out infinite',
+        }} />
+        <div style={{
+          position:'absolute', inset:0,
+          background:'radial-gradient(ellipse 100% 35% at 70% 40%, rgba(0,80,180,0.06) 0%, transparent 55%)',
+          animation:'waterSwell2 17s ease-in-out infinite',
+          animationDelay:'3s',
+        }} />
+        <div style={{
+          position:'absolute', inset:0,
+          background:'radial-gradient(ellipse 80% 30% at 50% 70%, rgba(0,60,140,0.05) 0%, transparent 50%)',
+          animation:'waterSwell1 22s ease-in-out infinite reverse',
+          animationDelay:'7s',
+        }} />
 
         {/* 심해 배경 glow 유지 */}
         <div className="absolute inset-0" style={{background:'radial-gradient(ellipse 80% 50% at 50% 60%, rgba(0,80,160,0.18) 0%, transparent 70%)'}} />
         <div className="absolute bottom-0 left-0 right-0 h-[30%]" style={{background:'linear-gradient(0deg, rgba(0,20,40,0.7) 0%, transparent 100%)'}} />
       </div>
+
+
 
       <div className="z-10 w-full max-w-sm mx-auto flex flex-col items-center gap-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
 
