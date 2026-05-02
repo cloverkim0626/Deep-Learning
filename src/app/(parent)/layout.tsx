@@ -229,8 +229,8 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
                   <Trophy size={20} className="text-white" strokeWidth={2.5} />
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-[18px] font-black text-slate-800">由щ뜑蹂대뱶</h1>
-                  <p className="text-[11px] text-slate-400 font-bold">?뺣떟 ?⑥뼱 ???⑹궛</p>
+                  <h1 className="text-[18px] font-black text-slate-800">리더보드</h1>
+                  <p className="text-[11px] text-slate-400 font-bold">누적 점수 기준 순위</p>
                 </div>
                 <button onClick={() => loadLeaderboard(lbPeriod)}
                   className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-all">
@@ -260,7 +260,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
                 <div className="flex items-center gap-2 mb-2.5">
                   <Crown size={13} className="text-amber-500" strokeWidth={2.5} />
                   <span className="text-[11px] font-black text-amber-600 tracking-widest uppercase">
-                    {hallOfFame[0] ? `${hallOfFame[0].year}??${MONTH_LABELS[hallOfFame[0].month]} MVP` : ''}
+                    {hallOfFame[0] ? `${hallOfFame[0].year}년 ${MONTH_LABELS[hallOfFame[0].month]} MVP` : ''}
                   </span>
                   <div className="flex-1 h-px bg-amber-200/60" />
                 </div>

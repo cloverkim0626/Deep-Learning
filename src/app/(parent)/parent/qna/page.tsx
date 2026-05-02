@@ -8,9 +8,9 @@ type Post = { id: string; author: string; question: string; status: "pending"|"a
 type Hearts = Record<string, string[]>;
 
 const KTALK = {
-  myBubble: { bg: "#B8E4F9", text: "#0d2d3f" },
-  otherBubble: { bg: "#FFFFFF", text: "#222222" },
-  teacherBubble: { bg: "#FFF8CC", text: "#4a3800" },
+  myBubble:      { bg: "rgba(100,70,220,0.25)",  text: "#d0c8ff" },
+  otherBubble:   { bg: "rgba(255,255,255,0.07)", text: "rgba(220,210,255,0.85)" },
+  teacherBubble: { bg: "rgba(60,30,160,0.35)",   text: "#c8b8ff" },
 };
 const BR = "18px";
 
@@ -122,34 +122,34 @@ export default function ParentQnA() {
     return (
       <button onClick={e => { e.stopPropagation(); handleHeart(targetId, type); }}
         className="flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:scale-105 select-none"
-        style={{ background: liked ? "rgba(210,50,80,0.12)" : "rgba(0,0,0,0.07)", border: liked ? "1px solid rgba(210,50,80,0.3)" : "1px solid rgba(0,0,0,0.1)", color: liked ? "#c0203a" : "rgba(40,40,40,0.6)", fontSize: 10, fontWeight: 700 }}>
-        <span style={{ fontSize: 13 }}>{liked ? "❤️" : "🤍"}</span><span>{likers.length}</span>
+        style={{ background: liked ? "rgba(160,80,220,0.2)" : "rgba(255,255,255,0.06)", border: liked ? "1px solid rgba(160,80,220,0.4)" : "1px solid rgba(255,255,255,0.12)", color: liked ? "#c084fc" : "rgba(200,190,255,0.5)", fontSize: 10, fontWeight: 700 }}>
+        <span style={{ fontSize: 13 }}>{liked ? "💜" : "🤍"}</span><span>{likers.length}</span>
       </button>
     );
   };
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-500" style={{ background: "linear-gradient(180deg, rgba(0,180,180,0.25) 0%, rgba(0,168,204,0.2) 100%)", minHeight: "calc(100vh - 120px)", fontFamily: "var(--font-inter), sans-serif" }}>
+    <div className="flex flex-col h-full animate-in fade-in duration-500" style={{ background: "transparent", minHeight: "calc(100vh - 120px)", fontFamily: "var(--font-inter), sans-serif" }}>
 
       {/* 헤더 */}
-      <div className="px-5 pt-6 pb-4 shrink-0 flex items-center justify-between shadow-sm"
-        style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.3)" }}>
+      <div className="px-5 pt-6 pb-4 shrink-0 flex items-center justify-between"
+        style={{ background: "rgba(10,5,30,0.6)", backdropFilter: "blur(16px)", borderBottom: "1px solid rgba(120,80,255,0.2)" }}>
         <div>
-          <h1 className="text-2xl font-black" style={{ color: "#2a1a0a" }}>Q&amp;A 채팅방</h1>
-          <p className="text-[12px] mt-0.5 font-semibold" style={{ color: "rgba(50,30,10,0.6)" }}>학습 관련 질문을 자유롭게 남겨주세요 💬</p>
+          <h1 className="text-2xl font-black" style={{ color: "rgba(220,210,255,0.95)" }}>Q&amp;A 채팅방</h1>
+          <p className="text-[12px] mt-0.5 font-semibold" style={{ color: "rgba(160,130,255,0.6)" }}>학습 관련 질문을 자유롭게 남겨주세요 💬</p>
         </div>
         <button onClick={() => setShowModal(true)}
-          className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all"
-          style={{ background: "#D4AF37", color: "#3A1D1D" }}>
+          className="w-12 h-12 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+          style={{ background: "rgba(120,80,255,0.2)", border: "1px solid rgba(120,80,255,0.4)", color: "rgba(200,180,255,0.9)" }}>
           <Plus size={22} strokeWidth={3} />
         </button>
       </div>
 
       {/* 채팅방 라벨 */}
       <div className="flex items-center gap-3 px-6 py-3 shrink-0">
-        <div style={{ flex:1, height:1, background:"rgba(80,50,10,0.18)" }} />
-        <span className="text-[11px] font-bold px-3 py-0.5 rounded-full" style={{ background:"rgba(255,255,255,0.35)", color:"rgba(50,30,10,0.7)" }}>학부모 Q&amp;A</span>
-        <div style={{ flex:1, height:1, background:"rgba(80,50,10,0.18)" }} />
+        <div style={{ flex:1, height:1, background:"rgba(120,80,255,0.15)" }} />
+        <span className="text-[11px] font-bold px-3 py-0.5 rounded-full" style={{ background:"rgba(80,50,180,0.2)", color:"rgba(180,150,255,0.7)", border:"1px solid rgba(120,80,255,0.2)" }}>학부모 Q&amp;A</span>
+        <div style={{ flex:1, height:1, background:"rgba(120,80,255,0.15)" }} />
       </div>
 
       {/* 포스트 목록 */}

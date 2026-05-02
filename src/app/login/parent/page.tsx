@@ -69,107 +69,48 @@ export default function ParentLoginPage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #010812 0%, #020e14 30%, #040e1a 60%, #060212 100%)" }}>
+      style={{ background: "#000000" }}>
 
-      {/* ══ 오로라 배경 ══ */}
+      {/* 블랙홀 배경 */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <style>{`
-          @keyframes auroraA { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(8%,12%) scale(1.2)} }
-          @keyframes auroraB { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(-10%,8%) scale(1.25)} }
-          @keyframes auroraC { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(6%,-10%) scale(1.15)} }
-          @keyframes auroraD { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(-8%,15%) scale(1.22)} }
-          @keyframes auroraE { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(10%,-6%) scale(1.1)} }
-          @keyframes curtainWave {
-            0%,100%{opacity:0.5; transform:scaleX(1) skewY(0deg)}
-            50%{opacity:1; transform:scaleX(1.06) skewY(0.5deg)}
-          }
+          @keyframes lbhCore { 0%,100%{opacity:0.55;transform:scale(1)} 50%{opacity:1;transform:scale(1.1)} }
+          @keyframes lbhOrbit1 { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+          @keyframes lbhOrbit2 { 0%{transform:rotate(0deg)} 100%{transform:rotate(-360deg)} }
+          @keyframes lbhDrift { 0%,100%{opacity:0.25;transform:translate(0,0)} 50%{opacity:0.6;transform:translate(4%,6%)} }
         `}</style>
 
-        {/* ── 주요 오로라 글로우 블롭 5개 ── */}
-        <div style={{ position:'absolute', top:'-25%', left:'-15%', width:'80%', height:'70%',
-          background:'radial-gradient(ellipse, rgba(0,255,140,0.32) 0%, rgba(0,200,120,0.08) 50%, transparent 70%)',
-          animation:'auroraA 10s ease-in-out infinite alternate', borderRadius:'50%', filter:'blur(35px)' }}/>
-        <div style={{ position:'absolute', top:'-10%', right:'-25%', width:'75%', height:'65%',
-          background:'radial-gradient(ellipse, rgba(80,40,255,0.28) 0%, rgba(60,20,200,0.07) 50%, transparent 70%)',
-          animation:'auroraB 14s ease-in-out infinite alternate', borderRadius:'50%', filter:'blur(40px)' }}/>
-        <div style={{ position:'absolute', top:'25%', left:'10%', width:'65%', height:'55%',
-          background:'radial-gradient(ellipse, rgba(0,200,255,0.22) 0%, rgba(0,150,220,0.06) 50%, transparent 70%)',
-          animation:'auroraC 17s ease-in-out infinite alternate', borderRadius:'50%', filter:'blur(38px)' }}/>
-        <div style={{ position:'absolute', bottom:'-20%', right:'5%', width:'70%', height:'60%',
-          background:'radial-gradient(ellipse, rgba(180,0,255,0.18) 0%, rgba(120,0,200,0.05) 50%, transparent 70%)',
-          animation:'auroraD 20s ease-in-out infinite alternate', borderRadius:'50%', filter:'blur(45px)' }}/>
-        <div style={{ position:'absolute', bottom:'10%', left:'-10%', width:'55%', height:'45%',
-          background:'radial-gradient(ellipse, rgba(0,255,200,0.2) 0%, transparent 70%)',
-          animation:'auroraE 12s ease-in-out infinite alternate', borderRadius:'50%', filter:'blur(30px)' }}/>
-
-        {/* ── 빛의 커튼 (수직 광선들) ── */}
-        {[
-          {l:'15%', color:'rgba(0,255,160,0.12)', d:'5.5s', delay:'0s', w:'3px', h:'70%', top:'0'},
-          {l:'28%', color:'rgba(0,220,255,0.09)', d:'7s',   delay:'1s', w:'2px', h:'55%', top:'5%'},
-          {l:'42%', color:'rgba(0,255,120,0.14)', d:'6s',   delay:'0.5s', w:'4px', h:'80%', top:'0'},
-          {l:'58%', color:'rgba(120,60,255,0.1)', d:'8s',   delay:'1.5s', w:'2px', h:'60%', top:'10%'},
-          {l:'72%', color:'rgba(0,200,255,0.11)', d:'5s',   delay:'0.3s', w:'3px', h:'75%', top:'0'},
-          {l:'85%', color:'rgba(80,0,255,0.09)',  d:'9s',   delay:'2s',   w:'2px', h:'50%', top:'15%'},
-        ].map((ray,i) => (
-          <div key={i} style={{
-            position:'absolute', top:ray.top, left:ray.l, width:ray.w, height:ray.h,
-            background:`linear-gradient(180deg, transparent 0%, ${ray.color} 20%, ${ray.color} 60%, transparent 100%)`,
-            filter:'blur(4px)',
-            animation:`curtainWave ${ray.d} ease-in-out infinite`,
-            animationDelay:ray.delay,
-          }}/>
-        ))}
-
-        {/* ── 수평 오로라 띠 ── */}
-        {[
-          {top:'18%', color:'rgba(0,255,160,0.12)', d:'6s', delay:'0s'},
-          {top:'35%', color:'rgba(0,180,255,0.1)',  d:'8s', delay:'1.5s'},
-          {top:'52%', color:'rgba(100,60,255,0.09)',d:'7s', delay:'0.8s'},
-          {top:'70%', color:'rgba(0,220,180,0.08)', d:'9s', delay:'2s'},
-        ].map((band,i) => (
-          <div key={i} style={{
-            position:'absolute', top:band.top, left:0, right:0, height:'60px',
-            background:`radial-gradient(ellipse 80% 50% at 50% 50%, ${band.color} 0%, transparent 100%)`,
-            filter:'blur(8px)',
-            animation:`curtainWave ${band.d} ease-in-out infinite`,
-            animationDelay:band.delay,
-          }}/>
-        ))}
-
-        {/* ── 별빛 반짝임 ── */}
-        {[
-          {top:'8%', left:'12%', s:'1.2s', delay:'0s', size:'2px'},
-          {top:'15%',left:'78%', s:'0.8s', delay:'0.4s', size:'3px'},
-          {top:'22%',left:'45%', s:'1.5s', delay:'0.9s', size:'2px'},
-          {top:'35%',left:'88%', s:'0.9s', delay:'0.2s', size:'2px'},
-          {top:'50%',left:'5%',  s:'1.3s', delay:'1.1s', size:'3px'},
-          {top:'62%',left:'92%', s:'1.0s', delay:'0.6s', size:'2px'},
-          {top:'75%',left:'33%', s:'0.7s', delay:'1.4s', size:'2px'},
-          {top:'88%',left:'67%', s:'1.1s', delay:'0.3s', size:'3px'},
-          {top:'5%', left:'55%', s:'1.4s', delay:'0.7s', size:'2px'},
-          {top:'42%',left:'22%', s:'0.9s', delay:'1.8s', size:'2px'},
-        ].map((st,i) => (
-          <div key={i} style={{
-            position:'absolute', top:st.top, left:st.left,
-            width:st.size, height:st.size,
-            background:'white', borderRadius:'50%',
-            boxShadow:`0 0 6px 2px rgba(180,255,220,0.9)`,
-            animation:`${i%2===0?'starBlink':'starBlink2'} ${st.s} ease-in-out infinite`,
-            animationDelay:st.delay,
-          }}/>
-        ))}
+        {/* 코어 그로우 - 오른쪽 아래 */}
+        <div style={{ position:'absolute', bottom:'-15%', right:'-10%', width:'70vw', height:'70vw',
+          background:'radial-gradient(ellipse, rgba(80,50,220,0.5) 0%, rgba(40,20,140,0.28) 25%, transparent 65%)',
+          borderRadius:'50%', filter:'blur(45px)', animation:'lbhCore 7s ease-in-out infinite' }}/>
+        {/* 첫 번째 강착 원반 */}
+        <div style={{ position:'absolute', bottom:'-20%', right:'-15%', width:'85vw', height:'85vw',
+          background:'conic-gradient(from 0deg, transparent 0%, rgba(100,70,255,0.1) 20%, rgba(150,100,255,0.2) 35%, transparent 55%, rgba(60,30,200,0.07) 75%, transparent 92%)',
+          borderRadius:'50%', filter:'blur(14px)', animation:'lbhOrbit1 22s linear infinite' }}/>
+        {/* 두 번째 - 역방향 */}
+        <div style={{ position:'absolute', bottom:'-25%', right:'-20%', width:'100vw', height:'100vw',
+          background:'conic-gradient(from 180deg, transparent 0%, rgba(60,30,180,0.07) 25%, rgba(100,60,220,0.14) 42%, transparent 58%)',
+          borderRadius:'50%', filter:'blur(20px)', animation:'lbhOrbit2 35s linear infinite' }}/>
+        {/* 좌상단 드리프트 */}
+        <div style={{ position:'absolute', top:'-5%', left:'-15%', width:'60vw', height:'60vw',
+          background:'radial-gradient(ellipse, rgba(40,20,120,0.14) 0%, transparent 65%)',
+          borderRadius:'50%', filter:'blur(50px)', animation:'lbhDrift 14s ease-in-out infinite' }}/>
+        {/* 중력 왜곡 오버레이 */}
+        <div style={{ position:'absolute', inset:0,
+          background:'radial-gradient(ellipse 70% 70% at 90% 90%, rgba(60,20,180,0.18) 0%, transparent 60%)' }}/>
       </div>
 
       <div className="w-full max-w-sm relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <Link href="/" className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity mb-8 text-[13px]"
-          style={{ color: 'rgba(0,255,180,0.5)' }}>
+          style={{ color: 'rgba(160,130,255,0.5)' }}>
           <ArrowLeft size={14} /> 홈으로
         </Link>
 
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-[28px] font-black mb-2" style={{ color: '#e2ffe8', letterSpacing: '-0.5px' }}>리포트 열람</h1>
-          <p className="text-[13px]" style={{ color: "rgba(0,255,180,0.6)" }}>
+          <h1 className="text-[28px] font-black mb-2" style={{ color: 'rgba(220,210,255,0.95)', letterSpacing: '-0.5px' }}>리포트 열람</h1>
+          <p className="text-[13px]" style={{ color: "rgba(160,130,255,0.6)" }}>
             {step === 1 ? "반을 선택해 주세요" : step === 2 ? "자녀를 선택해 주세요" : `${selStudent} 학부모님, 반갑습니다`}
           </p>
         </div>
