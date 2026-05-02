@@ -34,12 +34,13 @@ const ATT_STYLE: Record<AttendanceStatus, string> = {
   present: "bg-emerald-100 text-emerald-700 border border-emerald-300 font-black",
   late:    "bg-amber-100 text-amber-700 border border-amber-300 font-black",
   absent:  "bg-rose-100 text-rose-700 border border-rose-300 font-black",
+  'n/a':   "bg-slate-100 text-slate-400 border border-slate-200 font-black",
 };
 const ATT_LABEL: Record<AttendanceStatus, string> = {
-  present: "출석", late: "지각", absent: "결석",
+  present: "출석", late: "지각", absent: "결석", 'n/a': "해당없음",
 };
 const ATT_SHORT: Record<AttendanceStatus, string> = {
-  present: "출", late: "지", absent: "결",
+  present: "출석", late: "지각", absent: "결석", 'n/a': "N/A",
 };
 
 // 과제 종류 (테스트는 테스트 버튼으로 별도 처리)
@@ -641,6 +642,7 @@ type AttBoardEntry = {
   lateReason: string;
   makeupType: MakeupType;
   makeupDate: string;
+  makeupTime: string; // 대면보강 시간
 };
 
 function AttendanceBoardModal({ session, students, existingAtt, onClose, onSaved }: {
@@ -660,6 +662,7 @@ function AttendanceBoardModal({ session, students, existingAtt, onClose, onSaved
         lateReason: ex?.late_reason || '',
         makeupType: ex?.makeup_type || '',
         makeupDate: ex?.makeup_date || '',
+        makeupTime: (ex as any)?.makeup_time || '',
       };
     }
     return init;
@@ -685,8 +688,9 @@ function AttendanceBoardModal({ session, students, existingAtt, onClose, onSaved
           late_reason: e.lateReason, late_arrival_time: e.lateTime,
           makeup_type: e.makeupType as MakeupType,
           makeup_date: e.makeupDate || null, makeup_video_date: null,
+          makeup_time: e.makeupType === 'direct' ? (e.makeupTime || null) : null,
         };
-        await upsertAttendance(payload);
+        await upsertAttendance(payload as any);
         updated[s.student_name] = { ...((existingAtt[s.student_name] || {}) as AttendanceRow), ...payload };
       }));
       onSaved(updated);
@@ -699,6 +703,7 @@ function AttendanceBoardModal({ session, students, existingAtt, onClose, onSaved
     present: 'bg-emerald-500 text-white border-emerald-500',
     late:    'bg-amber-400 text-white border-amber-400',
     absent:  'bg-rose-500 text-white border-rose-500',
+    'n/a':   'bg-slate-400 text-white border-slate-400',
   };
 
   return (
@@ -757,7 +762,7 @@ function AttendanceBoardModal({ session, students, existingAtt, onClose, onSaved
                 )}
                 {/* 결석 세부 */}
                 {e.status === 'absent' && (
-                  <div className="mt-2 flex gap-2 items-center">
+                  <div className="mt-2 flex gap-2 items-center flex-wrap">
                     <select value={e.makeupType}
                       onChange={ev => upd(stu.student_name, { makeupType: ev.target.value as MakeupType })}
                       className="h-7 px-2 rounded-lg border border-rose-200 bg-rose-50 text-[11px] text-rose-800 outline-none">
@@ -769,6 +774,11 @@ function AttendanceBoardModal({ session, students, existingAtt, onClose, onSaved
                       <input type="date" value={e.makeupDate}
                         onChange={ev => upd(stu.student_name, { makeupDate: ev.target.value })}
                         className="h-7 px-2 rounded-lg border border-slate-200 text-[11px] outline-none" />
+                    )}
+                    {e.makeupType === 'direct' && (
+                      <input type="time" value={e.makeupTime}
+                        onChange={ev => upd(stu.student_name, { makeupTime: ev.target.value })}
+                        className="h-7 px-2 rounded-lg border border-blue-200 bg-blue-50 text-[11px] text-blue-800 outline-none" />
                     )}
                   </div>
                 )}
@@ -793,263 +803,336 @@ function AttendanceBoardModal({ session, students, existingAtt, onClose, onSaved
 }
 
 type TestEntry = {
-  included: boolean;
-  score: string;
-  resultCode: string; // pass|fail|absent|unattempted|unmemorized|other|verbal_retest
-  retryDate: string;
+  included: boolean; score: string;
+  resultCode: string; retryDate: string;
+  pfResult: 'pass' | 'fail' | '';
 };
-type TestConfig = { id: string; name: string; range: string; maxScore: string; passScore: string; };
+type TestConfig = { id: string; name: string; range: string; maxScore: string; passScore: string; isPF: boolean; existingSlotId?: string; };
 
-function mkConfig(n=1): TestConfig {
-  return { id: crypto.randomUUID(), name: n===1?'단어테스트':'', range:'', maxScore:'', passScore:'' };
+function mkConfig(n = 1): TestConfig {
+  return { id: crypto.randomUUID(), name: n === 1 ? '단어테스트' : '', range: '', maxScore: '', passScore: '', isPF: false };
+}
+function mkEntryFromCheck(chk: HomeworkCheck | undefined, slot: HomeworkSlot): TestEntry {
+  if (!chk) return { included: true, score: '', resultCode: '', retryDate: '', pfResult: '' };
+  return {
+    included: chk.status !== 'skipped',
+    score: chk.score != null ? String(chk.score) : '',
+    resultCode: chk.delay_reason || (chk.status === 'skipped' ? 'absent' : ''),
+    retryDate: chk.rollover_date || '',
+    pfResult: slot.is_pf ? (chk.is_pass === true ? 'pass' : chk.is_pass === false ? 'fail' : '') : '',
+  };
 }
 
-function TestSessionModal({ session, students, existingSlot, existingChecks, onClose, onSaved }: {
+function TestSessionModal({ session, students, existingSlots, existingChecks, onClose, onSaved, onSlotDeleted }: {
   session: ClassSession; students: ClassStudent[];
-  existingSlot: HomeworkSlot | null; existingChecks: Record<string,HomeworkCheck>;
-  onClose: ()=>void; onSaved:(slot:HomeworkSlot,checks:Record<string,HomeworkCheck>)=>void;
+  existingSlots: HomeworkSlot[];
+  existingChecks: Record<string, Record<string, HomeworkCheck>>;
+  onClose: () => void;
+  onSaved: (slot: HomeworkSlot, checks: Record<string, HomeworkCheck>) => void;
+  onSlotDeleted?: (slotId: string) => void;
 }) {
-  const [tests, setTests] = useState<TestConfig[]>([mkConfig(1)]);
+  const initConfigs = (): TestConfig[] => {
+    if (existingSlots.length > 0) {
+      return existingSlots.map(s => ({
+        id: s.id, name: s.title, range: s.test_range || '', isPF: s.is_pf || false,
+        maxScore: s.max_score != null ? String(s.max_score) : '',
+        passScore: s.pass_score != null ? String(s.pass_score) : '',
+        existingSlotId: s.id,
+      }));
+    }
+    return [mkConfig(1)];
+  };
+  const initEntries = (cfgs: TestConfig[]): Record<number, Record<string, TestEntry>> => {
+    const out: Record<number, Record<string, TestEntry>> = {};
+    cfgs.forEach((cfg, i) => {
+      const slotChecks = cfg.existingSlotId ? (existingChecks[cfg.existingSlotId] || {}) : {};
+      const slot = existingSlots.find(s => s.id === cfg.existingSlotId);
+      out[i] = Object.fromEntries(students.map(s => [
+        s.student_name,
+        slot ? mkEntryFromCheck(slotChecks[s.student_name], slot) : { included: true, score: '', resultCode: '', retryDate: '', pfResult: '' }
+      ]));
+    });
+    return out;
+  };
+
+  const [tests, setTests] = useState<TestConfig[]>(initConfigs);
   const [activeTest, setActiveTest] = useState(0);
-  // entries[testIdx][studentName]
-  const [allEntries, setAllEntries] = useState<Record<number,Record<string,TestEntry>>>(()=>({
-    0: Object.fromEntries(students.map(s=>[s.student_name,{included:true,score:"",resultCode:"",retryDate:""}]))
-  }));
+  const [allEntries, setAllEntries] = useState<Record<number, Record<string, TestEntry>>>(() => initEntries(initConfigs()));
   const [saving, setSaving] = useState(false);
+  const [deletingSlot, setDeletingSlot] = useState<string | null>(null);
 
   const entries = allEntries[activeTest] || {};
   const cfg = tests[activeTest];
 
-  const upd = (name:string, patch:Partial<TestEntry>) =>
-    setAllEntries(prev=>({...prev,[activeTest]:{...prev[activeTest],[name]:{...prev[activeTest][name],...patch}}}));
-
-  const updCfg = (patch:Partial<TestConfig>) =>
-    setTests(prev=>prev.map((t,i)=>i===activeTest?{...t,...patch}:t));
+  const upd = (name: string, patch: Partial<TestEntry>) =>
+    setAllEntries(prev => ({ ...prev, [activeTest]: { ...prev[activeTest], [name]: { ...prev[activeTest][name], ...patch } } }));
+  const updCfg = (patch: Partial<TestConfig>) =>
+    setTests(prev => prev.map((t, i) => i === activeTest ? { ...t, ...patch } : t));
 
   const addTest = () => {
     const idx = tests.length;
-    setTests(p=>[...p,mkConfig(idx+1)]);
-    setAllEntries(p=>({...p,[idx]:Object.fromEntries(students.map(s=>[s.student_name,{included:true,score:"",resultCode:"",retryDate:""}]))}));
+    setTests(p => [...p, mkConfig(idx + 1)]);
+    setAllEntries(p => ({ ...p, [idx]: Object.fromEntries(students.map(s => [s.student_name, { included: true, score: '', resultCode: '', retryDate: '', pfResult: '' }])) }));
     setActiveTest(idx);
   };
 
-  const getAutoResult = (e:TestEntry):string => {
-    if (!e.included) return "excluded";
-    // already explicitly set (absent/late/etc.)
-    if (["absent","unattempted","unmemorized_retry","late","other","verbal_retest","fail_retry"].includes(e.resultCode)) return e.resultCode;
-    if (!e.score) return "";
-    const ps = cfg?.passScore ? Number(cfg.passScore) : null;
-    if (ps===null) return "";
-    return Number(e.score) >= ps ? "pass" : "fail";
+  const deleteSlot = async (t: TestConfig, idx: number) => {
+    if (!t.existingSlotId) {
+      setTests(p => p.filter((_, i) => i !== idx));
+      setAllEntries(p => { const n = { ...p }; delete n[idx]; return n; });
+      setActiveTest(Math.max(0, idx - 1));
+      return;
+    }
+    if (!confirm(`"${t.name}" 테스트를 삭제하시겠습니까?`)) return;
+    setDeletingSlot(t.existingSlotId);
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      await (supabase as any).from('homework_checks').delete().eq('slot_id', t.existingSlotId);
+      await (supabase as any).from('homework_slots').delete().eq('id', t.existingSlotId);
+      onSlotDeleted?.(t.existingSlotId);
+      setTests(p => p.filter((_, i) => i !== idx));
+      setAllEntries(p => { const n = { ...p }; delete n[idx]; return n; });
+      setActiveTest(Math.max(0, idx - 1));
+    } catch (e) { alert((e as Error).message); }
+    finally { setDeletingSlot(null); }
+  };
+
+  const getAutoResult = (e: TestEntry): string => {
+    if (!e.included) return 'excluded';
+    if (['absent','late','unattempted','unmemorized_retry'].includes(e.resultCode)) return e.resultCode;
+    if (['verbal_retest','fail_retry'].includes(e.resultCode)) return e.resultCode;
+    if (!e.score) return '';
+    if (cfg?.isPF && cfg?.passScore) {
+      return Number(e.score) >= Number(cfg.passScore) ? 'pass' : 'fail';
+    }
+    return 'scored'; // non-PF: just has a score
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      for (let ti=0; ti<tests.length; ti++) {
+      for (let ti = 0; ti < tests.length; ti++) {
         const c = tests[ti];
         const ents = allEntries[ti] || {};
-        const [slot] = await createHomeworkSlotBatch([{
-          session_id: session.id, title: c.name||'테스트', hw_type:'vocab_test',
-          test_range: c.range||null, max_score: c.maxScore?Number(c.maxScore):null,
-          pass_score: c.passScore?Number(c.passScore):null, is_pf:false,
-        }]);
-        const newChecks:Record<string,HomeworkCheck>={};
-        await Promise.all(students.map(async s=>{
+        let slot: HomeworkSlot;
+        if (c.existingSlotId) {
+          const { supabase } = await import('@/lib/supabase');
+          const { data, error } = await (supabase as any).from('homework_slots').update({
+            title: c.name || '테스트', test_range: c.range || null,
+            max_score: c.maxScore ? Number(c.maxScore) : null,
+            pass_score: c.passScore ? Number(c.passScore) : null, is_pf: c.isPF,
+          }).eq('id', c.existingSlotId).select().single();
+          if (error) throw error;
+          slot = data as HomeworkSlot;
+        } else {
+          [slot] = await createHomeworkSlotBatch([{
+            session_id: session.id, title: c.name || '테스트', hw_type: 'vocab_test',
+            test_range: c.range || null, max_score: c.maxScore ? Number(c.maxScore) : null,
+            pass_score: c.passScore ? Number(c.passScore) : null, is_pf: c.isPF,
+          }]);
+        }
+        const newChecks: Record<string, HomeworkCheck> = {};
+        await Promise.all(students.map(async s => {
           const e = ents[s.student_name];
           if (!e?.included) return;
           const res = getAutoResult(e);
-          const FAIL_CODES=["fail","verbal_retest","fail_retry"];
-          const ABSENT_CODES=["absent","unattempted","unmemorized_retry","late","other"];
-          const isPassRes = res==="pass"||res==="verbal_retest";
-          const isFailRes = FAIL_CODES.includes(res);
+          const ABSENT_CODES = ['absent','late','unattempted','unmemorized_retry'];
+          const ps = c.passScore ? Number(c.passScore) : null;
+          const scoreNum = e.score ? Number(e.score) : null;
           const isSkipped = ABSENT_CODES.includes(res);
+          const isPassRes = c.isPF && ps !== null && scoreNum !== null && !isSkipped ? scoreNum >= ps : false;
+          const isFailRes = c.isPF && ps !== null && scoreNum !== null && !isSkipped ? scoreNum < ps : false;
           const payload = {
-            slot_id:slot.id, student_name:s.student_name,
-            status:(isSkipped?"skipped":"done") as HwStatus,
-            score: e.score?Number(e.score):null,
-            is_pass: isSkipped?null:(isPassRes?true:isFailRes?false:null),
-            delay_reason: res==="absent"?"결석":res==="late"?"지각":res==="unattempted"?"미응시":res==="unmemorized_retry"?"미암기재시":res==="other"?"기타":res==="verbal_retest"?"구두재시후귀가":res==="fail_retry"?"추후재응시":null,
-            rollover_date: e.retryDate||null,
+            slot_id: slot.id, student_name: s.student_name,
+            status: (isSkipped ? 'skipped' : 'done') as HwStatus,
+            score: e.score ? Number(e.score) : null,
+            is_pass: isSkipped ? null : (isPassRes ? true : (isFailRes ? false : null)),
+            delay_reason:
+              res === 'absent' ? '결석' :
+              res === 'late' ? '지각' :
+              res === 'unattempted' ? '미응시' :
+              res === 'unmemorized_retry' ? '미암기재시' :
+              res === 'verbal_retest' ? '구두재시후귀가' :
+              res === 'fail_retry' ? '추후재응시' : null,
+            rollover_date: e.retryDate || null,
           };
           await upsertHomeworkCheck(payload);
-          newChecks[s.student_name]={...(existingChecks[s.student_name]||{}as HomeworkCheck),...payload};
+          newChecks[s.student_name] = { ...(existingChecks[slot.id]?.[s.student_name] || {} as HomeworkCheck), ...payload };
         }));
-        if (ti===0) onSaved(slot,newChecks);
+        onSaved(slot, newChecks);
       }
       onClose();
-    } catch(err){alert((err as Error).message);}
-    finally{setSaving(false);}
+    } catch (err) { alert((err as Error).message); }
+    finally { setSaving(false); }
   };
 
-  const includedCount = students.filter(s=>entries[s.student_name]?.included).length;
-  const doneCount = students.filter(s=>{ const e=entries[s.student_name]; return e?.included && (e.score||e.resultCode); }).length;
-  const BG="#ffffff"; const BD="#e2e8f0"; const TXT="#1e293b";
+  // 통계: 미응시자 제외
+  const SKIP_CODES = ['absent','unattempted','unmemorized_retry','late','other'];
+  const participating = students.filter(s => {
+    const e = entries[s.student_name];
+    return e?.included && !SKIP_CODES.includes(e.resultCode);
+  });
+  const scores = participating.map(stu2 => Number(entries[stu2.student_name]?.score)).filter((n, i) => !isNaN(n) && participating[i] && entries[participating[i].student_name]?.score !== '');
+  const avg = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  const passCount = cfg?.isPF
+    ? participating.filter(s => entries[s.student_name]?.pfResult === 'pass').length
+    : (cfg?.passScore ? scores.filter(n => n >= Number(cfg.passScore)).length : null);
+  const doneCount = students.filter(s => { const e = entries[s.student_name]; return e?.included && (e.score || e.resultCode || e.pfResult); }).length;
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm z-[350] flex items-center justify-center p-3"
-      style={{background:"rgba(0,0,0,0.65)"}}>
-      <div className="w-full max-w-2xl max-h-[94vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden"
-        style={{background:'#fff',border:'1.5px solid #e0e7ff'}}>
+    <div className="fixed inset-0 backdrop-blur-sm z-[350] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }}>
+      <div className="w-full max-w-3xl rounded-2xl flex flex-col shadow-2xl overflow-hidden" style={{ background: '#fff', border: '2px solid #e0e7ff', maxHeight: '92vh' }}>
 
         {/* 헤더 */}
-        <div className="flex items-center justify-between px-5 py-3 shrink-0"
-          style={{borderBottom:`1px solid ${BD}`,background:'#eef2ff'}}>
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: '1px solid #e0e7ff', background: 'linear-gradient(135deg,#eef2ff,#e0e7ff)' }}>
           <div>
-            <h3 className="text-[15px] font-black" style={{color:'#4f46e5'}}>🎯 테스트 결과 기록</h3>
-            <p className="text-[10px] mt-0.5 font-bold" style={{color:'#6366f1'}}>{session.session_date} · {includedCount}명 해당 · {doneCount}명 입력완료</p>
+            <h3 className="text-[17px] font-black" style={{ color: '#4338ca' }}>🎯 테스트 관리</h3>
+            <p className="text-[11px] mt-0.5 font-semibold" style={{ color: '#6366f1' }}>
+              {session.session_date} · {students.length}명 등록 · {doneCount}명 입력완료
+            </p>
           </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{background:'#f1f5f9',color:'#64748b'}}><X size={14}/></button>
+          <div className="flex items-center gap-3">
+            {avg != null && <span className="text-[12px] font-bold px-3 py-1.5 rounded-full" style={{ background: '#eef2ff', color: '#4338ca' }}>평균 {avg}점</span>}
+            {cfg?.isPF && passCount != null && <span className="text-[12px] font-bold px-3 py-1.5 rounded-full" style={{ background: '#f0fdf4', color: '#15803d' }}>합격 {passCount}명</span>}
+            <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#f1f5f9', color: '#64748b' }}><X size={15} /></button>
+          </div>
         </div>
 
-        {/* 테스트 탭 */}
-        <div className="flex items-center gap-1 px-4 pt-2 shrink-0 overflow-x-auto"
-          style={{borderBottom:`1px solid ${BD}`}}>
-          {tests.map((t,i)=>(
-            <button key={t.id} onClick={()=>setActiveTest(i)}
-              className="shrink-0 px-3 py-1.5 rounded-t-lg text-[11px] font-black whitespace-nowrap transition-all"
-              style={{
-                background: activeTest===i?'#eef2ff':'#f8fafc',
-                borderBottom: activeTest===i?"2px solid #6366f1":"2px solid transparent",
-                color: activeTest===i?'#4f46e5':'#94a3b8',
-              }}>
-              {t.name||`테스트${i+1}`}
-            </button>
+        {/* 탭 */}
+        <div className="flex items-center gap-1.5 px-5 pt-3 pb-0 shrink-0 overflow-x-auto" style={{ borderBottom: '1px solid #e2e8f0', background: '#fafbff' }}>
+          {tests.map((t, i) => (
+            <div key={t.id} className="flex items-center shrink-0">
+              <button onClick={() => setActiveTest(i)}
+                className="px-4 py-2 rounded-t-xl text-[12px] font-bold whitespace-nowrap transition-all"
+                style={{ background: activeTest === i ? '#fff' : '#f1f5f9', borderTop: activeTest === i ? '2px solid #6366f1' : '2px solid transparent', color: activeTest === i ? '#4338ca' : '#94a3b8', marginBottom: activeTest === i ? '-1px' : '0' }}>
+                {t.name || `테스트${i + 1}`}
+              </button>
+              <button onClick={() => deleteSlot(t, i)} disabled={deletingSlot === t.existingSlotId}
+                className="ml-0.5 w-5 h-5 rounded-full text-[10px] flex items-center justify-center hover:bg-rose-100 text-rose-400">✕</button>
+            </div>
           ))}
-          <button onClick={addTest}
-            className="shrink-0 px-2.5 py-1.5 rounded-t-lg text-[11px] font-black transition-all"
-            style={{color:'#4f46e5',background:'#eef2ff'}}>
-            + 추가
-          </button>
+          <button onClick={addTest} className="shrink-0 px-4 py-2 rounded-t-xl text-[12px] font-black" style={{ color: '#6366f1', background: '#eef2ff' }}>+ 추가</button>
         </div>
 
-        {/* 현재 테스트 설정 */}
+        {/* 설정 */}
         {cfg && (
-          <div className="px-4 py-2.5 shrink-0 flex gap-2 items-center flex-wrap"
-            style={{borderBottom:`1px solid ${BD}`,background:'#f8fafc'}}>
-            <input value={cfg.name} onChange={e=>updCfg({name:e.target.value})} placeholder="테스트명"
-              className="h-8 px-3 rounded-lg text-[12px] font-bold outline-none w-32"
-              style={{background:'#eef2ff',border:'1px solid #c7d2fe',color:'#4f46e5'}}/>
-            <input value={cfg.range} onChange={e=>updCfg({range:e.target.value})} placeholder="범위 (예: L1~5)"
-              className="h-8 px-3 rounded-lg text-[12px] outline-none flex-1 min-w-[100px]"
-              style={{background:'#f8fafc',border:'1px solid #e2e8f0',color:'#475569'}}/>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black" style={{color:'#6366f1'}}>만점</span>
-              <input type="number" value={cfg.maxScore} onChange={e=>updCfg({maxScore:e.target.value})} placeholder="100"
-                className="w-14 h-8 px-2 rounded-lg text-[12px] font-bold outline-none text-center"
-                style={{background:'#f8fafc',border:'1px solid #e2e8f0',color:TXT}}/>
+          <div className="px-5 py-3 shrink-0 flex gap-3 items-center flex-wrap" style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+            <input value={cfg.name} onChange={e => updCfg({ name: e.target.value })} placeholder="테스트명"
+              className="h-9 px-3 rounded-xl text-[13px] font-bold outline-none w-36"
+              style={{ background: '#eef2ff', border: '1.5px solid #c7d2fe', color: '#4f46e5' }} />
+            <input value={cfg.range} onChange={e => updCfg({ range: e.target.value })} placeholder="범위"
+              className="h-9 px-3 rounded-xl text-[13px] outline-none flex-1 min-w-[100px]"
+              style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', color: '#475569' }} />
+            <label className="flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-pointer"
+              style={{ background: cfg.isPF ? '#eef2ff' : '#f1f5f9', border: `1.5px solid ${cfg.isPF ? '#a5b4fc' : '#e2e8f0'}` }}>
+              <input type="checkbox" checked={cfg.isPF} onChange={e => updCfg({ isPF: e.target.checked })} className="w-4 h-4 accent-indigo-500" />
+              <span className="text-[12px] font-black" style={{ color: cfg.isPF ? '#4f46e5' : '#94a3b8' }}>P/F 방식</span>
+            </label>
+            {/* 만점: P/F 여부 상관없이 항상 표시 */}
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-black" style={{ color: '#6366f1' }}>만점</span>
+              <input type="number" value={cfg.maxScore} onChange={e => updCfg({ maxScore: e.target.value })} placeholder="100"
+                className="w-16 h-9 px-2 rounded-xl text-[13px] font-bold outline-none text-center"
+                style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0' }} />
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black" style={{color:'#d97706'}}>합격기준</span>
-              <input type="number" value={cfg.passScore} onChange={e=>updCfg({passScore:e.target.value})} placeholder="70"
-                className="w-14 h-8 px-2 rounded-lg text-[12px] font-bold outline-none text-center"
-                style={{background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e'}}/>
-              {cfg.maxScore&&cfg.passScore&&(
-                <span className="text-[10px] font-bold" style={{color:'#94a3b8'}}>
-                  ({Math.round(Number(cfg.passScore)/Number(cfg.maxScore)*100)}%)
-                </span>
-              )}
-            </div>
+            {/* 합격기준: P/F 모드일 때만 표시 */}
+            {cfg.isPF && (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black" style={{ color: '#d97706' }}>합격기준</span>
+                <input type="number" value={cfg.passScore} onChange={e => updCfg({ passScore: e.target.value })} placeholder="70"
+                  className="w-16 h-9 px-2 rounded-xl text-[13px] font-bold outline-none text-center"
+                  style={{ background: '#fffbeb', border: '1.5px solid #fde68a', color: '#92400e' }} />
+                {cfg.maxScore && cfg.passScore && <span className="text-[11px]" style={{ color: '#94a3b8' }}>({Math.round(Number(cfg.passScore) / Number(cfg.maxScore) * 100)}%)</span>}
+              </div>
+            )}
           </div>
         )}
 
-        {/* 학생 목록 헤더 */}
-        <div className="grid px-4 py-1.5 shrink-0 text-[9px] font-black uppercase tracking-widest"
-          style={{gridTemplateColumns:"20px 90px 1fr 100px 95px",gap:"8px",borderBottom:`1px solid ${BD}`,color:"#475569",background:'#f8fafc'}}>
-          <div/><div>학생</div><div className="text-center">점수</div>
-          <div className="text-center">테스트결과</div><div className="text-center">재응시일</div>
+        {/* 헤더 행 */}
+        <div className="grid px-5 py-2.5 shrink-0 text-[10px] font-black uppercase tracking-widest"
+          style={{ gridTemplateColumns: '20px 1fr 130px 130px 100px', gap: '12px', borderBottom: '1px solid #e2e8f0', color: '#64748b', background: '#f1f5f9' }}>
+          <div /><div>학생</div>
+          <div className="text-center">{cfg?.isPF ? 'P / F' : '점수'}</div>
+          <div className="text-center">상태</div><div className="text-center">재응시일</div>
         </div>
 
         {/* 학생 목록 */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-2 space-y-1"
-          style={{background:'#f8fafc'}}>
-          {students.map(stu=>{
-            const e=entries[stu.student_name]||{included:true,score:"",resultCode:"",retryDate:""};
+        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1.5" style={{ background: '#f8fafc' }}>
+          {students.map(stu => {
+            const e = entries[stu.student_name] || { included: true, score: '', resultCode: '', retryDate: '', pfResult: '' };
             const autoRes = getAutoResult(e);
-            const isFail = ["fail","verbal_retest","fail_retry"].includes(autoRes);
-            const isPass = autoRes==="pass";
-            const isLate = autoRes==="late";
-            const isAbsent = ["absent","unattempted","unmemorized_retry","other","late"].includes(autoRes);
-
+            const isFail = cfg?.isPF ? e.pfResult === 'fail' : ['fail','verbal_retest','fail_retry'].includes(autoRes);
+            const isPass = cfg?.isPF ? e.pfResult === 'pass' : autoRes === 'pass';
+            const isAbsent = SKIP_CODES.includes(autoRes);
+            const myScore = e.score ? Number(e.score) : null;
+            const rank = !cfg?.isPF && myScore != null && scores.length > 1 ? scores.filter(s => s > myScore).length + 1 : null;
+            const pct = !cfg?.isPF && myScore != null && cfg?.maxScore ? Math.round(myScore / Number(cfg.maxScore) * 100) : null;
             return (
-              <div key={stu.student_name}
-                className="grid items-center rounded-xl px-2 py-1.5 transition-all"
+              <div key={stu.student_name} className="grid items-center rounded-xl px-4 py-3"
                 style={{
-                  gridTemplateColumns:"20px 90px 1fr 100px 95px",gap:"8px",
-                  background: !e.included?'#f8fafc':isPass?'#f0fdf4':isFail?'#fef2f2':isAbsent?'#fffbeb':'#ffffff',
-                  opacity:e.included?1:0.4,
-                  border: isPass?'1px solid #bbf7d0':isFail?'1px solid #fecaca':isAbsent?'1px solid #fde68a':'1px solid #f1f5f9',
+                  gridTemplateColumns: '20px 1fr 130px 130px 100px', gap: '12px',
+                  background: !e.included ? '#f8fafc' : isPass ? '#f0fdf4' : isFail ? '#fef2f2' : isAbsent ? '#fffbeb' : '#fff',
+                  opacity: e.included ? 1 : 0.4,
+                  border: isPass ? '1.5px solid #bbf7d0' : isFail ? '1.5px solid #fecaca' : isAbsent ? '1.5px solid #fde68a' : '1.5px solid #f1f5f9',
                 }}>
-
-                {/* 해당자 체크 */}
-                <input type="checkbox" checked={e.included} onChange={()=>upd(stu.student_name,{included:!e.included})}
-                  className="w-4 h-4 rounded cursor-pointer accent-indigo-500"/>
-
-                {/* 이름 + 결과 뱃지 */}
+                <input type="checkbox" checked={e.included} onChange={() => upd(stu.student_name, { included: !e.included })}
+                  className="w-4 h-4 rounded cursor-pointer accent-indigo-500" />
                 <div>
-                  <p className="text-[12px] font-black truncate" style={{color:e.included?'#1e293b':'#94a3b8'}}>{stu.student_name}</p>
-                  {e.included && autoRes && (
-                    <p className="text-[9px] font-black" style={{color:isPass?'#16a34a':isFail?'#dc2626':isAbsent?'#d97706':'#94a3b8'}}>
-                      {isPass?"✅ PASS":autoRes==="verbal_retest"?"🗣 구두재시후귀가":autoRes==="fail_retry"?"🔁 추후재응시":autoRes==="fail"?"❌ FAIL":autoRes==="late"?"⏰ 지각":autoRes==="unmemorized_retry"?"📚 미암기재시":""}
-                    </p>
-                  )}
+                  <p className="text-[13px] font-black truncate" style={{ color: e.included ? '#1e293b' : '#94a3b8' }}>{stu.student_name}</p>
+                  {e.included && !cfg?.isPF && rank != null && <p className="text-[10px] font-bold" style={{ color: '#6366f1' }}>#{rank} · {pct}%</p>}
+                  {e.included && cfg?.isPF && e.pfResult && <p className="text-[10px] font-black" style={{ color: isPass ? '#15803d' : '#dc2626' }}>{isPass ? '✅ PASS' : '❌ FAIL'}</p>}
                 </div>
-
-                {/* 점수 입력 */}
-                <div className="flex items-center justify-center gap-1">
+                <div className="flex items-center justify-center gap-1.5">
                   {e.included && !isAbsent && (
-                    <>
-                      <input type="number" value={e.score}
-                        onChange={ev=>upd(stu.student_name,{score:ev.target.value,resultCode:""})}
-                        placeholder="0" min={0} max={cfg?.maxScore||undefined}
-                        className="w-16 h-7 rounded-lg text-[13px] font-black outline-none text-center"
-                        style={{background:e.score?'#eef2ff':'#f8fafc',border:e.score?'1px solid #a5b4fc':'1px solid #e2e8f0',color:'#4f46e5'}}/>
-                      {cfg?.maxScore&&<span className="text-[9px]" style={{color:'#94a3b8'}}>/{cfg.maxScore}</span>}
-                    </>
+                    cfg?.isPF ? (
+                      <select value={e.pfResult} onChange={ev => upd(stu.student_name, { pfResult: ev.target.value as 'pass' | 'fail' | '' })}
+                        className="w-full h-9 px-2 rounded-xl text-[12px] font-black outline-none text-center cursor-pointer"
+                        style={{ background: e.pfResult === 'pass' ? '#f0fdf4' : e.pfResult === 'fail' ? '#fef2f2' : '#f8fafc', border: '1.5px solid #e2e8f0', color: e.pfResult === 'pass' ? '#15803d' : e.pfResult === 'fail' ? '#dc2626' : '#94a3b8' }}>
+                        <option value="">— 선택</option>
+                        <option value="pass">✅ PASS</option>
+                        <option value="fail">❌ FAIL</option>
+                      </select>
+                    ) : (
+                      <>
+                        <input type="number" value={e.score} onChange={ev => upd(stu.student_name, { score: ev.target.value, resultCode: '' })}
+                          placeholder="0" className="w-20 h-9 rounded-xl text-[14px] font-black outline-none text-center"
+                          style={{ background: e.score ? '#eef2ff' : '#f8fafc', border: '1.5px solid ' + (e.score ? '#a5b4fc' : '#e2e8f0'), color: '#4f46e5' }} />
+                        {cfg?.maxScore && <span className="text-[11px]" style={{ color: '#94a3b8' }}>/{cfg.maxScore}</span>}
+                      </>
+                    )
                   )}
                 </div>
-
-                {/* 테스트결과: 미응시/결석 등 OR FAIL 처리 */}
                 <div className="flex justify-center">
                   {e.included && (
-                    !e.score && !isAbsent && !isFail ? (
-                      <select value={e.resultCode} onChange={ev=>upd(stu.student_name,{resultCode:ev.target.value,score:""})}
-                        className="w-full h-7 px-1 rounded-lg text-[9px] font-bold outline-none cursor-pointer"
-                        style={{background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e'}}>
-                        <option value="">— 선택</option>
-                        <option value="absent">결석</option>
-                        <option value="late">지각</option>
-                        <option value="unattempted">미응시</option>
-                        <option value="unmemorized_retry">미암기 (추후재시)</option>
-                        <option value="other">기타</option>
+                    !e.score && !isAbsent && !isFail && !cfg?.isPF ? (
+                      <select value={e.resultCode} onChange={ev => upd(stu.student_name, { resultCode: ev.target.value, score: '' })}
+                        className="w-full h-9 px-2 rounded-xl text-[11px] font-bold outline-none cursor-pointer"
+                        style={{ background: '#fffbeb', border: '1.5px solid #fde68a', color: '#92400e' }}>
+                        <option value="">— 정상응시</option>
+                        <option value="absent">결석 (추후재응시)</option>
+                        <option value="late">지각 (추후재응시)</option>
+                        <option value="unattempted">미비 (추후재응시)</option>
                       </select>
-                    ) : isFail ? (
-                      <select value={["fail"].includes(e.resultCode)?"":e.resultCode}
-                        onChange={ev=>upd(stu.student_name,{resultCode:ev.target.value||"fail"})}
-                        className="w-full h-7 px-1 rounded-lg text-[9px] font-bold outline-none cursor-pointer"
-                        style={{background:'#fef2f2',border:'1px solid #fecaca',color:'#dc2626'}}>
-                        <option value="fail">❌ FAIL — 처리 선택</option>
-                        <option value="verbal_retest">🗣 구두재시 후 귀가</option>
-                        <option value="fail_retry">🔁 추후 재응시</option>
+                    ) : isFail && !cfg?.isPF ? (
+                      <select value={['fail'].includes(e.resultCode) ? '' : e.resultCode} onChange={ev => upd(stu.student_name, { resultCode: ev.target.value || 'fail' })}
+                        className="w-full h-9 px-2 rounded-xl text-[11px] font-bold outline-none cursor-pointer"
+                        style={{ background: '#fef2f2', border: '1.5px solid #fecaca', color: '#dc2626' }}>
+                        <option value="">❌ FAIL</option>
+                        <option value="verbal_retest">🗣 구두재시</option>
+                        <option value="fail_retry">🔁 추후재응시</option>
                       </select>
                     ) : isAbsent ? (
-                      <button onClick={()=>upd(stu.student_name,{resultCode:"",score:""})}
-                        className="text-[9px] font-black px-2 py-1 rounded-lg transition-all"
-                        style={{background:'#fffbeb',color:'#92400e',border:'1px solid #fde68a'}}>
-                        ✕ 취소
-                      </button>
+                      <button onClick={() => upd(stu.student_name, { resultCode: '', score: '' })}
+                        className="text-[11px] font-black px-3 py-1.5 rounded-xl"
+                        style={{ background: '#fffbeb', color: '#92400e', border: '1.5px solid #fde68a' }}>✕ 취소</button>
                     ) : null
                   )}
                 </div>
-
-                {/* 재응시일 (추후재응시만) */}
                 <div className="flex justify-center">
-                  {e.included && (e.resultCode==="fail_retry"||e.resultCode==="unmemorized_retry") && (
-                    <input type="date" value={e.retryDate}
-                      onChange={ev=>upd(stu.student_name,{retryDate:ev.target.value})}
-                      className="w-full h-7 px-1 rounded-lg text-[9px] outline-none"
-                      style={{background:'#eef2ff',border:"1px solid rgba(99,102,241,0.25)",color:"#a5b4fc",colorScheme:"dark"}}/>
+                  {e.included && (e.resultCode === 'fail_retry' || e.resultCode === 'unmemorized_retry') && (
+                    <input type="date" value={e.retryDate} onChange={ev => upd(stu.student_name, { retryDate: ev.target.value })}
+                      className="w-full h-9 px-2 rounded-xl text-[11px] outline-none"
+                      style={{ background: '#eef2ff', border: '1.5px solid #c7d2fe', color: '#4f46e5' }} />
                   )}
                 </div>
               </div>
@@ -1058,16 +1141,12 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
         </div>
 
         {/* 저장 */}
-        <div className="px-5 py-3 flex gap-3 shrink-0"
-          style={{borderTop:`1px solid ${BD}`,background:'#f8fafc'}}>
-          <button onClick={onClose} className="flex-1 h-10 rounded-xl text-[13px] font-black"
-            style={{border:'1px solid #e2e8f0',color:'#64748b'}}>
-            취소
-          </button>
+        <div className="px-5 py-4 flex gap-3 shrink-0" style={{ borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
+          <button onClick={onClose} className="flex-1 h-11 rounded-xl text-[13px] font-black" style={{ border: '1.5px solid #e2e8f0', color: '#64748b' }}>닫기</button>
           <button onClick={handleSave} disabled={saving}
-            className="flex-1 h-10 rounded-xl text-[13px] font-black disabled:opacity-30 transition-all"
-            style={{background:"linear-gradient(135deg,#6366f1,#4f46e5)",color:"white"}}>
-            {saving?"저장 중...":"전체 저장 ("+tests.length+"개 테스트)"}
+            className="h-11 px-8 rounded-xl text-[13px] font-black disabled:opacity-30 transition-all"
+            style={{ background: 'linear-gradient(135deg,#6366f1,#4338ca)', color: '#fff', flex: 2 }}>
+            {saving ? '저장 중...' : `💾 저장 (${tests.length}개)`}
           </button>
         </div>
       </div>
@@ -1248,6 +1327,8 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   const [testResultPopup, setTestResultPopup] = useState<{ slot: HomeworkSlot; studentName: string; existingCheck: HomeworkCheck | null } | null>(null);
   const [addTestModal, setAddTestModal] = useState<WeekColumn | null>(null);
   const [attBoardModal, setAttBoardModal] = useState<WeekColumn | null>(null);
+  const [deleteSessionConfirm, setDeleteSessionConfirm] = useState<WeekColumn | null>(null);
+  const [attDetailModal, setAttDetailModal] = useState<{ status: AttendanceStatus; lateTime?: string; reason?: string; makeupType?: string; makeupDate?: string } | null>(null);
 
   // ── 초기 로드 ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1343,10 +1424,11 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   }, [cls, weekStart, tab, loadWeekData]);
 
   // ── 세션 생성 ───────────────────────────────────────────────────────────────
-  const handleCreateSession = async (col: WeekColumn) => {
+  const handleCreateSession = async (col: WeekColumn, isCancelled = false) => {
     if (!cls) return;
     try {
-      const session = await createSession(classId, col.date, col.is_clinic ? 'clinic' : 'class');
+      const type = isCancelled ? 'cancelled' : (col.is_clinic ? 'clinic' : 'class');
+      const session = await createSession(classId, col.date, type);
       setWeekData(prev => {
         if (!prev) return prev;
         return {
@@ -1532,15 +1614,13 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         <th key={col.date}
                           className="border-b border-r px-2 py-2 min-w-[140px]" style={{background: today ? '#eef2ff' : '#f8fafc', borderColor: '#e2e8f0'}}>
                           {/* 날짜 제목 */}
-                          <div className="flex items-center justify-between mb-1">
-                            <div>
-                              <p className={`text-[11px] font-black ${today ? colColor : 'text-slate-700'}`}>
-                                {col.dayName} {col.date.slice(5).replace('-', '/')}
-                                {col.is_clinic && <span className="ml-1 text-[8px] bg-teal-100 text-teal-700 px-1 py-0.5 rounded font-black">클리닉</span>}
-                                {today && <span className="ml-1 text-[8px] bg-slate-800 text-white px-1 py-0.5 rounded font-black">오늘</span>}
-                              </p>
-                              <p className="text-[9px] text-slate-400">{col.time}{col.end_time ? `~${col.end_time}` : ''}</p>
-                            </div>
+                          <div className="flex flex-col items-center mb-1.5">
+                            <p className={`text-[12px] font-black ${today ? colColor : 'text-slate-700'} flex items-center gap-1`}>
+                              {col.dayName} {col.date.slice(5).replace('-', '/')}
+                              {col.is_clinic && <span className="text-[8px] bg-teal-100 text-teal-700 px-1 py-0.5 rounded font-black">클리닉</span>}
+                              {today && <span className="text-[8px] bg-indigo-600 text-white px-1 py-0.5 rounded font-black">오늘</span>}
+                            </p>
+                            <p className="text-[9px] text-slate-400 font-medium">{col.time}{col.end_time ? ` ~ ${col.end_time}` : ''}</p>
                           </div>
                           {/* 세션 액션 버튼들 */}
                           {hasSes ? (
@@ -1558,21 +1638,23 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                 🎯 테스트
                               </button>
                               <button onClick={async () => {
-                                if (!confirm("이 세션을 삭제할까요?")) return;
-                                await deleteSession(col.session!.id);
-                                setWeekData(prev => prev ? {
-                                  ...prev,
-                                  columns: prev.columns.map(cc => cc.date === col.date ? { ...cc, session: null } : cc),
-                                } : null);
-                              }} className="h-5 px-1 text-red-400/50 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all">
+                                setDeleteSessionConfirm(col);
+                              }} className="h-5 px-1 text-rose-300 hover:text-rose-500 hover:bg-rose-50 rounded-md transition-all">
                                 <Trash2 size={8} />
                               </button>
                             </div>
                           ) : (
-                            <button onClick={() => handleCreateSession(col)}
-                              className={`h-5 px-2 rounded-md text-[9px] font-black border transition-all hover:-translate-y-0.5 ${col.date <= toDateStr(new Date()) ? 'border-slate-300 text-slate-600 bg-white hover:bg-slate-50' : 'border-slate-200 text-slate-300'}`}>
-                              {col.date <= toDateStr(new Date()) ? '+ 수업 기록' : '예정'}
-                            </button>
+                            <div className="flex gap-1 flex-wrap">
+                              <button onClick={() => handleCreateSession(col)}
+                                className="h-5 px-1.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-md text-[9px] font-black hover:bg-indigo-100 transition-all">
+                                수업 시작
+                              </button>
+                              <button onClick={async () => {
+                                await handleCreateSession(col, true);
+                              }} className="h-5 px-1.5 bg-rose-50 text-rose-500 border border-rose-200 rounded-md text-[9px] font-black hover:bg-rose-100 transition-all">
+                                휴강
+                              </button>
+                            </div>
                           )}
                         </th>
                       );
@@ -1590,8 +1672,35 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         </button>
                       </td>
                     </tr>
-                  ) : students.map((stu, si) => (
-                    <tr key={stu.student_name} className={si % 2 === 0 ? '' : 'bg-foreground/1.5'}>
+                  ) : (
+                    <>
+                      {/* ── 수업 내용 입력 행 (학생 목록 위) ── */}
+                      <tr>
+                        <td className="sticky left-0 border-b border-r px-1.5 py-1.5 z-10" style={{ background: '#eef2ff', borderColor: '#e2e8f0' }}>
+                          <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">📝 수업내용</p>
+                        </td>
+                        {weekData.columns.map(col => (
+                          <td key={col.date} className="border-b border-r px-1.5 py-1.5 align-top" style={{ background: '#eef2ff', borderColor: '#e2e8f0', minWidth: '140px' }}>
+                            {col.session ? (
+                              <textarea
+                                key={col.session.id}
+                                defaultValue={weekData.lessonNotes[col.session.id] || ''}
+                                onBlur={async e => {
+                                  const val = e.target.value;
+                                  await upsertLessonNote(col.session!.id, val);
+                                  setWeekData(prev => prev ? { ...prev, lessonNotes: { ...prev.lessonNotes, [col.session!.id]: val } } : prev);
+                                }}
+                                rows={2}
+                                placeholder="수업 내용 입력..."
+                                className="w-full px-1.5 py-1 rounded-lg border border-indigo-200 bg-white text-[10px] outline-none focus:border-indigo-400 resize-none text-slate-700 placeholder:text-slate-300"
+                              />
+                            ) : <span className="text-[9px] text-slate-300">—</span>}
+                          </td>
+                        ))}
+                      </tr>
+                      {/* ── 학생 목록 ── */}
+                      {students.map((stu, si) => (
+                        <tr key={stu.student_name} className={si % 2 === 0 ? '' : 'bg-foreground/1.5'}>
                       {/* 학생 이름 셀 */}
                       <td className="sticky left-0 border-b border-r px-1.5 py-1.5 z-10 min-w-[64px] max-w-[72px]"
                         style={{ background: si % 2 === 0 ? '#ffffff' : '#f8fafc', borderColor: '#e2e8f0' }}>
@@ -1613,7 +1722,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                           const assigned = weekData.slotStudents[slot.id];
                           return !assigned || assigned.length === 0 || assigned.includes(stu.student_name);
                         });
-                        const myGeneral = mySlots.filter(s => s.hw_type !== 'vocab_test');
+                        const myGeneral = mySlots.filter(s => s.hw_type !== 'vocab_test' && s.hw_type !== 'test_prep');
                         const myTests = mySlots.filter(s => s.hw_type === 'vocab_test');
                         const doneCount = myGeneral.filter(slot => weekData.checks[slot.id]?.[stu.student_name]?.status === 'done').length;
 
@@ -1621,108 +1730,113 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         <td key={col.date}
                           className="border-b border-r align-top" style={{borderColor: '#e2e8f0', background: isToday(col.date) ? '#eef2ff' : (si % 2 === 0 ? '#ffffff' : '#f8fafc')}}>
                           {col.session ? (
-                            <div className="min-w-[140px]">
+                            <div className="flex min-w-[160px]">
 
-                              {/* ── 출결 섹션 ── */}
-                              <div className="px-1.5 pt-1 pb-1 border-b border-slate-100">
-                                <button
-                                  onClick={() => setAttPopup({ date: col.date, studentName: stu.student_name, session: col.session })}
-                                  className={`w-full text-center px-1 py-0.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-80 ${
-                                    att ? ATT_STYLE[att.status] : 'border border-dashed border-slate-300 text-slate-400 hover:border-slate-400'
-                                  }`}>
+                              {/* ── 왼쪽 20% : 출결 + 태도 ── */}
+                              <div className="shrink-0 border-r border-slate-100 flex flex-col items-center justify-start pt-1.5 pb-1 px-1 gap-1"
+                                style={{ width: '20%', minWidth: '32px' }}>
+                                <div
+                                  onClick={() => { if (att) setAttDetailModal({ status: att.status, lateTime: att.late_arrival_time || undefined, reason: (att as any).absence_reason || undefined, makeupType: att.makeup_type || undefined, makeupDate: att.makeup_date || undefined }); }}
+                                  className={`w-full text-center px-0.5 py-0.5 rounded text-[8px] font-black select-none leading-tight ${att ? `${ATT_STYLE[att.status]} cursor-pointer hover:opacity-80 transition-all` : 'text-slate-200'}`}>
                                   {att ? (<>
-                                    <span>{ATT_SHORT[att.status]}</span>
-                                    {att.status === 'late' && att.late_arrival_time && <span className="ml-1 text-[8px] opacity-60">{att.late_arrival_time.slice(0,5)}</span>}
-                                    {att.status === 'absent' && att.makeup_type && <span className="ml-1 text-[8px] opacity-60">{att.makeup_type === 'direct' ? '보강' : '영상'}</span>}
+                                    <span className="block">{ATT_SHORT[att.status]}</span>
+                                    {att.status === 'late' && att.late_arrival_time && <span className="block text-[7px] opacity-70">{att.late_arrival_time.slice(0,5)}</span>}
+                                    {att.status === 'absent' && att.makeup_type && <span className="block text-[7px] opacity-70">{att.makeup_type === 'direct' ? '보강' : '영상'}</span>}
                                   </>) : '—'}
-                                </button>
+                                </div>
+                                {/* 태도 A~E */}
+                                {col.session && (['A','B','C','D','E'] as const).map(g => {
+                                  const cur = (att as any)?.attitude_grade;
+                                  const active = cur === g;
+                                  const gc = g==='A'?'emerald':g==='B'?'blue':g==='C'?'amber':g==='D'?'orange':'red';
+                                  return (
+                                    <button key={g} onClick={async () => {
+                                      const next = active ? null : g;
+                                      await import('@/lib/class-service').then(m => m.upsertAttitudeGrade(col.session!.id, stu.student_name, next));
+                                      setWeekData(prev => {
+                                        if (!prev) return prev;
+                                        const am = { ...prev.attMap };
+                                        am[col.date] = { ...(am[col.date]||{}), [stu.student_name]: { ...(am[col.date]?.[stu.student_name]||{}), attitude_grade: next } as AttendanceRow };
+                                        return { ...prev, attMap: am };
+                                      });
+                                    }}
+                                    className={`w-full text-center text-[7px] font-black rounded leading-tight py-0.5 transition-all ${active ? `bg-${gc}-500 text-white` : `text-${gc}-400 hover:bg-${gc}-50`}`}>
+                                      {g}
+                                    </button>
+                                  );
+                                })}
                               </div>
 
-                              {/* ── 과제 섹션 ── */}
-                              {(myGeneral.length > 0 || (weekData.rolloverChecks[col.date] || []).some(rc => rc.student_name === stu.student_name)) && (
-                                <div className="px-1.5 pt-0.5 pb-1 border-b border-slate-100 space-y-0.5">
-                                  {myGeneral.map(slot => {
-                                    const chk = weekData.checks[slot.id]?.[stu.student_name];
-                                    const status = chk?.status || 'pending';
-                                    const isDone = status === 'done';
-                                    const isDonePartial = status === 'done_partial';
-                                    const isDelayed = status === 'delayed';
-                                    return (
-                                      <div key={slot.id} className="flex items-center gap-0.5">
-                                        <button
-                                          onClick={async () => {
-                                            const next: HwStatus = status === 'pending' ? 'done' : status === 'done' ? 'done_partial' : 'pending';
-                                            await upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: next });
-                                            setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id] || {}), [stu.student_name]: { ...(chk || {}), slot_id: slot.id, student_name: stu.student_name, status: next } as HomeworkCheck } } } : prev);
-                                          }}
-                                          className={`flex-1 text-left px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all truncate ${
-                                            isDone        ? 'bg-emerald-50 text-emerald-700 line-through' :
-                                            isDonePartial ? 'bg-sky-50 text-sky-700' :
-                                            isDelayed     ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                                            'bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200'
-                                          }`}>
-                                          {isDone ? '✓완' : isDonePartial ? '↩귀' : isDelayed ? '⏩' : '○'} {slot.title}
-                                        </button>
-                                        {!isDone && !isDonePartial && (
-                                          <button onClick={() => setRolloverPopup({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk || null })}
-                                            className="shrink-0 px-1 py-0.5 rounded text-[8px] font-bold bg-orange-50 text-orange-500 hover:bg-orange-100 border border-orange-200"
-                                            title="이월">
-                                            ⏩
-                                          </button>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                  {/* 이월과제 */}
-                                  {(weekData.rolloverChecks[col.date] || [])
-                                    .filter(rc => rc.student_name === stu.student_name)
-                                    .map(rc => (
-                                      <div key={rc.id || rc.slot_id + rc.student_name} className="flex items-center gap-0.5">
-                                        <div className="flex-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-200 truncate">⏩ 이월</div>
-                                        <button onClick={async () => {
-                                          await upsertHomeworkCheck({ slot_id: rc.slot_id, student_name: stu.student_name, status: 'done', rollover_date: null });
-                                          setWeekData(prev => {
-                                            if (!prev) return prev;
-                                            const nr = { ...prev.rolloverChecks };
-                                            nr[col.date] = (nr[col.date] || []).filter(r => !(r.slot_id === rc.slot_id && r.student_name === stu.student_name));
-                                            return { ...prev, rolloverChecks: nr, checks: { ...prev.checks, [rc.slot_id]: { ...(prev.checks[rc.slot_id] || {}), [stu.student_name]: { ...(rc as HomeworkCheck), status: 'done', rollover_date: null } } } };
-                                          });
+                              {/* ── 오른쪽 80% : 과제 + 테스트 ── */}
+                              <div className="flex-1 min-w-0 py-1 px-1 space-y-0.5">
+
+                                {/* 과제 목록 */}
+                                {myGeneral.map(slot => {
+                                  const chk = weekData.checks[slot.id]?.[stu.student_name];
+                                  const status = chk?.status || 'pending';
+                                  const isDone = status === 'done';
+                                  const isDonePartial = status === 'done_partial';
+                                  const isDelayed = status === 'delayed';
+                                  return (
+                                    <div key={slot.id} className="flex items-center gap-0.5">
+                                      <button
+                                        onClick={async () => {
+                                          const next: HwStatus = status === 'pending' ? 'done' : status === 'done' ? 'done_partial' : 'pending';
+                                          await upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: next });
+                                          setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id] || {}), [stu.student_name]: { ...(chk || {}), slot_id: slot.id, student_name: stu.student_name, status: next } as HomeworkCheck } } } : prev);
                                         }}
-                                          className="shrink-0 px-1 py-0.5 rounded text-[8px] font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200">
-                                          ✓
-                                        </button>
-                                      </div>
-                                    ))}
-                                </div>
-                              )}
-
-                              {/* ── 테스트 섹션 ── */}
-                              {myTests.length > 0 && (
-                                <div className="px-1.5 pt-0.5 pb-1 space-y-0.5">
-                                  {myTests.map(slot => {
-                                    const chk = weekData.checks[slot.id]?.[stu.student_name];
-                                    return (
-                                      <div key={slot.id} className="flex items-center gap-0.5">
-                                        <div className={`flex-1 px-1 py-0.5 rounded text-[9px] font-bold truncate ${
-                                          chk?.score != null ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
+                                        className={`flex-1 text-left px-1 py-0.5 rounded text-[8px] font-bold transition-all truncate ${
+                                          isDone        ? 'bg-emerald-50 text-emerald-700 line-through' :
+                                          isDonePartial ? 'bg-sky-50 text-sky-700' :
+                                          isDelayed     ? 'bg-amber-50 text-amber-700' :
+                                          'bg-slate-50 text-slate-500 hover:bg-slate-100'
                                         }`}>
-                                          🎯 {slot.title}
-                                          {chk?.score != null && <span className="ml-1 font-black">{chk.score}{slot.max_score ? `/${slot.max_score}` : ''}{slot.is_pf ? (chk.is_pass ? ' P' : ' F') : ''}</span>}
-                                        </div>
-                                        <button onClick={() => setTestResultPopup({ slot, studentName: stu.student_name, existingCheck: chk || null })}
-                                          className="shrink-0 px-1 py-0.5 rounded text-[8px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200">
-                                          {chk?.score != null ? '수정' : '입력'}
-                                        </button>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
+                                        {isDone ? '✓' : isDonePartial ? '↩' : isDelayed ? '⏩' : '○'} {slot.title}
+                                      </button>
+                                      {!isDone && !isDonePartial && (
+                                        <button onClick={() => setRolloverPopup({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk || null })}
+                                          className="shrink-0 w-4 h-4 flex items-center justify-center rounded text-[7px] text-orange-400 hover:bg-orange-50">⏩</button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
 
+                                {/* 이월과제 */}
+                                {(weekData.rolloverChecks[col.date] || []).filter(rc => rc.student_name === stu.student_name).map(rc => (
+                                  <div key={rc.id || rc.slot_id + rc.student_name} className="flex items-center gap-0.5">
+                                    <div className="flex-1 px-1 py-0.5 rounded text-[8px] font-bold bg-orange-50 text-orange-600 truncate">⏩이월</div>
+                                    <button onClick={async () => {
+                                      await upsertHomeworkCheck({ slot_id: rc.slot_id, student_name: stu.student_name, status: 'done', rollover_date: null });
+                                      setWeekData(prev => {
+                                        if (!prev) return prev;
+                                        const nr = { ...prev.rolloverChecks };
+                                        nr[col.date] = (nr[col.date] || []).filter(r => !(r.slot_id === rc.slot_id && r.student_name === stu.student_name));
+                                        return { ...prev, rolloverChecks: nr, checks: { ...prev.checks, [rc.slot_id]: { ...(prev.checks[rc.slot_id] || {}), [stu.student_name]: { ...(rc as HomeworkCheck), status: 'done', rollover_date: null } } } };
+                                      });
+                                    }} className="shrink-0 w-4 h-4 flex items-center justify-center rounded text-[7px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100">✓</button>
+                                  </div>
+                                ))}
+
+                                {/* 테스트 목록 */}
+                                {myTests.map(slot => {
+                                  const chk = weekData.checks[slot.id]?.[stu.student_name];
+                                  return (
+                                    <div key={slot.id} className="flex items-center gap-0.5">
+                                      <div className={`flex-1 px-1 py-0.5 rounded text-[8px] font-bold truncate ${chk?.score != null || chk?.is_pass != null ? 'bg-indigo-50 text-indigo-700' : 'bg-amber-50 text-amber-700'}`}>
+                                        🎯{chk?.score != null ? ` ${chk.score}${slot.max_score ? `/${slot.max_score}` : ''}` : slot.is_pf ? (chk?.is_pass != null ? (chk.is_pass ? ' P' : ' F') : '') : ''}
+                                      </div>
+                                      <button onClick={() => setTestResultPopup({ slot, studentName: stu.student_name, existingCheck: chk || null })}
+                                        className="shrink-0 w-4 h-4 flex items-center justify-center rounded text-[7px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100">✎</button>
+                                    </div>
+                                  );
+                                })}
+
+                              </div>
                             </div>
                           ) : (
-                            <div className="text-center text-[10px] text-slate-300 py-2 min-w-[100px]">—</div>
+                            <div className="text-center text-[10px] text-slate-200 py-2 min-w-[100px]">—</div>
                           )}
+
                         </td>
                         );
                       })}
@@ -1741,42 +1855,63 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         <td key={col.date} className="border-t border-b border-r px-2 py-2 align-top" style={{background: '#f1f5f9', borderColor: '#e2e8f0'}}>
                           {col.session ? (
                             <div className="space-y-1.5 min-w-[150px]">
-                              <textarea
-                                defaultValue={sessionNote}
-                                onBlur={async e => {
-                                  const val = e.target.value;
-                                  await upsertLessonNote(col.session!.id, val);
-                                  setWeekData(prev => prev ? { ...prev, lessonNotes: { ...prev.lessonNotes, [col.session!.id]: val } } : prev);
-                                }}
-                                rows={2}
-                                placeholder="수업 내용 메모..."
-                                className="w-full px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-[10px] outline-none focus:border-slate-400 resize-none text-slate-600"
-                              />
-                              {slots.map(slot => (
-                                <div key={slot.id} className="flex items-center justify-between gap-1 px-2 py-1 rounded-lg bg-background border border-foreground/8">
-                                  <div className="flex-1 min-w-0">
-                                    <span className="text-[10px] font-bold text-foreground truncate block">{slot.title}</span>
-                                    {slot.due_date && <span className="text-[9px] text-accent">마감 {slot.due_date.slice(5).replace('-','/')}</span>}
-                                    {(weekData.slotStudents[slot.id] || []).length > 0 && (
-                                      <span className="text-[9px] text-violet-500"> ({(weekData.slotStudents[slot.id] || []).join(', ')})</span>
+                              {/* 과제 목록 통합 박스 */}
+                              {(() => {
+                                const allSlots = slots.filter(s => s.hw_type !== 'test_prep');
+                                const globalSlots = allSlots.filter(s => (weekData.slotStudents[s.id] || []).length === 0);
+                                const indivSlots = allSlots.filter(s => (weekData.slotStudents[s.id] || []).length > 0);
+                                if (allSlots.length === 0) return null;
+                                return (
+                                  <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+                                    {globalSlots.length > 0 && (
+                                      <div className="px-2 py-1.5 border-b border-slate-100">
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">전체 과제</p>
+                                        {globalSlots.map(slot => (
+                                          <div key={slot.id} className="flex items-start justify-between gap-1 py-0.5">
+                                            <p className="text-[9px] text-slate-700 leading-tight flex-1 min-w-0">
+                                              <span className="text-slate-400 mr-1">-</span>
+                                              <span className="font-semibold">{slot.title}</span>
+                                              {slot.due_date && <span className="text-slate-400 ml-1">{slot.due_date.slice(5).replace('-','/')}</span>}
+                                            </p>
+                                            <button onClick={async () => {
+                                              if (!confirm(`"${slot.title}" 삭제?`)) return;
+                                              await deleteHomeworkSlot(slot.id);
+                                              setWeekData(prev => prev && col.session ? { ...prev, slots: { ...prev.slots, [col.session!.id]: (prev.slots[col.session!.id] || []).filter(s => s.id !== slot.id) } } : prev);
+                                            }} className="p-0.5 text-slate-300 hover:text-rose-400 transition-colors shrink-0"><X size={8} /></button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {indivSlots.length > 0 && (
+                                      <div className="px-2 py-1.5">
+                                        <p className="text-[8px] font-black text-violet-400 uppercase tracking-widest mb-1">개별 과제</p>
+                                        {indivSlots.map(slot => (
+                                          <div key={slot.id} className="flex items-start justify-between gap-1 py-0.5">
+                                            <p className="text-[9px] leading-tight flex-1 min-w-0">
+                                              <span className="text-slate-400 mr-1">-</span>
+                                              <span className="font-semibold text-violet-700">{slot.title}</span>
+                                              <span className="text-[8px] text-violet-400 ml-1">({(weekData.slotStudents[slot.id] || []).join(', ')})</span>
+                                            </p>
+                                            <button onClick={async () => {
+                                              if (!confirm(`"${slot.title}" 삭제?`)) return;
+                                              await deleteHomeworkSlot(slot.id);
+                                              setWeekData(prev => prev && col.session ? { ...prev, slots: { ...prev.slots, [col.session!.id]: (prev.slots[col.session!.id] || []).filter(s => s.id !== slot.id) } } : prev);
+                                            }} className="p-0.5 text-slate-300 hover:text-rose-400 transition-colors shrink-0"><X size={8} /></button>
+                                          </div>
+                                        ))}
+                                      </div>
                                     )}
                                   </div>
-                                  <button onClick={async () => {
-                                    if (!confirm(`"${slot.title}" 과제를 삭제할까요?`)) return;
-                                    await deleteHomeworkSlot(slot.id);
-                                    setWeekData(prev => {
-                                      if (!prev || !col.session) return prev;
-                                      return { ...prev, slots: { ...prev.slots, [col.session.id]: (prev.slots[col.session.id] || []).filter(s => s.id !== slot.id) } };
-                                    });
-                                  }} className="p-0.5 text-red-200 hover:text-red-500 transition-colors shrink-0"><X size={9} /></button>
-                                </div>
-                              ))}
+                                );
+                              })()}
                             </div>
                           ) : <p className="text-[9px] text-slate-400 text-center">—</p>}
                         </td>
                       );
                     })}
-                  </tr>
+                   </tr>
+                    </>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1785,6 +1920,53 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       )}
 
       {/* ── 모달들 ──────────────────────────────────────────────────────────── */}
+
+      {/* 세션 초기화 확인 모달 */}
+      {deleteSessionConfirm && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-80 border border-slate-200">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-2xl">🗑️</span>
+              <h3 className="text-[15px] font-black text-slate-800">수업 내역 초기화</h3>
+            </div>
+            <p className="text-[13px] text-slate-600 mb-1">{deleteSessionConfirm.date} 수업 내역을</p>
+            <p className="text-[13px] font-bold text-rose-600 mb-4">초기화하시겠습니까?</p>
+            <p className="text-[11px] text-slate-400 mb-5">출결, 과제, 테스트 기록이 모두 삭제됩니다.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setDeleteSessionConfirm(null)}
+                className="flex-1 h-10 rounded-xl text-[13px] font-bold border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all">취소</button>
+              <button onClick={async () => {
+                const col = deleteSessionConfirm;
+                await deleteSession(col.session!.id);
+                setWeekData(prev => prev ? { ...prev, columns: prev.columns.map(cc => cc.date === col.date ? { ...cc, session: null } : cc) } : null);
+                setDeleteSessionConfirm(null);
+              }} className="flex-1 h-10 rounded-xl text-[13px] font-black bg-rose-500 text-white hover:bg-rose-600 transition-all">초기화</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 출결 상세 확인 모달 (읽기전용) */}
+      {attDetailModal && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50" onClick={() => setAttDetailModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-72 border border-slate-200" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-full text-[12px] font-black ${ATT_STYLE[attDetailModal.status]}`}>{ATT_LABEL[attDetailModal.status]}</span>
+              </div>
+              <button onClick={() => setAttDetailModal(null)} className="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-slate-200"><X size={13} /></button>
+            </div>
+            {attDetailModal.lateTime && <div className="mb-3"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">도착시간</p><p className="text-[14px] font-bold text-slate-800">{attDetailModal.lateTime}</p></div>}
+            {attDetailModal.makeupType && <div className="mb-3"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">보강방식</p><p className="text-[14px] font-bold text-slate-800">{attDetailModal.makeupType === 'direct' ? '직접 보강' : '영상 보강'}</p></div>}
+            {attDetailModal.makeupDate && <div className="mb-3"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">보강일</p><p className="text-[14px] font-bold text-indigo-700">{attDetailModal.makeupDate.slice(5).replace('-','/')} 보강 예정</p></div>}
+            {attDetailModal.reason && <div className="mb-3"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">사유</p><p className="text-[13px] text-slate-700">{attDetailModal.reason}</p></div>}
+            {!attDetailModal.lateTime && !attDetailModal.makeupType && !attDetailModal.makeupDate && !attDetailModal.reason && (
+              <p className="text-[12px] text-slate-400 text-center py-2">추가 정보 없음</p>
+            )}
+            <p className="text-[10px] text-slate-300 text-center mt-3">출석부에서 수정할 수 있습니다</p>
+          </div>
+        </div>
+      )}
 
       {attPopup && (
         <AttendancePopup
@@ -1921,29 +2103,43 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       )}
 
       {/* ─── 테스트 추가 모달 (헤더 버튼) ─────────────────────────────── */}
-      {addTestModal && addTestModal.session && (
-        <TestSessionModal
-          session={addTestModal.session}
-          students={students}
-          existingSlot={null}
-          existingChecks={{}}
-          onClose={() => setAddTestModal(null)}
-          onSaved={(slot, checks) => {
-            setWeekData(prev => {
-              if (!prev || !addTestModal.session) return prev;
-              const sid = addTestModal.session.id;
-              const newChecks = { ...prev.checks };
-              newChecks[slot.id] = checks;
-              return {
-                ...prev,
-                slots: { ...prev.slots, [sid]: [...(prev.slots[sid] || []), slot] },
-                checks: newChecks,
-              };
-            });
-            setAddTestModal(null);
-          }}
-        />
-      )}
+      {addTestModal && addTestModal.session && (() => {
+        const sid = addTestModal.session.id;
+        const testSlots = (weekData?.slots[sid] || []).filter(s => s.hw_type === 'vocab_test');
+        const testChecksMap: Record<string, Record<string, HomeworkCheck>> = {};
+        for (const slot of testSlots) testChecksMap[slot.id] = weekData?.checks[slot.id] || {};
+        return (
+          <TestSessionModal
+            session={addTestModal.session}
+            students={students}
+            existingSlots={testSlots}
+            existingChecks={testChecksMap}
+            onClose={() => setAddTestModal(null)}
+            onSlotDeleted={slotId => {
+              setWeekData(prev => {
+                if (!prev) return prev;
+                const newSlots = { ...prev.slots, [sid]: (prev.slots[sid] || []).filter(s => s.id !== slotId) };
+                const newChecks = { ...prev.checks };
+                delete newChecks[slotId];
+                return { ...prev, slots: newSlots, checks: newChecks };
+              });
+            }}
+            onSaved={(slot, checks) => {
+              setWeekData(prev => {
+                if (!prev) return prev;
+                const existing = prev.slots[sid] || [];
+                const isUpdate = existing.some(s => s.id === slot.id);
+                return {
+                  ...prev,
+                  slots: { ...prev.slots, [sid]: isUpdate ? existing.map(s => s.id === slot.id ? slot : s) : [...existing, slot] },
+                  checks: { ...prev.checks, [slot.id]: checks },
+                };
+              });
+            }}
+          />
+        );
+      })()}
+
     </div>
   );
 }

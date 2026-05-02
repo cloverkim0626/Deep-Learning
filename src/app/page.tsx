@@ -53,7 +53,6 @@ export default function Home() {
           transform-origin: top center;
           animation: godRayPulse var(--pd) ease-in-out infinite;
         }
-        /* ── 보조 가느다란 광선들 ── */
         @keyframes thinRay {
           0%,100% { opacity:0.03; }
           50%     { opacity:0.07; }
@@ -66,7 +65,6 @@ export default function Home() {
           animation: thinRay var(--td) ease-in-out infinite alternate;
           filter: blur(6px);
         }
-        /* ── 물결 요동 (수류 흐름) ── */
         @keyframes waterSwell1 {
           0%,100% { transform:scaleX(1)   scaleY(1)   translateX(0);    opacity:0.06; }
           33%     { transform:scaleX(1.04) scaleY(0.97) translateX(8px);  opacity:0.10; }
@@ -76,6 +74,22 @@ export default function Home() {
           0%,100% { transform:scaleX(1)   scaleY(1)   translateX(0);    opacity:0.04; }
           40%     { transform:scaleX(0.96) scaleY(1.04) translateX(-10px);opacity:0.08; }
           70%     { transform:scaleX(1.03) scaleY(0.98) translateX(6px);  opacity:0.05; }
+        }
+        /* 에메랄드 버튼 물결 */
+        @keyframes waveShift {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        @keyframes foamFade {
+          0%,100% { opacity:0.18; transform:scaleX(1); }
+          50%     { opacity:0.30; transform:scaleX(1.03); }
+        }
+        .wave-layer {
+          position:absolute; bottom:0; left:0;
+          width:200%; height:100%;
+          background-repeat: repeat-x;
+          background-size: 50% 100%;
+          animation: waveShift var(--ws) linear infinite;
         }
       `}</style>
 
@@ -216,17 +230,123 @@ export default function Home() {
 
         {/* CTA Buttons */}
         <div className="flex flex-col w-full gap-3">
-          {/* 학생 입장 */}
+          {/* 학습 입장 */}
           <Link
             href="/login?role=student"
-            className="group relative flex flex-col items-start w-full p-7 rounded-[2rem] shadow-2xl hover:-translate-y-0.5 transition-all duration-500 overflow-hidden"
-            style={{background:'linear-gradient(135deg, rgba(0,80,180,0.7) 0%, rgba(0,40,100,0.8) 100%)', border:'1px solid rgba(80,160,255,0.25)', backdropFilter:'blur(12px)'}}
+            className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] shadow-2xl hover:-translate-y-0.5 transition-all duration-500 overflow-hidden"
+            style={{background:'linear-gradient(135deg, rgba(30,90,200,0.72) 0%, rgba(10,50,140,0.82) 100%)', border:'1px solid rgba(100,170,255,0.28)', backdropFilter:'blur(12px)'}}
           >
-            <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-1000" style={{background:'rgba(100,180,255,0.08)'}} />
-            <div className="flex items-center gap-2 font-semibold text-[18px] mb-1.5 relative z-10 text-white">학습 공간 입장하기</div>
-            <p className="text-[12px] font-normal relative z-10 leading-relaxed" style={{color:'rgba(180,220,255,0.6)'}}>배당된 지문 · 어휘 카드 · AI 튜터 · 테스트</p>
-            <div className="absolute bottom-6 right-6 w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-white/20 transition-all duration-400" style={{border:'1px solid rgba(255,255,255,0.15)'}}>
-              <ArrowRight strokeWidth={2} size={17} className="text-white group-hover:translate-x-0.5 transition-transform" />
+            <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-1000" style={{background:'rgba(120,190,255,0.1)'}} />
+            <div className="flex items-center gap-2 font-semibold text-[15px] mb-1 relative z-10 text-white">
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest" style={{background:'rgba(255,255,255,0.15)', color:'rgba(180,220,255,0.9)'}}>STUDENT</span>
+              <span className="text-[13px]">학습 공간 입장</span>
+            </div>
+            <p className="text-[11px] font-normal relative z-10 leading-relaxed" style={{color:'rgba(180,220,255,0.65)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
+            <div className="absolute bottom-4 right-4 w-8 h-8 rounded-full flex items-center justify-center" style={{border:'1px solid rgba(255,255,255,0.2)'}}>
+              <ArrowRight strokeWidth={2} size={14} className="text-white/70 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </Link>
+
+          {/* 리포트 열람 - 오로라 컨셉 */}
+          <style>{`
+            @keyframes auroraShift1 {
+              0%,100%{transform:translate(0,0) scale(1);opacity:0.9}
+              33%{transform:translate(8%,5%) scale(1.12);opacity:1}
+              66%{transform:translate(-5%,8%) scale(0.95);opacity:0.85}
+            }
+            @keyframes auroraShift2 {
+              0%,100%{transform:translate(0,0) scale(1);opacity:0.8}
+              40%{transform:translate(-10%,-5%) scale(1.18);opacity:1}
+              70%{transform:translate(6%,10%) scale(0.92);opacity:0.7}
+            }
+            @keyframes auroraShift3 {
+              0%,100%{transform:translate(0,0) scale(1);opacity:0.7}
+              50%{transform:translate(12%,-8%) scale(1.15);opacity:0.95}
+            }
+            @keyframes auroraRipple {
+              0%,100%{opacity:0.4;transform:scaleX(1)}
+              50%{opacity:0.9;transform:scaleX(1.04)}
+            }
+            @keyframes auroraStarTwinkle {
+              0%,100%{opacity:0;transform:scale(0.5)}
+              50%{opacity:1;transform:scale(1)}
+            }
+          `}</style>
+          <Link
+            href="/login/parent"
+            className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] shadow-2xl hover:-translate-y-1 transition-all duration-500 overflow-hidden"
+            style={{
+              background:'linear-gradient(160deg, #020b18 0%, #041a1a 50%, #080318 100%)',
+              border:'1px solid rgba(0,255,160,0.25)',
+              backdropFilter:'blur(14px)',
+              boxShadow:'0 8px 40px rgba(0,200,120,0.15), 0 0 0 1px rgba(0,255,160,0.1)',
+            }}
+          >
+            {/* ── 오로라 레이어 1: 에메랄드 그린 ── */}
+            <div className="absolute pointer-events-none" style={{
+              top:'-40%', left:'-20%', width:'70%', height:'160%',
+              background:'radial-gradient(ellipse, rgba(0,255,150,0.18) 0%, transparent 65%)',
+              borderRadius:'50%', filter:'blur(22px)',
+              animation:'auroraShift1 8s ease-in-out infinite',
+            }}/>
+            {/* ── 오로라 레이어 2: 청록 ── */}
+            <div className="absolute pointer-events-none" style={{
+              top:'-20%', right:'-15%', width:'60%', height:'120%',
+              background:'radial-gradient(ellipse, rgba(0,200,255,0.22) 0%, transparent 65%)',
+              borderRadius:'50%', filter:'blur(20px)',
+              animation:'auroraShift2 11s ease-in-out infinite',
+            }}/>
+            {/* ── 오로라 레이어 3: 보라/파랑 ── */}
+            <div className="absolute pointer-events-none" style={{
+              bottom:'-30%', left:'30%', width:'70%', height:'130%',
+              background:'radial-gradient(ellipse, rgba(120,60,255,0.22) 0%, transparent 65%)',
+              borderRadius:'50%', filter:'blur(25px)',
+              animation:'auroraShift3 13s ease-in-out infinite',
+            }}/>
+            {/* ── 오로라 수평 리플 (빛의 커튼) ── */}
+            {[
+              {top:'20%', color:'rgba(0,255,180,0.18)', w:'90%', d:'4.5s', delay:'0s'},
+              {top:'45%', color:'rgba(0,180,255,0.14)', w:'75%', d:'6s', delay:'1.5s'},
+              {top:'68%', color:'rgba(100,80,255,0.12)', w:'85%', d:'5s', delay:'0.8s'},
+            ].map((r,i) => (
+              <div key={i} className="absolute left-0 pointer-events-none rounded-full" style={{
+                top:r.top, width:r.w, height:'1px',
+                background:`linear-gradient(90deg, transparent 0%, ${r.color} 30%, ${r.color} 70%, transparent 100%)`,
+                filter:'blur(3px)',
+                animation:`auroraRipple ${r.d} ease-in-out infinite`,
+                animationDelay:r.delay,
+              }}/>
+            ))}
+            {/* ── 별빛 반짝임 ── */}
+            {[
+              {top:'15%',left:'80%',s:'0.7s',delay:'0s'},
+              {top:'60%',left:'90%',s:'1.1s',delay:'0.4s'},
+              {top:'30%',left:'70%',s:'0.9s',delay:'0.8s'},
+              {top:'80%',left:'85%',s:'1.3s',delay:'0.2s'},
+            ].map((st,i) => (
+              <div key={i} className="absolute pointer-events-none" style={{
+                top:st.top, left:st.left, width:'3px', height:'3px',
+                background:'white', borderRadius:'50%',
+                boxShadow:'0 0 4px 1px rgba(150,255,220,0.8)',
+                animation:`auroraStarTwinkle ${st.s} ease-in-out infinite`,
+                animationDelay:st.delay,
+              }}/>
+            ))}
+            {/* ── 콘텐츠 ── */}
+            <div className="relative z-10 flex items-center gap-2 font-semibold text-[15px] mb-1">
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest"
+                style={{background:'rgba(0,255,160,0.12)', color:'rgba(150,255,210,0.7)', border:'1px solid rgba(0,255,160,0.2)'}}>
+                REPORT
+              </span>
+              <span className="text-[13px] font-black" style={{color:'#e2ffe8'}}>리포트 열람하기</span>
+            </div>
+            <p className="relative z-10 text-[11px] font-normal leading-relaxed" style={{color:'rgba(150,255,210,0.65)'}}>
+              일간·월간 리포트 · 학습 현황 · 질의응답
+            </p>
+            <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all group-hover:scale-110"
+              style={{background:'rgba(0,255,160,0.12)', border:'1px solid rgba(0,255,160,0.3)'}}>
+              <ArrowRight strokeWidth={2} size={14} style={{color:'#00ffa8'}}
+                className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </Link>
 

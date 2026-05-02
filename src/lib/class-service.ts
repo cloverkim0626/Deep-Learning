@@ -39,7 +39,7 @@ export type ClassSession = {
   created_at: string;
 };
 
-export type AttendanceStatus = 'present' | 'late' | 'absent';
+export type AttendanceStatus = 'present' | 'late' | 'absent' | 'n/a';
 export type MakeupType = '' | 'direct' | 'video';
 
 export type AttendanceRow = {
@@ -47,7 +47,8 @@ export type AttendanceRow = {
   session_id: string;
   student_name: string;
   status: AttendanceStatus;
-  late_reason: string;
+  late_reason: string;       // 지각 사유 (지각 시)
+  absent_reason?: string;    // 결석 사유 (결석 시) — late_reason 컬럼 재사용
   late_arrival_time: string;
   makeup_type: MakeupType;
   makeup_date: string | null;
@@ -113,18 +114,21 @@ export type LessonNote = {
 // ─── Weekly View Type ─────────────────────────────────────────────────────────
 
 export type WeekColumn = {
-  date: string;      // "YYYY-MM-DD"
-  dayName: string;   // '월'|...
+  date: string;         // "YYYY-MM-DD"
+  dayName: string;      // '월'|...
   time: string;
   end_time: string;
   is_clinic: boolean;
+  is_extra?: boolean;   // 수업추가로 생성된 임시 컬럼
+  is_cancelled?: boolean; // 휴강 처리된 컬럼
   session: ClassSession | null;
 };
 
 export type WeekData = {
   columns: WeekColumn[];
   attMap: Record<string, Record<string, AttendanceRow>>; // date → student → row
-  slots:  Record<string, HomeworkSlot[]>;                // session_id → slots
+  slots:  Record<string, HomeworkSlot[]>;                // session_id → slots (수업내역용)
+  dueDateSlots?: Record<string, HomeworkSlot[]>;         // due_date → slots (과제검사일 컬럼 표시용)
   checks: Record<string, Record<string, HomeworkCheck>>; // slot_id → student → check
   slotStudents: Record<string, string[]>; // slot_id → assigned student names (empty = all)
   lessonNotes: Record<string, string>;   // session_id → note
@@ -133,11 +137,16 @@ export type WeekData = {
 
 // ─── Helper: Date Utils ───────────────────────────────────────────────────────
 
+/** 해당 날짜가 속한 주의 일요일(주 시작)을 반환 */
 export function getMonday(d: Date): Date {
+  return getSunday(d);
+}
+
+/** 해당 날짜가 속한 주의 일요일(주 시작)을 반환 */
+export function getSunday(d: Date): Date {
   const date = new Date(d);
-  const day = date.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  date.setDate(date.getDate() + diff);
+  const day = date.getDay(); // 0=일, 1=월, ..., 6=토
+  date.setDate(date.getDate() - day); // 일요일로 이동
   date.setHours(0, 0, 0, 0);
   return date;
 }
@@ -156,7 +165,7 @@ export function toDateStr(d: Date): string {
 }
 
 const DAY_OFFSET: Record<string, number> = {
-  '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+  '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6,
 };
 
 export function getDateForDay(weekStart: Date, dayName: string): Date {
@@ -167,10 +176,14 @@ export function getDateForDay(weekStart: Date, dayName: string): Date {
 
 export function getWeekLabel(weekStart: Date): string {
   const weekEnd = addDays(weekStart, 6);
+  // 주차 번호: 해당 월에서 몇 번째 일요일인지
+  const firstSunday = getSunday(new Date(weekStart.getFullYear(), weekStart.getMonth(), 1));
+  // 첫째 주 일요일이 전달에 있을 수 있으므로 주차 계산
+  const diffMs = weekStart.getTime() - firstSunday.getTime();
+  const wNum = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
   const m = weekStart.getMonth() + 1;
-  const wNum = Math.ceil(weekStart.getDate() / 7);
   const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
-  return `${weekStart.getFullYear()}년 ${m}월 ${wNum}주차 (${fmt(weekStart)} - ${fmt(weekEnd)})`;
+  return `${weekStart.getFullYear()}년 ${m}월 ${wNum}주차 (${fmt(weekStart)} ~ ${fmt(weekEnd)})`;
 }
 
 // ─── Classes ──────────────────────────────────────────────────────────────────
@@ -340,26 +353,53 @@ export async function upsertAttendance(row: {
   student_name: string;
   status: AttendanceStatus;
   late_reason?: string;
+  absent_reason?: string;
   late_arrival_time?: string;
   makeup_type?: MakeupType;
   makeup_date?: string | null;
   makeup_video_date?: string | null;
   note?: string;
+  attitude_grade?: string | null; // A/B/C/D/E
 }): Promise<void> {
+  const payload: Record<string, unknown> = {
+    session_id: row.session_id,
+    student_name: row.student_name,
+    status: row.status,
+    late_reason: row.status === 'absent' ? (row.absent_reason || '') : (row.late_reason || ''),
+    late_arrival_time: row.late_arrival_time || '',
+    makeup_type: row.makeup_type || '',
+    makeup_date: row.makeup_date || null,
+    makeup_video_date: row.makeup_video_date || null,
+    note: row.note || '',
+  };
+  if (row.attitude_grade !== undefined) payload.attitude_grade = row.attitude_grade;
+  const { error } = await supabase
+    .from('attendance')
+    .upsert([payload], { onConflict: 'session_id,student_name' });
+  if (error) throw error;
+}
+
+/** 수업 태도만 별도 업데이트 (출결 변경 없이 태도만 바꿀 때) */
+export async function upsertAttitudeGrade(
+  sessionId: string, studentName: string, grade: string | null
+): Promise<void> {
   const { error } = await supabase
     .from('attendance')
     .upsert([{
-      session_id: row.session_id,
-      student_name: row.student_name,
-      status: row.status,
-      late_reason: row.late_reason || '',
-      late_arrival_time: row.late_arrival_time || '',
-      makeup_type: row.makeup_type || '',
-      makeup_date: row.makeup_date || null,
-      makeup_video_date: row.makeup_video_date || null,
-      note: row.note || '',
-    }], { onConflict: 'session_id,student_name' });
-  if (error) throw error;
+      session_id: sessionId,
+      student_name: studentName,
+      status: 'present', // 기본값 (이미 존재하면 onConflict로 무시됨)
+      attitude_grade: grade,
+    }], { onConflict: 'session_id,student_name' })
+    .select();
+  // 이미 레코드가 있을 경우 attitude_grade만 update
+  if (error) {
+    await supabase
+      .from('attendance')
+      .update({ attitude_grade: grade })
+      .eq('session_id', sessionId)
+      .eq('student_name', studentName);
+  }
 }
 
 export async function markAllPresent(sessionId: string, studentNames: string[]): Promise<void> {
