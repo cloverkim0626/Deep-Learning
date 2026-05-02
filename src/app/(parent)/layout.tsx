@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -33,13 +33,13 @@ function useParentSession() {
 }
 
 const AURORA = {
-  primary: "#00ffc8",
+  primary: "rgba(160,130,255,0.9)",
   accent: "#7c3aed",
-  light: "rgba(0,255,180,0.08)",
-  border: "rgba(0,255,200,0.15)",
-  bg: "linear-gradient(160deg, #020b18 0%, #051a2e 40%, #02150f 70%, #0a0520 100%)",
-  header: "rgba(2,15,28,0.85)",
-  navBg: "rgba(2,12,24,0.92)",
+  light: "rgba(120,80,255,0.08)",
+  border: "rgba(120,80,255,0.18)",
+  bg: "#000000",
+  header: "rgba(4,2,12,0.92)",
+  navBg: "rgba(2,1,8,0.95)",
 };
 
 export default function ParentLayout({ children }: { children: React.ReactNode }) {
@@ -113,95 +113,68 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-hidden" style={{ background: AURORA.bg }}>
-      {/* 오로라 배경 레이어 */}
+      {/* 블랙홀 배경 레이어 */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <style>{`
-          @keyframes auroraA { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(8%,12%) scale(1.15)} }
-          @keyframes auroraB { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(-10%,8%) scale(1.2)} }
-          @keyframes auroraC { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(6%,-10%) scale(1.1)} }
-          @keyframes auroraD { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(-8%,15%) scale(1.25)} }
-          @keyframes auroraE { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(12%,-5%) scale(1.08)} }
-          @keyframes pCurtain {
-            0%,100%{opacity:0.4;transform:scaleX(1)}
-            50%{opacity:0.85;transform:scaleX(1.05)}
+          @keyframes bhCorePulse {
+            0%,100%{opacity:0.6;transform:scale(1)}
+            50%{opacity:1;transform:scale(1.08)}
           }
-          @keyframes pStar {
-            0%,100%{opacity:0;transform:scale(0.3)} 50%{opacity:1;transform:scale(1)}
+          @keyframes bhOrbit1 {
+            0%{transform:rotate(0deg) translateX(0)}
+            100%{transform:rotate(360deg) translateX(0)}
           }
-          @keyframes pStar2 {
-            0%,100%{opacity:0.15;transform:scale(0.6)} 50%{opacity:1;transform:scale(1.3)}
+          @keyframes bhOrbit2 {
+            0%{transform:rotate(0deg)}
+            100%{transform:rotate(-360deg)}
+          }
+          @keyframes bhDrift {
+            0%,100%{opacity:0.3;transform:translate(0,0) scale(1)}
+            50%{opacity:0.7;transform:translate(3%,5%) scale(1.05)}
           }
         `}</style>
-        {/* 5개 글로우 블롭 */}
-        <div style={{ position:'absolute', top:'-20%', left:'-10%', width:'70%', height:'60%',
-          background:'radial-gradient(ellipse, rgba(0,255,160,0.28) 0%, rgba(0,200,120,0.06) 55%, transparent 70%)',
-          animation:'auroraA 12s ease-in-out infinite alternate', borderRadius:'50%', filter:'blur(32px)' }}/>
-        <div style={{ position:'absolute', top:'10%', right:'-15%', width:'65%', height:'55%',
-          background:'radial-gradient(ellipse, rgba(100,60,255,0.24) 0%, rgba(70,20,220,0.05) 55%, transparent 70%)',
-          animation:'auroraB 15s ease-in-out infinite alternate', borderRadius:'50%', filter:'blur(38px)' }}/>
-        <div style={{ position:'absolute', bottom:'5%', left:'20%', width:'60%', height:'50%',
-          background:'radial-gradient(ellipse, rgba(0,220,255,0.2) 0%, rgba(0,150,220,0.05) 55%, transparent 70%)',
-          animation:'auroraC 18s ease-in-out infinite alternate', borderRadius:'50%', filter:'blur(35px)' }}/>
-        <div style={{ position:'absolute', top:'30%', left:'30%', width:'40%', height:'40%',
-          background:'radial-gradient(ellipse, rgba(180,0,255,0.14) 0%, transparent 70%)',
-          animation:'auroraD 20s ease-in-out infinite alternate', borderRadius:'50%', filter:'blur(42px)' }}/>
-        <div style={{ position:'absolute', bottom:'-15%', right:'10%', width:'55%', height:'45%',
-          background:'radial-gradient(ellipse, rgba(0,255,200,0.18) 0%, transparent 70%)',
-          animation:'auroraE 11s ease-in-out infinite alternate', borderRadius:'50%', filter:'blur(28px)' }}/>
-        {/* 수직 빛 커튼 */}
-        {[
-          {l:'12%',color:'rgba(0,255,160,0.1)',d:'6s',delay:'0s',w:'2px',h:'65%',top:'0'},
-          {l:'25%',color:'rgba(0,210,255,0.08)',d:'8s',delay:'1.2s',w:'3px',h:'50%',top:'8%'},
-          {l:'45%',color:'rgba(0,255,130,0.11)',d:'5.5s',delay:'0.4s',w:'2px',h:'75%',top:'0'},
-          {l:'65%',color:'rgba(100,50,255,0.08)',d:'7.5s',delay:'1.8s',w:'3px',h:'55%',top:'12%'},
-          {l:'80%',color:'rgba(0,190,255,0.09)',d:'6.5s',delay:'0.7s',w:'2px',h:'70%',top:'0'},
-        ].map((r,i)=>(
-          <div key={i} style={{
-            position:'absolute',top:r.top,left:r.l,width:r.w,height:r.h,
-            background:`linear-gradient(180deg,transparent 0%,${r.color} 25%,${r.color} 65%,transparent 100%)`,
-            filter:'blur(5px)',animation:`pCurtain ${r.d} ease-in-out infinite`,animationDelay:r.delay,
-          }}/>
-        ))}
-        {/* 수평 오로라 띠 */}
-        {[
-          {top:'15%',c:'rgba(0,255,160,0.1)',d:'7s',delay:'0s'},
-          {top:'38%',c:'rgba(0,170,255,0.08)',d:'9s',delay:'2s'},
-          {top:'60%',c:'rgba(90,50,255,0.08)',d:'8s',delay:'1s'},
-          {top:'80%',c:'rgba(0,220,180,0.07)',d:'10s',delay:'3s'},
-        ].map((b,i)=>(
-          <div key={i} style={{
-            position:'absolute',top:b.top,left:0,right:0,height:'50px',
-            background:`radial-gradient(ellipse 80% 50% at 50% 50%,${b.c} 0%,transparent 100%)`,
-            filter:'blur(10px)',animation:`pCurtain ${b.d} ease-in-out infinite`,animationDelay:b.delay,
-          }}/>
-        ))}
-        {/* 별빛 */}
-        {[
-          {top:'5%',left:'20%',s:'1.1s',d:'0s',sz:'2px'},
-          {top:'12%',left:'75%',s:'0.8s',d:'0.5s',sz:'3px'},
-          {top:'28%',left:'42%',s:'1.4s',d:'1s',sz:'2px'},
-          {top:'45%',left:'88%',s:'0.9s',d:'0.3s',sz:'2px'},
-          {top:'55%',left:'8%',s:'1.2s',d:'1.6s',sz:'3px'},
-          {top:'72%',left:'62%',s:'1.0s',d:'0.8s',sz:'2px'},
-          {top:'85%',left:'30%',s:'0.7s',d:'1.3s',sz:'2px'},
-          {top:'90%',left:'80%',s:'1.3s',d:'0.1s',sz:'3px'},
-        ].map((st,i)=>(
-          <div key={i} style={{
-            position:'absolute',top:st.top,left:st.left,width:st.sz,height:st.sz,
-            background:'white',borderRadius:'50%',
-            boxShadow:'0 0 5px 2px rgba(160,255,210,0.85)',
-            animation:`${i%2===0?'pStar':'pStar2'} ${st.s} ease-in-out infinite`,
-            animationDelay:st.d,
-          }}/>
-        ))}
+
+        {/* 중심 블랙홀 코어 - 아래 중앙에 배치 */}
+        <div style={{ position:'absolute', bottom:'-15%', right:'-10%', width:'55vw', height:'55vw',
+          background:'radial-gradient(ellipse, rgba(80,50,220,0.45) 0%, rgba(40,20,140,0.25) 25%, rgba(10,5,50,0.1) 50%, transparent 70%)',
+          borderRadius:'50%', filter:'blur(40px)',
+          animation:'bhCorePulse 6s ease-in-out infinite' }}/>
+
+        {/* 강착 원반 - 큰 타원 회전 */}
+        <div style={{ position:'absolute', bottom:'-20%', right:'-15%', width:'65vw', height:'65vw',
+          background:'conic-gradient(from 0deg, transparent 0%, rgba(100,70,255,0.08) 15%, rgba(150,100,255,0.18) 30%, rgba(80,50,200,0.1) 45%, transparent 60%, rgba(60,30,180,0.06) 75%, transparent 90%)',
+          borderRadius:'50%', filter:'blur(12px)',
+          animation:'bhOrbit1 20s linear infinite' }}/>
+
+        {/* 두 번째 강착 원반 - 역방향 */}
+        <div style={{ position:'absolute', bottom:'-25%', right:'-20%', width:'80vw', height:'80vw',
+          background:'conic-gradient(from 180deg, transparent 0%, rgba(60,30,180,0.06) 20%, rgba(100,60,220,0.12) 40%, transparent 55%, rgba(80,40,200,0.08) 70%, transparent 85%)',
+          borderRadius:'50%', filter:'blur(18px)',
+          animation:'bhOrbit2 30s linear infinite' }}/>
+
+        {/* 상단 좌측 희미한 중력 렌즈 */}
+        <div style={{ position:'absolute', top:'-10%', left:'-20%', width:'60vw', height:'60vw',
+          background:'radial-gradient(ellipse, rgba(40,20,120,0.12) 0%, transparent 60%)',
+          borderRadius:'50%', filter:'blur(50px)',
+          animation:'bhDrift 12s ease-in-out infinite' }}/>
+
+        {/* 중간 보라빛 안개 */}
+        <div style={{ position:'absolute', top:'30%', left:'10%', width:'40vw', height:'40vw',
+          background:'radial-gradient(ellipse, rgba(60,30,180,0.08) 0%, transparent 70%)',
+          borderRadius:'50%', filter:'blur(35px)',
+          animation:'bhDrift 18s ease-in-out infinite reverse' }}/>
+
+        {/* 중력 왜곡 오버레이 - 화면 전체에 은은하게 */}
+        <div style={{ position:'absolute', inset:0,
+          background:'radial-gradient(ellipse 80% 80% at 85% 85%, rgba(60,20,180,0.15) 0%, transparent 60%)' }}/>
       </div>
 
       {/* ?? ?ㅻ뜑 ?? */}
       <header className="sticky top-0 z-30 flex items-center justify-between px-5 py-3.5 border-b"
         style={{ background: AURORA.header, borderColor: AURORA.border, backdropFilter: "blur(16px)" }}>
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: AURORA.primary }}>Report Portal</p>
-          <p className="text-[16px] font-black" style={{ color: '#e2ffe8' }}>{session.studentName} 학부모님</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'rgba(160,130,255,0.7)' }}>Report Portal</p>
+          <p className="text-[16px] font-black" style={{ color: 'rgba(230,220,255,0.95)' }}>{session.studentName} 학부모님</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => { setShowTrophy(true); loadLeaderboard(lbPeriod); }}
@@ -217,7 +190,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
           </button>
           <button onClick={() => setShowSettings(true)}
             className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-            style={{ background: "rgba(100,150,200,0.12)", border: "1px solid rgba(100,150,200,0.15)", color: "#4a7a9b" }}>
+            style={{ background: "rgba(120,80,255,0.1)", border: "1px solid rgba(120,80,255,0.18)", color: "rgba(160,130,255,0.8)" }}>
             <Settings size={16} />
           </button>
         </div>

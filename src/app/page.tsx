@@ -274,7 +274,7 @@ export default function Home() {
               <span className="text-[13px] text-white">학습 공간 입장</span>
             </div>
             <p className="text-[11px] font-normal relative z-10 leading-relaxed" style={{color:'rgba(180,160,255,0.5)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
-            <div className="absolute bottom-4 right-4 w-8 h-8 rounded-full flex items-center justify-center relative z-10" style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)'}}>
+            <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)'}}>
               <ArrowRight strokeWidth={2} size={14} className="text-white/40 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all" />
             </div>
           </Link>
