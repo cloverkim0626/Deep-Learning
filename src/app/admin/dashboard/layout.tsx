@@ -28,15 +28,15 @@ export default function AdminDashboardLayout({
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#0d0f14', color: '#e2e8f0' }}>
+    <div className="min-h-screen flex" style={{ background: '#f1f5f9', color: '#1e293b' }}>
       {/* Admin Sidebar - dark professional */}
       <aside className="w-56 border-r flex-col z-20 hidden md:flex shrink-0"
-        style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(10,12,18,0.95)' }}>
+        style={{ borderColor: '#e2e8f0', background: '#ffffff' }}>
         {/* Logo */}
         <div className="h-16 flex items-center px-5 border-b shrink-0"
-          style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          style={{ borderColor: '#f1f5f9' }}>
           <div>
-            <p className="text-[14px] font-black text-white tracking-tight">Deep Learning</p>
+            <p className="text-[14px] font-bold text-slate-800 tracking-tight">Deep Learning</p>
             <p className="text-[9px] font-bold tracking-widest uppercase mt-0.5" style={{ color: '#6366f1' }}>Team Parallax</p>
           </div>
         </div>
@@ -48,39 +48,39 @@ export default function AdminDashboardLayout({
               <Link key={href} href={href}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[12px] font-bold transition-all"
                 style={{
-                  background: active ? 'rgba(99,102,241,0.15)' : 'transparent',
-                  color: active ? '#818cf8' : 'rgba(226,232,240,0.45)',
+                  background: active ? '#eef2ff' : 'transparent',
+                  color: active ? '#4f46e5' : '#475569',
                   borderLeft: active ? '2px solid #6366f1' : '2px solid transparent',
                 }}>
                 <Icon size={15} strokeWidth={active ? 2.5 : 1.8}
-                  style={{ color: active ? '#818cf8' : 'rgba(226,232,240,0.35)' }} />
+                  style={{ color: active ? '#4f46e5' : '#94a3b8' }} />
                 {label}
               </Link>
             );
           })}
         </nav>
         {/* Logout */}
-        <div className="p-3 border-t shrink-0" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+        <div className="p-3 border-t shrink-0" style={{ borderColor: '#f1f5f9' }}>
           <button onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-[12px] font-bold transition-all"
-            style={{ color: 'rgba(248,113,113,0.5)' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+            style={{ color: '#ef4444' }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#fef2f2')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
             <LogOut size={15} strokeWidth={1.8} />
             로그아웃
           </button>
-          <p className="text-[8px] font-bold tracking-[0.2em] uppercase mt-3 px-1 select-none" style={{ color: 'rgba(255,255,255,0.08)' }}>
+          <p className="text-[8px] font-bold tracking-[0.2em] uppercase mt-3 px-1 select-none" style={{ color: '#cbd5e1' }}>
             Team Parallax © 2026
           </p>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-hidden flex flex-col" style={{ background: '#0d0f14' }}>
+      <main className="flex-1 overflow-hidden flex flex-col" style={{ background: '#f1f5f9' }}>
         {/* Mobile Header */}
         <div className="md:hidden h-14 border-b flex items-center px-5 justify-between shrink-0"
-          style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(10,12,18,0.95)' }}>
-          <span className="text-[14px] font-black text-white">Deep Learning</span>
-          <button onClick={handleLogout} style={{ color: 'rgba(248,113,113,0.7)' }}>
+          style={{ borderColor: '#e2e8f0', background: '#ffffff' }}>
+          <span className="text-[14px] font-bold text-slate-800">Deep Learning</span>
+          <button onClick={handleLogout} style={{ color: '#ef4444' }}>
             <LogOut size={18} />
           </button>
         </div>

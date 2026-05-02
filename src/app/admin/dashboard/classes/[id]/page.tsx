@@ -726,23 +726,23 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
 
   const includedCount = students.filter(s=>entries[s.student_name]?.included).length;
   const doneCount = students.filter(s=>{ const e=entries[s.student_name]; return e?.included && (e.score||e.resultCode); }).length;
-  const BG="#1a2236"; const BD="rgba(255,255,255,0.13)"; const TXT="#f0f4ff";
+  const BG="#ffffff"; const BD="#e2e8f0"; const TXT="#1e293b";
 
   return (
     <div className="fixed inset-0 backdrop-blur-sm z-[350] flex items-center justify-center p-3"
       style={{background:"rgba(0,0,0,0.65)"}}>
       <div className="w-full max-w-2xl max-h-[94vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden"
-        style={{background:BG,border:"1.5px solid rgba(99,102,241,0.35)"}}>
+        style={{background:'#fff',border:'1.5px solid #e0e7ff'}}>
 
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-3 shrink-0"
-          style={{borderBottom:`1px solid ${BD}`,background:"rgba(99,102,241,0.1)"}}>
+          style={{borderBottom:`1px solid ${BD}`,background:'#eef2ff'}}>
           <div>
-            <h3 className="text-[15px] font-black" style={{color:"#c7d2fe"}}>🎯 테스트 결과 기록</h3>
-            <p className="text-[10px] mt-0.5 font-bold" style={{color:"#818cf8"}}>{session.session_date} · {includedCount}명 해당 · {doneCount}명 입력완료</p>
+            <h3 className="text-[15px] font-black" style={{color:'#4f46e5'}}>🎯 테스트 결과 기록</h3>
+            <p className="text-[10px] mt-0.5 font-bold" style={{color:'#6366f1'}}>{session.session_date} · {includedCount}명 해당 · {doneCount}명 입력완료</p>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{background:"rgba(255,255,255,0.08)",color:"#94a3b8"}}><X size={14}/></button>
+            style={{background:'#f1f5f9',color:'#64748b'}}><X size={14}/></button>
         </div>
 
         {/* 테스트 탭 */}
@@ -752,16 +752,16 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
             <button key={t.id} onClick={()=>setActiveTest(i)}
               className="shrink-0 px-3 py-1.5 rounded-t-lg text-[11px] font-black whitespace-nowrap transition-all"
               style={{
-                background: activeTest===i?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.05)",
+                background: activeTest===i?'#eef2ff':'#f8fafc',
                 borderBottom: activeTest===i?"2px solid #6366f1":"2px solid transparent",
-                color: activeTest===i?"#a5b4fc":"#64748b",
+                color: activeTest===i?'#4f46e5':'#94a3b8',
               }}>
               {t.name||`테스트${i+1}`}
             </button>
           ))}
           <button onClick={addTest}
             className="shrink-0 px-2.5 py-1.5 rounded-t-lg text-[11px] font-black transition-all"
-            style={{color:"#6366f1",background:"rgba(99,102,241,0.08)"}}>
+            style={{color:'#4f46e5',background:'#eef2ff'}}>
             + 추가
           </button>
         </div>
@@ -769,26 +769,26 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
         {/* 현재 테스트 설정 */}
         {cfg && (
           <div className="px-4 py-2.5 shrink-0 flex gap-2 items-center flex-wrap"
-            style={{borderBottom:`1px solid ${BD}`,background:"rgba(255,255,255,0.03)"}}>
+            style={{borderBottom:`1px solid ${BD}`,background:'#f8fafc'}}>
             <input value={cfg.name} onChange={e=>updCfg({name:e.target.value})} placeholder="테스트명"
               className="h-8 px-3 rounded-lg text-[12px] font-bold outline-none w-32"
-              style={{background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.3)",color:"#c7d2fe"}}/>
+              style={{background:'#eef2ff',border:'1px solid #c7d2fe',color:'#4f46e5'}}/>
             <input value={cfg.range} onChange={e=>updCfg({range:e.target.value})} placeholder="범위 (예: L1~5)"
               className="h-8 px-3 rounded-lg text-[12px] outline-none flex-1 min-w-[100px]"
-              style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",color:"#94a3b8"}}/>
+              style={{background:'#f8fafc',border:'1px solid #e2e8f0',color:'#475569'}}/>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black" style={{color:"#818cf8"}}>만점</span>
+              <span className="text-[10px] font-black" style={{color:'#6366f1'}}>만점</span>
               <input type="number" value={cfg.maxScore} onChange={e=>updCfg({maxScore:e.target.value})} placeholder="100"
                 className="w-14 h-8 px-2 rounded-lg text-[12px] font-bold outline-none text-center"
-                style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",color:TXT}}/>
+                style={{background:'#f8fafc',border:'1px solid #e2e8f0',color:TXT}}/>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black" style={{color:"#f59e0b"}}>합격기준</span>
+              <span className="text-[10px] font-black" style={{color:'#d97706'}}>합격기준</span>
               <input type="number" value={cfg.passScore} onChange={e=>updCfg({passScore:e.target.value})} placeholder="70"
                 className="w-14 h-8 px-2 rounded-lg text-[12px] font-bold outline-none text-center"
-                style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.25)",color:"#fcd34d"}}/>
+                style={{background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e'}}/>
               {cfg.maxScore&&cfg.passScore&&(
-                <span className="text-[10px] font-bold" style={{color:"#64748b"}}>
+                <span className="text-[10px] font-bold" style={{color:'#94a3b8'}}>
                   ({Math.round(Number(cfg.passScore)/Number(cfg.maxScore)*100)}%)
                 </span>
               )}
@@ -798,14 +798,14 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
 
         {/* 학생 목록 헤더 */}
         <div className="grid px-4 py-1.5 shrink-0 text-[9px] font-black uppercase tracking-widest"
-          style={{gridTemplateColumns:"20px 90px 1fr 100px 95px",gap:"8px",borderBottom:`1px solid ${BD}`,color:"#475569",background:"rgba(255,255,255,0.03)"}}>
+          style={{gridTemplateColumns:"20px 90px 1fr 100px 95px",gap:"8px",borderBottom:`1px solid ${BD}`,color:"#475569",background:'#f8fafc'}}>
           <div/><div>학생</div><div className="text-center">점수</div>
           <div className="text-center">테스트결과</div><div className="text-center">재응시일</div>
         </div>
 
         {/* 학생 목록 */}
         <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-2 space-y-1"
-          style={{background:"#1a2236"}}>
+          style={{background:'#f8fafc'}}>
           {students.map(stu=>{
             const e=entries[stu.student_name]||{included:true,score:"",resultCode:"",retryDate:""};
             const autoRes = getAutoResult(e);
@@ -819,9 +819,9 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
                 className="grid items-center rounded-xl px-2 py-1.5 transition-all"
                 style={{
                   gridTemplateColumns:"20px 90px 1fr 100px 95px",gap:"8px",
-                  background: !e.included?"rgba(255,255,255,0.01)":isPass?"rgba(16,185,129,0.13)":isFail?"rgba(239,68,68,0.1)":isAbsent?"rgba(245,158,11,0.09)":"rgba(255,255,255,0.05)",
-                  opacity:e.included?1:0.25,
-                  border: isPass?"1px solid rgba(16,185,129,0.25)":isFail?"1px solid rgba(239,68,68,0.25)":isAbsent?"1px solid rgba(245,158,11,0.2)":"1px solid rgba(255,255,255,0.06)",
+                  background: !e.included?'#f8fafc':isPass?'#f0fdf4':isFail?'#fef2f2':isAbsent?'#fffbeb':'#ffffff',
+                  opacity:e.included?1:0.4,
+                  border: isPass?'1px solid #bbf7d0':isFail?'1px solid #fecaca':isAbsent?'1px solid #fde68a':'1px solid #f1f5f9',
                 }}>
 
                 {/* 해당자 체크 */}
@@ -830,9 +830,9 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
 
                 {/* 이름 + 결과 뱃지 */}
                 <div>
-                  <p className="text-[12px] font-black truncate" style={{color:e.included?TXT:"#334155"}}>{stu.student_name}</p>
+                  <p className="text-[12px] font-black truncate" style={{color:e.included?'#1e293b':'#94a3b8'}}>{stu.student_name}</p>
                   {e.included && autoRes && (
-                    <p className="text-[9px] font-black" style={{color:isPass?"#4ade80":isFail?"#f87171":isAbsent?"#fbbf24":"#94a3b8"}}>
+                    <p className="text-[9px] font-black" style={{color:isPass?'#16a34a':isFail?'#dc2626':isAbsent?'#d97706':'#94a3b8'}}>
                       {isPass?"✅ PASS":autoRes==="verbal_retest"?"🗣 구두재시후귀가":autoRes==="fail_retry"?"🔁 추후재응시":autoRes==="fail"?"❌ FAIL":autoRes==="late"?"⏰ 지각":autoRes==="unmemorized_retry"?"📚 미암기재시":""}
                     </p>
                   )}
@@ -846,8 +846,8 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
                         onChange={ev=>upd(stu.student_name,{score:ev.target.value,resultCode:""})}
                         placeholder="0" min={0} max={cfg?.maxScore||undefined}
                         className="w-16 h-7 rounded-lg text-[13px] font-black outline-none text-center"
-                        style={{background:e.score?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.07)",border:e.score?"1px solid rgba(99,102,241,0.5)":"1px solid rgba(255,255,255,0.12)",color:"#c7d2fe"}}/>
-                      {cfg?.maxScore&&<span className="text-[9px]" style={{color:"#475569"}}>/{cfg.maxScore}</span>}
+                        style={{background:e.score?'#eef2ff':'#f8fafc',border:e.score?'1px solid #a5b4fc':'1px solid #e2e8f0',color:'#4f46e5'}}/>
+                      {cfg?.maxScore&&<span className="text-[9px]" style={{color:'#94a3b8'}}>/{cfg.maxScore}</span>}
                     </>
                   )}
                 </div>
@@ -858,7 +858,7 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
                     !e.score && !isAbsent && !isFail ? (
                       <select value={e.resultCode} onChange={ev=>upd(stu.student_name,{resultCode:ev.target.value,score:""})}
                         className="w-full h-7 px-1 rounded-lg text-[9px] font-bold outline-none cursor-pointer"
-                        style={{background:"rgba(245,158,11,0.12)",border:"1px solid rgba(245,158,11,0.3)",color:"#fde68a",colorScheme:"dark"}}>
+                        style={{background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e'}}>
                         <option value="">— 선택</option>
                         <option value="absent">결석</option>
                         <option value="late">지각</option>
@@ -870,7 +870,7 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
                       <select value={["fail"].includes(e.resultCode)?"":e.resultCode}
                         onChange={ev=>upd(stu.student_name,{resultCode:ev.target.value||"fail"})}
                         className="w-full h-7 px-1 rounded-lg text-[9px] font-bold outline-none cursor-pointer"
-                        style={{background:"rgba(239,68,68,0.12)",border:"1px solid rgba(239,68,68,0.3)",color:"#fca5a5",colorScheme:"dark"}}>
+                        style={{background:'#fef2f2',border:'1px solid #fecaca',color:'#dc2626'}}>
                         <option value="fail">❌ FAIL — 처리 선택</option>
                         <option value="verbal_retest">🗣 구두재시 후 귀가</option>
                         <option value="fail_retry">🔁 추후 재응시</option>
@@ -878,7 +878,7 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
                     ) : isAbsent ? (
                       <button onClick={()=>upd(stu.student_name,{resultCode:"",score:""})}
                         className="text-[9px] font-black px-2 py-1 rounded-lg transition-all"
-                        style={{background:"rgba(245,158,11,0.15)",color:"#fde68a",border:"1px solid rgba(245,158,11,0.3)"}}>
+                        style={{background:'#fffbeb',color:'#92400e',border:'1px solid #fde68a'}}>
                         ✕ 취소
                       </button>
                     ) : null
@@ -891,7 +891,7 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
                     <input type="date" value={e.retryDate}
                       onChange={ev=>upd(stu.student_name,{retryDate:ev.target.value})}
                       className="w-full h-7 px-1 rounded-lg text-[9px] outline-none"
-                      style={{background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.25)",color:"#a5b4fc",colorScheme:"dark"}}/>
+                      style={{background:'#eef2ff',border:"1px solid rgba(99,102,241,0.25)",color:"#a5b4fc",colorScheme:"dark"}}/>
                   )}
                 </div>
               </div>
@@ -901,9 +901,9 @@ function TestSessionModal({ session, students, existingSlot, existingChecks, onC
 
         {/* 저장 */}
         <div className="px-5 py-3 flex gap-3 shrink-0"
-          style={{borderTop:`1px solid ${BD}`,background:"rgba(255,255,255,0.03)"}}>
+          style={{borderTop:`1px solid ${BD}`,background:'#f8fafc'}}>
           <button onClick={onClose} className="flex-1 h-10 rounded-xl text-[13px] font-black"
-            style={{border:"1px solid rgba(255,255,255,0.12)",color:"#64748b"}}>
+            style={{border:'1px solid #e2e8f0',color:'#64748b'}}>
             취소
           </button>
           <button onClick={handleSave} disabled={saving}
