@@ -119,11 +119,11 @@ export default function ParentLoginPage() {
         <div className="flex items-center gap-2 mb-7">
           {[1,2,3].map(s => (
             <div key={s} className="flex items-center gap-2">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black transition-all ${s <= step ? "" : ""}`}
-                style={{ background: s <= step ? "rgba(0,255,160,0.25)" : "rgba(255,255,255,0.05)", color: s <= step ? "#00ffa8" : "rgba(255,255,255,0.2)", border: s <= step ? "1px solid rgba(0,255,160,0.4)" : "1px solid rgba(255,255,255,0.08)" }}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black transition-all`}
+                style={{ background: s <= step ? "rgba(100,70,255,0.25)" : "rgba(255,255,255,0.05)", color: s <= step ? "rgba(160,130,255,0.95)" : "rgba(255,255,255,0.2)", border: s <= step ? "1px solid rgba(120,80,255,0.45)" : "1px solid rgba(255,255,255,0.08)" }}>
                 {s}
               </div>
-              {s < 3 && <div className="h-px w-8 transition-all" style={{ background: s < step ? "rgba(0,255,160,0.3)" : "rgba(255,255,255,0.07)" }} />}
+              {s < 3 && <div className="h-px w-8 transition-all" style={{ background: s < step ? "rgba(100,70,255,0.3)" : "rgba(255,255,255,0.07)" }} />}
             </div>
           ))}
           <span className="ml-2 text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
@@ -136,11 +136,11 @@ export default function ParentLoginPage() {
           {step === 1 && (
             <div className="space-y-2">
               {classes.length === 0 ? (
-                <div className="text-center py-8 text-[13px]" style={{ color: 'rgba(0,255,160,0.3)' }}>로딩 중...</div>
+                <div className="text-center py-8 text-[13px]" style={{ color: 'rgba(160,130,255,0.4)' }}>로딩 중...</div>
               ) : classes.map(cls => (
                 <button key={cls.id} onClick={() => handleSelectClass(cls.name)}
-                  className="w-full flex items-center justify-between px-5 py-4 rounded-2xl text-left transition-all hover:-translate-y-0.5 hover:scale-[1.01]"
-                  style={{ background: "rgba(0,255,160,0.06)", border: "1px solid rgba(0,255,160,0.15)", color: "rgba(220,255,240,0.9)", boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
+                  className="w-full flex items-center justify-between px-5 py-4 rounded-2xl text-left transition-all hover:-translate-y-0.5 hover:scale-[1.01] group"
+                  style={{ background: "rgba(80,50,200,0.12)", border: "1px solid rgba(100,70,255,0.22)", color: "rgba(210,200,255,0.9)", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
                   <span className="text-[14px] font-bold">{cls.displayName}</span>
                   <ChevronDown size={14} className="rotate-[-90deg] opacity-40" />
                 </button>
@@ -152,15 +152,15 @@ export default function ParentLoginPage() {
           {step === 2 && (
             <div className="space-y-2">
               <button onClick={() => setStep(1)} className="text-[12px] flex items-center gap-1 mb-2 hover:opacity-80"
-                style={{ color: 'rgba(0,255,160,0.4)' }}>
+                style={{ color: 'rgba(120,80,255,0.5)' }}>
                 <ArrowLeft size={12} /> {selClass} 변경
               </button>
               {loading ? (
-                <div className="text-center py-8 text-[13px]" style={{ color: 'rgba(0,255,160,0.3)' }}>로딩 중...</div>
+                <div className="text-center py-8 text-[13px]" style={{ color: 'rgba(160,130,255,0.4)' }}>로딩 중...</div>
               ) : students.map(name => (
                 <button key={name} onClick={() => handleSelectStudent(name)}
                   className="w-full flex items-center justify-between px-5 py-4 rounded-2xl text-left transition-all hover:-translate-y-0.5"
-                  style={{ background: "rgba(0,255,160,0.06)", border: "1px solid rgba(0,255,160,0.15)", color: "rgba(220,255,240,0.9)" }}>
+                  style={{ background: "rgba(80,50,200,0.12)", border: "1px solid rgba(100,70,255,0.22)", color: "rgba(210,200,255,0.9)" }}>
                   <span className="text-[14px] font-bold">{name}</span>
                   <ChevronDown size={14} className="rotate-[-90deg] opacity-40" />
                 </button>
@@ -172,7 +172,7 @@ export default function ParentLoginPage() {
           {step === 3 && (
             <div className="space-y-3">
               <button onClick={() => setStep(2)} className="text-[12px] flex items-center gap-1 hover:opacity-80"
-                style={{ color: 'rgba(0,255,160,0.4)' }}>
+                style={{ color: 'rgba(120,80,255,0.5)' }}>
                 <ArrowLeft size={12} /> {selStudent} 변경
               </button>
               <input
@@ -181,12 +181,12 @@ export default function ParentLoginPage() {
                 placeholder="비밀번호 (초기: 1234)"
                 autoFocus
                 className="w-full h-14 px-5 rounded-2xl text-[15px] font-bold outline-none transition-all"
-                style={{ background: "rgba(0,255,160,0.06)", border: error ? "1px solid rgba(255,80,80,0.6)" : "1px solid rgba(0,255,160,0.2)", color: "rgba(220,255,240,0.95)", caretColor: '#00ffa8' }}
+                style={{ background: "rgba(80,50,200,0.1)", border: error ? "1px solid rgba(255,80,80,0.6)" : "1px solid rgba(100,70,255,0.25)", color: "rgba(210,200,255,0.95)", caretColor: 'rgba(160,130,255,0.9)' }}
               />
               {error && <p className="text-[12px] px-1" style={{ color: '#ff8080' }}>{error}</p>}
               <button onClick={handleLogin} disabled={loading}
                 className="w-full h-14 rounded-2xl text-[15px] font-black flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg, rgba(0,200,120,0.3) 0%, rgba(100,60,255,0.3) 100%)", color: "#e2ffe8", border: "1px solid rgba(0,255,160,0.25)", boxShadow: "0 0 30px rgba(0,255,120,0.1)" }}>
+                style={{ background: "linear-gradient(135deg, rgba(80,50,200,0.35) 0%, rgba(120,70,255,0.35) 100%)", color: "rgba(210,200,255,0.95)", border: "1px solid rgba(100,70,255,0.3)", boxShadow: "0 0 30px rgba(80,50,200,0.15)" }}>
                 {loading ? <span className="w-5 h-5 rounded-full border-2 border-current border-t-transparent animate-spin" /> : <><LogIn size={16} /> 입장하기</>}
               </button>
             </div>
