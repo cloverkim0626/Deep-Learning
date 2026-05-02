@@ -169,15 +169,16 @@ function HomeworkModal({ session, studentName, slots, checks, onClose, onCheckCh
   onCheckChange: (slotId: string, status: HwStatus, delayedTo?: string) => void;
 }) {
   const [saving, setSaving] = useState<string | null>(null);
-  const STATUS_ORDER: HwStatus[] = ['pending', 'done', 'delayed', 'skipped'];
+  const STATUS_ORDER: HwStatus[] = ['pending', 'done', 'done_partial', 'delayed', 'skipped'];
   const STATUS_STYLE: Record<HwStatus, string> = {
-    pending: "border-foreground/20 text-foreground/40",
-    done:    "bg-emerald-500 border-emerald-500 text-white",
-    delayed: "bg-amber-400 border-amber-400 text-white",
-    skipped: "bg-slate-200 border-slate-200 text-slate-500",
+    pending:      "border-foreground/20 text-foreground/40",
+    done:         "bg-emerald-500 border-emerald-500 text-white",
+    done_partial: "bg-sky-500 border-sky-500 text-white",
+    delayed:      "bg-amber-400 border-amber-400 text-white",
+    skipped:      "bg-slate-200 border-slate-200 text-slate-500",
   };
   const STATUS_LABEL: Record<HwStatus, string> = {
-    pending: "미제출", done: "완료 ✓", delayed: "연기", skipped: "면제",
+    pending: "미제출", done: "완료 ✓", done_partial: "귀가완료 ✓", delayed: "연기", skipped: "면제",
   };
 
   const toggle = async (slotId: string, current?: HwStatus) => {
@@ -319,7 +320,7 @@ function AddHomeworkModal({ session, allStudents, onClose, onAdded }: {
                     className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none focus:border-foreground/30" />
                 </div>
                 <div>
-                  <label className="text-[9px] font-black text-accent uppercase tracking-widest block mb-1">마감일 (선택)</label>
+                  <label className="text-[9px] font-black text-accent uppercase tracking-widest block mb-1">과제검사일 (다음 수업일)</label>
                   <input type="date" value={item.due_date} onChange={e => updateItem(item.id, { due_date: e.target.value })}
                     className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none focus:border-foreground/30" />
                 </div>
@@ -633,7 +634,164 @@ function ReportPanel({ classId }: { classId: string }) {
   );
 }
 
-// ─── 테스트 모달 (다중 탭 + 자동 P/F + FAIL 재시험) ────────────────────
+// ─── 출석부 모달 ────────────────────────────────────────────────────────────
+type AttBoardEntry = {
+  status: AttendanceStatus | '';
+  lateTime: string;
+  lateReason: string;
+  makeupType: MakeupType;
+  makeupDate: string;
+};
+
+function AttendanceBoardModal({ session, students, existingAtt, onClose, onSaved }: {
+  session: ClassSession;
+  students: ClassStudent[];
+  existingAtt: Record<string, AttendanceRow>;
+  onClose: () => void;
+  onSaved: (updated: Record<string, AttendanceRow>) => void;
+}) {
+  const [entries, setEntries] = useState<Record<string, AttBoardEntry>>(() => {
+    const init: Record<string, AttBoardEntry> = {};
+    for (const s of students) {
+      const ex = existingAtt[s.student_name];
+      init[s.student_name] = {
+        status: (ex?.status || '') as AttendanceStatus | '',
+        lateTime: ex?.late_arrival_time || '',
+        lateReason: ex?.late_reason || '',
+        makeupType: ex?.makeup_type || '',
+        makeupDate: ex?.makeup_date || '',
+      };
+    }
+    return init;
+  });
+  const [saving, setSaving] = useState(false);
+
+  const upd = (name: string, patch: Partial<AttBoardEntry>) =>
+    setEntries(p => ({ ...p, [name]: { ...p[name], ...patch } }));
+
+  const setAllPresent = () =>
+    setEntries(p => Object.fromEntries(Object.keys(p).map(k => [k, { ...p[k], status: 'present' as AttendanceStatus }])));
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const updated: Record<string, AttendanceRow> = { ...existingAtt };
+      await Promise.all(students.map(async s => {
+        const e = entries[s.student_name];
+        if (!e.status) return;
+        const payload = {
+          session_id: session.id, student_name: s.student_name,
+          status: e.status as AttendanceStatus,
+          late_reason: e.lateReason, late_arrival_time: e.lateTime,
+          makeup_type: e.makeupType as MakeupType,
+          makeup_date: e.makeupDate || null, makeup_video_date: null,
+        };
+        await upsertAttendance(payload);
+        updated[s.student_name] = { ...((existingAtt[s.student_name] || {}) as AttendanceRow), ...payload };
+      }));
+      onSaved(updated);
+      onClose();
+    } catch (e) { alert((e as Error).message); }
+    finally { setSaving(false); }
+  };
+
+  const ATT_BTN: Record<AttendanceStatus, string> = {
+    present: 'bg-emerald-500 text-white border-emerald-500',
+    late:    'bg-amber-400 text-white border-amber-400',
+    absent:  'bg-rose-500 text-white border-rose-500',
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[350] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-lg max-h-[88vh] rounded-2xl border border-slate-200 shadow-2xl flex flex-col">
+        {/* 헤더 */}
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+          <div>
+            <h3 className="text-[15px] font-bold text-slate-800">📋 출석부</h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">{session.session_date} · {students.length}명</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={setAllPresent}
+              className="h-8 px-3 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold hover:bg-emerald-100 transition-all">
+              전체출석 ✓
+            </button>
+            <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400">
+              <X size={15} />
+            </button>
+          </div>
+        </div>
+
+        {/* 학생 목록 */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-slate-50">
+          {students.map((stu, si) => {
+            const e = entries[stu.student_name];
+            return (
+              <div key={stu.student_name} className={`px-4 py-3 ${si % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                <div className="flex items-center gap-3">
+                  {/* 이름 */}
+                  <span className="text-[13px] font-bold text-slate-700 w-20 shrink-0">{stu.student_name}</span>
+                  {/* 출결 버튼 */}
+                  <div className="flex gap-1.5">
+                    {(['present', 'late', 'absent'] as AttendanceStatus[]).map(st => (
+                      <button key={st}
+                        onClick={() => upd(stu.student_name, { status: e.status === st ? '' : st })}
+                        className={`h-7 px-2.5 rounded-lg text-[11px] font-bold border transition-all ${
+                          e.status === st ? ATT_BTN[st] : 'border-slate-200 text-slate-400 hover:border-slate-300'
+                        }`}>
+                        {st === 'present' ? '출석' : st === 'late' ? '지각' : '결석'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* 지각 세부 */}
+                {e.status === 'late' && (
+                  <div className="mt-2 flex gap-2 ml-23">
+                    <input type="time" value={e.lateTime}
+                      onChange={ev => upd(stu.student_name, { lateTime: ev.target.value })}
+                      className="h-7 px-2 rounded-lg border border-amber-200 bg-amber-50 text-[11px] text-amber-800 outline-none w-28" />
+                    <input value={e.lateReason}
+                      onChange={ev => upd(stu.student_name, { lateReason: ev.target.value })}
+                      placeholder="사유 (선택)"
+                      className="flex-1 h-7 px-2 rounded-lg border border-slate-200 text-[11px] text-slate-600 outline-none" />
+                  </div>
+                )}
+                {/* 결석 세부 */}
+                {e.status === 'absent' && (
+                  <div className="mt-2 flex gap-2 items-center">
+                    <select value={e.makeupType}
+                      onChange={ev => upd(stu.student_name, { makeupType: ev.target.value as MakeupType })}
+                      className="h-7 px-2 rounded-lg border border-rose-200 bg-rose-50 text-[11px] text-rose-800 outline-none">
+                      <option value="">보강없음</option>
+                      <option value="direct">대면보강</option>
+                      <option value="video">영상보강</option>
+                    </select>
+                    {e.makeupType && (
+                      <input type="date" value={e.makeupDate}
+                        onChange={ev => upd(stu.student_name, { makeupDate: ev.target.value })}
+                        className="h-7 px-2 rounded-lg border border-slate-200 text-[11px] outline-none" />
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 저장 */}
+        <div className="px-5 py-3 border-t border-slate-100 flex gap-3 shrink-0">
+          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-500">
+            취소
+          </button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex-2 h-10 px-8 rounded-xl bg-slate-800 text-white text-[13px] font-bold disabled:opacity-40">
+            {saving ? '저장 중...' : '출석 저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type TestEntry = {
   included: boolean;
   score: string;
@@ -1089,6 +1247,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   const [rolloverPopup, setRolloverPopup] = useState<{ slotId: string; studentName: string; slotTitle: string; existingCheck: HomeworkCheck | null } | null>(null);
   const [testResultPopup, setTestResultPopup] = useState<{ slot: HomeworkSlot; studentName: string; existingCheck: HomeworkCheck | null } | null>(null);
   const [addTestModal, setAddTestModal] = useState<WeekColumn | null>(null);
+  const [attBoardModal, setAttBoardModal] = useState<WeekColumn | null>(null);
 
   // ── 초기 로드 ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1262,7 +1421,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
     <div className="flex flex-col h-full overflow-hidden">
 
       {/* ── 헤더 ─────────────────────────────────────────────────────────── */}
-      <div className="px-5 py-3 border-b shrink-0" style={{borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(10,12,18,0.8)'}}>
+      <div className="px-5 py-3 border-b shrink-0" style={{borderColor:'#e2e8f0', background:'#ffffff'}}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 min-w-0">
             <button onClick={() => router.push("/admin/dashboard/classes")}
@@ -1360,8 +1519,8 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                 <thead className="sticky top-0 z-20" style={{background: '#f8fafc'}}>
                   <tr>
                     {/* 학생 컬럼 헤더 */}
-                    <th className="sticky left-0 z-30 border-b border-r px-2 py-2 text-left min-w-[80px] max-w-[100px]" style={{background: '#f8fafc', borderColor: '#e2e8f0'}}>
-                      <p className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">학생</p>
+                    <th className="sticky left-0 z-30 border-b border-r px-1.5 py-2 text-left min-w-[60px] max-w-[70px]" style={{background: '#f8fafc', borderColor: '#e2e8f0'}}>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">학생</p>
                       <p className="text-[9px] text-slate-400">{students.length}명</p>
                     </th>
                     {/* 날짜별 컬럼 헤더 */}
@@ -1386,9 +1545,9 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                           {/* 세션 액션 버튼들 */}
                           {hasSes ? (
                             <div className="flex gap-1 flex-wrap">
-                              <button onClick={() => handleMarkAllPresent(col, col.session!)}
-                                className="flex items-center gap-1 h-5 px-1.5 bg-emerald-500/80 text-white rounded-md text-[9px] font-black hover:bg-emerald-500 transition-all">
-                                <Check size={8} /> 전체출석
+                              <button onClick={() => setAttBoardModal(col)}
+                                className="flex items-center gap-1 h-5 px-1.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-md text-[9px] font-bold hover:bg-slate-200 transition-all">
+                                📋 출석부
                               </button>
                               <button onClick={() => setAddHwModal(col)}
                                 className="flex items-center gap-1 h-5 px-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-md text-[9px] font-black hover:bg-blue-100 transition-all">
@@ -1434,7 +1593,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                   ) : students.map((stu, si) => (
                     <tr key={stu.student_name} className={si % 2 === 0 ? '' : 'bg-foreground/1.5'}>
                       {/* 학생 이름 셀 */}
-                      <td className="sticky left-0 border-b border-r px-2 py-1.5 z-10 min-w-[80px] max-w-[100px]"
+                      <td className="sticky left-0 border-b border-r px-1.5 py-1.5 z-10 min-w-[64px] max-w-[72px]"
                         style={{ background: si % 2 === 0 ? '#ffffff' : '#f8fafc', borderColor: '#e2e8f0' }}>
                         <div className="flex items-center justify-between group">
                           <p className="text-[11px] font-black text-slate-700 leading-tight truncate">{stu.student_name}</p>
@@ -1459,110 +1618,112 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         const doneCount = myGeneral.filter(slot => weekData.checks[slot.id]?.[stu.student_name]?.status === 'done').length;
 
                         return (
-                          <td key={col.date}
-                            className="border-b border-r px-1.5 py-1 align-top" style={{borderColor: '#e2e8f0', background: isToday(col.date) ? '#eef2ff' : (si % 2 === 0 ? '#ffffff' : '#f8fafc')}}>
-                            {col.session ? (
-                              <div className="flex flex-col gap-0.5 min-w-[130px]">
-                                {/* 출결 버튼 - 컴팩트 */}
+                        <td key={col.date}
+                          className="border-b border-r align-top" style={{borderColor: '#e2e8f0', background: isToday(col.date) ? '#eef2ff' : (si % 2 === 0 ? '#ffffff' : '#f8fafc')}}>
+                          {col.session ? (
+                            <div className="min-w-[140px]">
+
+                              {/* ── 출결 섹션 ── */}
+                              <div className="px-1.5 pt-1 pb-1 border-b border-slate-100">
                                 <button
                                   onClick={() => setAttPopup({ date: col.date, studentName: stu.student_name, session: col.session })}
-                                  className={`w-full text-center px-1.5 py-1 rounded-lg text-[10px] font-black transition-all hover:opacity-80 ${att ? ATT_STYLE[att.status] : 'border border-dashed border-slate-300 text-slate-400 hover:border-slate-400'}`}>
+                                  className={`w-full text-center px-1 py-0.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-80 ${
+                                    att ? ATT_STYLE[att.status] : 'border border-dashed border-slate-300 text-slate-400 hover:border-slate-400'
+                                  }`}>
                                   {att ? (<>
                                     <span>{ATT_SHORT[att.status]}</span>
                                     {att.status === 'late' && att.late_arrival_time && <span className="ml-1 text-[8px] opacity-60">{att.late_arrival_time.slice(0,5)}</span>}
                                     {att.status === 'absent' && att.makeup_type && <span className="ml-1 text-[8px] opacity-60">{att.makeup_type === 'direct' ? '보강' : '영상'}</span>}
                                   </>) : '—'}
                                 </button>
-
-                                {/* 일반과제 체크 */}
-                                {myGeneral.map(slot => {
-                                  const chk = weekData.checks[slot.id]?.[stu.student_name];
-                                  const status = chk?.status || 'pending';
-                                  return (
-                                    <div key={slot.id} className="flex items-center gap-0.5">
-                                      <button
-                                        onClick={async () => {
-                                          const newStatus: HwStatus = status === 'done' ? 'pending' : 'done';
-                                          await upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: newStatus });
-                                          setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id] || {}), [stu.student_name]: { ...(chk || {}), slot_id: slot.id, student_name: stu.student_name, status: newStatus } as HomeworkCheck } } } : prev);
-                                        }}
-                                        className={`flex-1 text-left px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all truncate ${
-                                          status === 'done' ? 'bg-emerald-500/15 text-emerald-400 line-through opacity-70' :
-                                          status === 'delayed' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/20' :
-                                          'bg-foreground/5 text-foreground/50 hover:bg-foreground/10 border border-foreground/8'
-                                        }`}>
-                                        {status === 'done' ? '✓' : status === 'delayed' ? '⏩' : '○'} {slot.title}
-                                      </button>
-                                      {status !== 'done' && (
-                                        <>
-                                          <button onClick={async () => {
-                                            await upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: 'done' });
-                                            setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id] || {}), [stu.student_name]: { ...(chk || {}), slot_id: slot.id, student_name: stu.student_name, status: 'done' } as HomeworkCheck } } } : prev);
-                                          }}
-                                            className="shrink-0 px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all border border-emerald-200"
-                                            title="완료 처리">
-                                            ✓완
-                                          </button>
-                                          <button onClick={() => setRolloverPopup({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk || null })}
-                                            className="shrink-0 px-1 py-0.5 rounded-md text-[8px] font-black bg-orange-500/15 text-orange-400 hover:bg-orange-500/25 transition-all border border-orange-500/20"
-                                            title="이월 처리">
-                                            ⏩이
-                                          </button>
-                                        </>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-
-                                {/* 단어테스트 */}
-                                {myTests.map(slot => {
-                                  const chk = weekData.checks[slot.id]?.[stu.student_name];
-                                  return (
-                                    <div key={slot.id} className="flex items-center gap-1">
-                                      <div className={`flex-1 px-2 py-1 rounded-lg text-[10px] font-bold truncate ${
-                                        chk?.score != null ? 'bg-blue-50 text-blue-700' : 'bg-amber-50/80 text-amber-700'
-                                      }`}>
-                                        🎯 {slot.title}
-                                        {chk?.score != null && <span className="ml-1 font-black">{chk.score}{slot.max_score ? `/${slot.max_score}` : ''}{slot.is_pf ? (chk.is_pass ? ' P' : ' F') : ''}</span>}
-                                      </div>
-                                      <button onClick={() => setTestResultPopup({ slot, studentName: stu.student_name, existingCheck: chk || null })}
-                                        className="shrink-0 px-1.5 py-1 rounded-lg text-[9px] font-black bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all border border-blue-200">
-                                        {chk?.score != null ? '수정' : '기록'}
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-
-                                {mySlots.length === 0 && sessionSlots.length > 0 && (
-                                  <p className="text-[9px] text-slate-400 text-center py-0.5">배당없음</p>
-                                )}
-                                {/* 이월된 과제 표시 */}
-                                {(weekData.rolloverChecks[col.date] || [])
-                                  .filter(rc => rc.student_name === stu.student_name)
-                                  .map(rc => (
-                                    <div key={rc.id || rc.slot_id + rc.student_name} className="flex items-center gap-0.5">
-                                      <div className="flex-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-200 truncate">
-                                        ⏩ 이월과제
-                                      </div>
-                                      <button onClick={async () => {
-                                        await upsertHomeworkCheck({ slot_id: rc.slot_id, student_name: stu.student_name, status: 'done', rollover_date: null });
-                                        setWeekData(prev => {
-                                          if (!prev) return prev;
-                                          const newRollovers = { ...prev.rolloverChecks };
-                                          newRollovers[col.date] = (newRollovers[col.date] || []).filter(r => !(r.slot_id === rc.slot_id && r.student_name === stu.student_name));
-                                          return { ...prev, rolloverChecks: newRollovers, checks: { ...prev.checks, [rc.slot_id]: { ...(prev.checks[rc.slot_id] || {}), [stu.student_name]: { ...(rc as HomeworkCheck), status: 'done', rollover_date: null } } } };
-                                        });
-                                      }}
-                                        className="shrink-0 px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200">
-                                        ✓완
-                                      </button>
-                                    </div>
-                                  ))}
                               </div>
-                            ) : (
-                              <div className="text-center text-[10px] text-slate-300 py-1">—</div>
-                            )}
-                          </td>
+
+                              {/* ── 과제 섹션 ── */}
+                              {(myGeneral.length > 0 || (weekData.rolloverChecks[col.date] || []).some(rc => rc.student_name === stu.student_name)) && (
+                                <div className="px-1.5 pt-0.5 pb-1 border-b border-slate-100 space-y-0.5">
+                                  {myGeneral.map(slot => {
+                                    const chk = weekData.checks[slot.id]?.[stu.student_name];
+                                    const status = chk?.status || 'pending';
+                                    const isDone = status === 'done';
+                                    const isDonePartial = status === 'done_partial';
+                                    const isDelayed = status === 'delayed';
+                                    return (
+                                      <div key={slot.id} className="flex items-center gap-0.5">
+                                        <button
+                                          onClick={async () => {
+                                            const next: HwStatus = status === 'pending' ? 'done' : status === 'done' ? 'done_partial' : 'pending';
+                                            await upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: next });
+                                            setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id] || {}), [stu.student_name]: { ...(chk || {}), slot_id: slot.id, student_name: stu.student_name, status: next } as HomeworkCheck } } } : prev);
+                                          }}
+                                          className={`flex-1 text-left px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all truncate ${
+                                            isDone        ? 'bg-emerald-50 text-emerald-700 line-through' :
+                                            isDonePartial ? 'bg-sky-50 text-sky-700' :
+                                            isDelayed     ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                            'bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200'
+                                          }`}>
+                                          {isDone ? '✓완' : isDonePartial ? '↩귀' : isDelayed ? '⏩' : '○'} {slot.title}
+                                        </button>
+                                        {!isDone && !isDonePartial && (
+                                          <button onClick={() => setRolloverPopup({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk || null })}
+                                            className="shrink-0 px-1 py-0.5 rounded text-[8px] font-bold bg-orange-50 text-orange-500 hover:bg-orange-100 border border-orange-200"
+                                            title="이월">
+                                            ⏩
+                                          </button>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                  {/* 이월과제 */}
+                                  {(weekData.rolloverChecks[col.date] || [])
+                                    .filter(rc => rc.student_name === stu.student_name)
+                                    .map(rc => (
+                                      <div key={rc.id || rc.slot_id + rc.student_name} className="flex items-center gap-0.5">
+                                        <div className="flex-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-200 truncate">⏩ 이월</div>
+                                        <button onClick={async () => {
+                                          await upsertHomeworkCheck({ slot_id: rc.slot_id, student_name: stu.student_name, status: 'done', rollover_date: null });
+                                          setWeekData(prev => {
+                                            if (!prev) return prev;
+                                            const nr = { ...prev.rolloverChecks };
+                                            nr[col.date] = (nr[col.date] || []).filter(r => !(r.slot_id === rc.slot_id && r.student_name === stu.student_name));
+                                            return { ...prev, rolloverChecks: nr, checks: { ...prev.checks, [rc.slot_id]: { ...(prev.checks[rc.slot_id] || {}), [stu.student_name]: { ...(rc as HomeworkCheck), status: 'done', rollover_date: null } } } };
+                                          });
+                                        }}
+                                          className="shrink-0 px-1 py-0.5 rounded text-[8px] font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200">
+                                          ✓
+                                        </button>
+                                      </div>
+                                    ))}
+                                </div>
+                              )}
+
+                              {/* ── 테스트 섹션 ── */}
+                              {myTests.length > 0 && (
+                                <div className="px-1.5 pt-0.5 pb-1 space-y-0.5">
+                                  {myTests.map(slot => {
+                                    const chk = weekData.checks[slot.id]?.[stu.student_name];
+                                    return (
+                                      <div key={slot.id} className="flex items-center gap-0.5">
+                                        <div className={`flex-1 px-1 py-0.5 rounded text-[9px] font-bold truncate ${
+                                          chk?.score != null ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
+                                        }`}>
+                                          🎯 {slot.title}
+                                          {chk?.score != null && <span className="ml-1 font-black">{chk.score}{slot.max_score ? `/${slot.max_score}` : ''}{slot.is_pf ? (chk.is_pass ? ' P' : ' F') : ''}</span>}
+                                        </div>
+                                        <button onClick={() => setTestResultPopup({ slot, studentName: stu.student_name, existingCheck: chk || null })}
+                                          className="shrink-0 px-1 py-0.5 rounded text-[8px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200">
+                                          {chk?.score != null ? '수정' : '입력'}
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                            </div>
+                          ) : (
+                            <div className="text-center text-[10px] text-slate-300 py-2 min-w-[100px]">—</div>
+                          )}
+                        </td>
                         );
                       })}
                     </tr>
@@ -1634,6 +1795,21 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
           }}
           onSave={async (status, extra) => {
             await saveAttendance(attPopup, status, extra as Parameters<typeof saveAttendance>[2]);
+          }}
+        />
+      )}
+
+      {attBoardModal && attBoardModal.session && (
+        <AttendanceBoardModal
+          session={attBoardModal.session}
+          students={students}
+          existingAtt={weekData?.attMap[attBoardModal.date] || {}}
+          onClose={() => setAttBoardModal(null)}
+          onSaved={(updated) => {
+            setWeekData(prev => prev ? {
+              ...prev,
+              attMap: { ...prev.attMap, [attBoardModal.date]: updated },
+            } : prev);
           }}
         />
       )}

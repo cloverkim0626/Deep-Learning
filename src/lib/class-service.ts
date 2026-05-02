@@ -83,7 +83,7 @@ export type HomeworkSlotStudent = {
   due_date: string | null;
 };
 
-export type HwStatus = 'pending' | 'done' | 'delayed' | 'skipped';
+export type HwStatus = 'pending' | 'done' | 'done_partial' | 'delayed' | 'skipped';
 
 export type HomeworkCheck = {
   id: string;
