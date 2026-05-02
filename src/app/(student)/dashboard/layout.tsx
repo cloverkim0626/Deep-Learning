@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, PenTool, Bot, MessageCircle, CalendarPlus, Bell, LogOut, Volume2, Quote, Settings, Lock, Eye, EyeOff, Calendar, Trophy, X, Layers, Flame, BarChart2, HelpCircle, Brain, Check } from "lucide-react";
+import { BookOpen, PenTool, Bot, MessageCircle, CalendarPlus, Bell, LogOut, Volume2, Quote, Settings, Lock, Eye, EyeOff, Calendar, Trophy, X, Layers, Flame, BarChart2, HelpCircle, Brain, Check, Crown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { getClinicQueue, getTestSessionsByStudent, getQnaPosts, changeStudentPassword, updateStudentNickname, getStudentNickname } from "@/lib/database-service";
 import { getAssignmentsByStudent } from "@/lib/assignment-service";
@@ -152,6 +152,13 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const [lbPeriod, setLbPeriod] = useState<'today'|'week'|'month'>('week');
   const [lbLoading, setLbLoading] = useState(false);
   const [showScholarship, setShowScholarship] = useState(false);
+  // ── 명예의 전당 ──
+  const KST_NOW = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const [hofYear, setHofYear] = useState(() => KST_NOW.getUTCMonth() === 0 ? KST_NOW.getUTCFullYear() - 1 : KST_NOW.getUTCFullYear());
+  const [hofMonth, setHofMonth] = useState(() => KST_NOW.getUTCMonth() === 0 ? 12 : KST_NOW.getUTCMonth());
+  const [hofEntries, setHofEntries] = useState<{rank:number;name:string;displayName:string;score:number}[]>([]);
+  const [hofLoading, setHofLoading] = useState(false);
+  const [showHof, setShowHof] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [calendarSessions, setCalendarSessions] = useState<{ completed_at?: string | null; set_id: string; word_sets?: { label: string } | null; test_type?: string | null; correct_count?: number; total_questions?: number }[]>([]);
   const [calendarSelectedDay, setCalendarSelectedDay] = useState<string | null>(null);
@@ -576,6 +583,14 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                       setLeaderboard(data.ranking || []);
                     } catch { setLeaderboard([]); }
                     setLbLoading(false);
+                    // 명예의 전당 로드
+                    setHofLoading(true);
+                    try {
+                      const mvpRes = await fetch(`/api/leaderboard/mvp?year=${hofYear}&month=${hofMonth}`);
+                      const mvpData = await mvpRes.json();
+                      setHofEntries(mvpData.entries || []);
+                    } catch { setHofEntries([]); }
+                    setHofLoading(false);
                   }}
                   className="absolute left-0 top-0 p-2.5 rounded-xl bg-amber-50 text-amber-500 hover:bg-amber-100 transition-all"
                   title="리더보드"
@@ -648,6 +663,81 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                       );
                     })}
                   </div>
+
+                  {/* ── 명예의 전당 토글 단독 행 ── */}
+                  <button
+                    onClick={async () => {
+                      if (!showHof) {
+                        setHofLoading(true);
+                        try {
+                          const r = await fetch(`/api/leaderboard/mvp?year=${hofYear}&month=${hofMonth}`);
+                          setHofEntries((await r.json()).entries || []);
+                        } catch { setHofEntries([]); }
+                        setHofLoading(false);
+                      }
+                      setShowHof(s => !s);
+                    }}
+                    className="w-full flex items-center justify-between px-5 py-3.5 border-t border-amber-100 bg-amber-50/60 hover:bg-amber-100/60 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Crown size={13} className="text-amber-500" strokeWidth={2.5} />
+                      <span className="text-[12px] font-black text-amber-800">딥러닝 명예의 전당</span>
+                    </div>
+                    <span className={`text-[16px] text-amber-500 transition-transform duration-300 ${showHof ? 'rotate-90' : ''}`}>›</span>
+                  </button>
+
+                  {/* 명예의 전당 내용 */}
+                  {showHof && (
+                    <div className="px-4 pt-3 pb-4 bg-amber-50/40 animate-in fade-in slide-in-from-top-2 duration-300">
+                      {/* 달 네비게이션 */}
+                      <div className="flex items-center justify-center gap-2 mb-3">
+                        <button
+                          onClick={async () => {
+                            const prev = hofMonth === 1 ? { y: hofYear - 1, m: 12 } : { y: hofYear, m: hofMonth - 1 };
+                            setHofYear(prev.y); setHofMonth(prev.m); setHofLoading(true);
+                            try { const r = await fetch(`/api/leaderboard/mvp?year=${prev.y}&month=${prev.m}`); setHofEntries((await r.json()).entries || []); } catch { setHofEntries([]); }
+                            setHofLoading(false);
+                          }}
+                          className="w-7 h-7 flex items-center justify-center rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-600 transition-colors"
+                        ><ChevronLeft size={14} /></button>
+                        <span className="text-[12px] font-black text-foreground min-w-[80px] text-center">{hofYear}년 {hofMonth}월 MVP</span>
+                        <button
+                          onClick={async () => {
+                            const next = hofMonth === 12 ? { y: hofYear + 1, m: 1 } : { y: hofYear, m: hofMonth + 1 };
+                            setHofYear(next.y); setHofMonth(next.m); setHofLoading(true);
+                            try { const r = await fetch(`/api/leaderboard/mvp?year=${next.y}&month=${next.m}`); setHofEntries((await r.json()).entries || []); } catch { setHofEntries([]); }
+                            setHofLoading(false);
+                          }}
+                          className="w-7 h-7 flex items-center justify-center rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-600 transition-colors"
+                        ><ChevronRight size={14} /></button>
+                      </div>
+                      {/* 순위 */}
+                      {hofLoading ? (
+                        <div className="space-y-2">
+                          {[1,2,3].map(i => <div key={i} className="h-10 bg-amber-100/50 rounded-xl animate-pulse" />)}
+                        </div>
+                      ) : hofEntries.length === 0 ? (
+                        <p className="text-center py-3 text-[11px] text-amber-400/60 font-medium">이달 수상자 없음</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {hofEntries.map(entry => {
+                            const medal = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉';
+                            const prize = entry.rank === 1 ? '문화상품권 3만원' : entry.rank === 2 ? '문화상품권 1만원' : '문화상품권 5천원';
+                            return (
+                              <div key={entry.rank} className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white border border-amber-100">
+                                <span className="text-[20px] shrink-0">{medal}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[13px] font-black text-foreground truncate">{entry.displayName}</p>
+                                  <p className="text-[10px] text-amber-600 font-bold">🎁 {prize}</p>
+                                </div>
+                                <span className="text-[12px] font-black text-amber-700 shrink-0">{entry.score}점</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* 장학제도 토글 */}
                   <button

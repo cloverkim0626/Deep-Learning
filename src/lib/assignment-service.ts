@@ -263,15 +263,13 @@ export async function autoCompleteAssignmentIfAllPassed(
 
     if (!assignment) return false;
 
-    // 2. 해당 set_id의 통과 세션 조회 (14일 이내)
-    const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    // 2. 해당 set_id의 통과 세션 조회 (기간 제한 없음 - 언제 통과해도 인정)
     const { data: sessions } = await supabase
       .from('test_sessions')
       .select('test_type, correct_count, total_questions')
       .eq('student_name', studentName)
       .eq('set_id', setId)
-      .not('completed_at', 'is', null)
-      .gte('created_at', since);
+      .not('completed_at', 'is', null);
 
     if (!sessions || sessions.length === 0) return false;
 

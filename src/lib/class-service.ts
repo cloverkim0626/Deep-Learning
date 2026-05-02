@@ -66,6 +66,20 @@ export type HomeworkSlot = {
   set_id: string | null;
   sort_order: number;
   created_at: string;
+  // v2 fields
+  assigned_at: string | null; // DATE string "YYYY-MM-DD"
+  due_date: string | null;
+  test_range: string | null;
+  max_score: number | null;
+  pass_score: number | null;
+  is_pf: boolean;
+};
+
+export type HomeworkSlotStudent = {
+  id: string;
+  slot_id: string;
+  student_name: string;
+  due_date: string | null;
 };
 
 export type HwStatus = 'pending' | 'done' | 'delayed' | 'skipped';
@@ -80,6 +94,19 @@ export type HomeworkCheck = {
   checked_at: string | null;
   note: string;
   created_at: string;
+  // v2 fields
+  delay_reason: string | null;
+  delay_note: string | null;
+  rollover_date: string | null;
+  score: number | null;
+  is_pass: boolean | null;
+};
+
+export type LessonNote = {
+  id: string;
+  session_id: string;
+  note: string;
+  updated_at: string;
 };
 
 // ─── Weekly View Type ─────────────────────────────────────────────────────────
@@ -98,6 +125,8 @@ export type WeekData = {
   attMap: Record<string, Record<string, AttendanceRow>>; // date → student → row
   slots:  Record<string, HomeworkSlot[]>;                // session_id → slots
   checks: Record<string, Record<string, HomeworkCheck>>; // slot_id → student → check
+  slotStudents: Record<string, string[]>; // slot_id → assigned student names (empty = all)
+  lessonNotes: Record<string, string>;   // session_id → note
 };
 
 // ─── Helper: Date Utils ───────────────────────────────────────────────────────
@@ -196,32 +225,47 @@ export async function deleteClass(id: string): Promise<void> {
 // ─── Class Students ───────────────────────────────────────────────────────────
 
 export async function getClassStudents(classId: string): Promise<ClassStudent[]> {
+  // students 테이블 기준 (source of truth): class_name이 일치하는 학생 반환
+  const { data: cls } = await supabase.from('classes').select('name').eq('id', classId).single();
+  if (!cls?.name) return [];
+
   const { data, error } = await supabase
-    .from('class_students')
-    .select('*')
-    .eq('class_id', classId)
-    .order('student_name', { ascending: true });
+    .from('students')
+    .select('name, class_name')
+    .eq('class_name', cls.name)
+    .order('name', { ascending: true });
   if (error) throw error;
-  return (data || []) as ClassStudent[];
+
+  return (data || []).map((s: { name: string; class_name: string | null }) => ({
+    id: `${classId}-${s.name}`,
+    class_id: classId,
+    student_name: s.name,
+    student_class: s.class_name || '',
+    class_name: s.class_name || '',
+    enrolled_at: '',
+  }));
 }
 
 export async function addStudentToClass(
   classId: string, studentName: string, studentClass: string
 ): Promise<void> {
-  const { error } = await supabase
-    .from('class_students')
-    .upsert([{ class_id: classId, student_name: studentName, student_class: studentClass }],
-      { onConflict: 'class_id,student_name' });
-  if (error) throw error;
+  // 1) students.class_name 업데이트 (단일 소스)
+  await supabase.from('students').update({ class_name: studentClass }).eq('name', studentName);
+  // 2) class_students 동기화 (레거시 호환)
+  const { data: existing } = await supabase
+    .from('class_students').select('id').eq('class_id', classId).eq('student_name', studentName).maybeSingle();
+  if (!existing) {
+    await supabase.from('class_students').insert([{ class_id: classId, student_name: studentName, student_class: studentClass }]);
+  } else {
+    await supabase.from('class_students').update({ student_class: studentClass, class_name: studentClass }).eq('class_id', classId).eq('student_name', studentName);
+  }
 }
 
 export async function removeStudentFromClass(classId: string, studentName: string): Promise<void> {
-  const { error } = await supabase
-    .from('class_students')
-    .delete()
-    .eq('class_id', classId)
-    .eq('student_name', studentName);
-  if (error) throw error;
+  // 1) students.class_name 비우기 (단일 소스)
+  await supabase.from('students').update({ class_name: '' }).eq('name', studentName);
+  // 2) class_students 동기화
+  await supabase.from('class_students').delete().eq('class_id', classId).eq('student_name', studentName);
 }
 
 // ─── Class Sessions ───────────────────────────────────────────────────────────
@@ -346,13 +390,79 @@ export async function getHomeworkSlotsForSessions(sessionIds: string[]): Promise
 
 export async function createHomeworkSlot(payload: {
   session_id: string; title: string; hw_type: HwType; set_id?: string | null; sort_order?: number;
+  assigned_at?: string; due_date?: string | null;
+  test_range?: string | null; max_score?: number | null; pass_score?: number | null; is_pf?: boolean;
 }): Promise<HomeworkSlot> {
   const { data, error } = await supabase
     .from('homework_slots')
-    .insert([{ ...payload, set_id: payload.set_id || null, sort_order: payload.sort_order || 0 }])
+    .insert([{
+      session_id: payload.session_id,
+      title: payload.title,
+      hw_type: payload.hw_type,
+      set_id: payload.set_id || null,
+      sort_order: payload.sort_order || 0,
+      assigned_at: payload.assigned_at || new Date().toISOString().slice(0, 10),
+      due_date: payload.due_date || null,
+      test_range: payload.test_range || null,
+      max_score: payload.max_score || null,
+      pass_score: payload.pass_score || null,
+      is_pf: payload.is_pf || false,
+    }])
     .select().single();
   if (error) throw error;
   return data as HomeworkSlot;
+}
+
+export async function createHomeworkSlotBatch(slots: Parameters<typeof createHomeworkSlot>[0][]): Promise<HomeworkSlot[]> {
+  const rows = slots.map(payload => ({
+    session_id: payload.session_id,
+    title: payload.title,
+    hw_type: payload.hw_type,
+    set_id: payload.set_id || null,
+    sort_order: payload.sort_order || 0,
+    assigned_at: payload.assigned_at || new Date().toISOString().slice(0, 10),
+    due_date: payload.due_date || null,
+    test_range: payload.test_range || null,
+    max_score: payload.max_score || null,
+    pass_score: payload.pass_score || null,
+    is_pf: payload.is_pf || false,
+  }));
+  const { data, error } = await supabase.from('homework_slots').insert(rows).select();
+  if (error) throw error;
+  return (data || []) as HomeworkSlot[];
+}
+
+export async function setSlotStudents(slotId: string, studentNames: string[]): Promise<void> {
+  // 기존 삭제 후 재삽입
+  await supabase.from('homework_slot_students').delete().eq('slot_id', slotId);
+  if (studentNames.length === 0) return; // empty = all students
+  const rows = studentNames.map(name => ({ slot_id: slotId, student_name: name }));
+  const { error } = await supabase.from('homework_slot_students').insert(rows);
+  if (error) throw error;
+}
+
+export async function getSlotStudents(slotIds: string[]): Promise<HomeworkSlotStudent[]> {
+  if (slotIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('homework_slot_students').select('*').in('slot_id', slotIds);
+  if (error) throw error;
+  return (data || []) as HomeworkSlotStudent[];
+}
+
+export async function getLessonNotes(sessionIds: string[]): Promise<LessonNote[]> {
+  if (sessionIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('lesson_notes').select('*').in('session_id', sessionIds);
+  if (error) throw error;
+  return (data || []) as LessonNote[];
+}
+
+export async function upsertLessonNote(sessionId: string, note: string): Promise<void> {
+  const { error } = await supabase.from('lesson_notes').upsert(
+    [{ session_id: sessionId, note, updated_at: new Date().toISOString() }],
+    { onConflict: 'session_id' }
+  );
+  if (error) throw error;
 }
 
 export async function deleteHomeworkSlot(slotId: string): Promise<void> {
@@ -373,6 +483,8 @@ export async function getHomeworkChecks(slotIds: string[]): Promise<HomeworkChec
 export async function upsertHomeworkCheck(payload: {
   slot_id: string; student_name: string; status: HwStatus;
   delayed_to?: string | null; delayed_from_session_id?: string | null; note?: string;
+  delay_reason?: string | null; delay_note?: string | null; rollover_date?: string | null;
+  score?: number | null; is_pass?: boolean | null;
 }): Promise<void> {
   const { error } = await supabase
     .from('homework_checks')
@@ -384,6 +496,11 @@ export async function upsertHomeworkCheck(payload: {
       delayed_from_session_id: payload.delayed_from_session_id || null,
       note: payload.note || '',
       checked_at: payload.status === 'done' ? new Date().toISOString() : null,
+      delay_reason: payload.delay_reason || null,
+      delay_note: payload.delay_note || null,
+      rollover_date: payload.rollover_date || null,
+      score: payload.score ?? null,
+      is_pass: payload.is_pass ?? null,
     }], { onConflict: 'slot_id,student_name' });
   if (error) throw error;
 }

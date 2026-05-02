@@ -216,10 +216,13 @@ export async function updateStudent(id: string, data: Partial<StudentData>) {
 }
 
 export async function deleteStudent(id: string) {
-  const { error } = await supabase
-    .from('students')
-    .delete()
-    .eq('id', id);
+  // students 테이블에서 name 먼저 조회 (class_students 삭제용)
+  const { data: stu } = await supabase.from('students').select('name').eq('id', id).single();
+  // class_students 에서도 삭제 (수업관리 동기화)
+  if (stu?.name) {
+    await supabase.from('class_students').delete().eq('student_name', stu.name);
+  }
+  const { error } = await supabase.from('students').delete().eq('id', id);
   if (error) throw error;
 }
 

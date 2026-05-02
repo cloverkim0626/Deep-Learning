@@ -10,6 +10,7 @@ import {
   getClasses, createClass, updateClass, deleteClass, getClassStudents,
   ClassRow, ClassColor, ClassScheduleItem
 } from "@/lib/class-service";
+import { supabase } from "@/lib/supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const COLOR_MAP: Record<ClassColor, { bg: string; text: string; border: string; badge: string }> = {
@@ -313,6 +314,8 @@ export default function ClassesPage() {
   const [studentCounts, setStudentCounts] = useState<Record<string, number>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<ClassRow | null>(null);
   const [deleting, setDeleting]   = useState(false);
+  // 반 삭제 옵션: 'ask'=선택중, 'students'=학생도삭제, 'class_only'=반만삭제
+  const [deleteOption, setDeleteOption] = useState<'ask' | 'students' | 'class_only' | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -329,13 +332,33 @@ export default function ClassesPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleDelete = async () => {
+  const handleDelete = async (withStudents: boolean) => {
     if (!deleteConfirm) return;
     setDeleting(true);
     try {
+      if (withStudents) {
+        // class_students 에서 학생 이름 목록 가져오기
+        const csRows = await getClassStudents(deleteConfirm.id);
+        const names = csRows.map(r => r.student_name);
+        // students 테이블에서 해당 학생들 삭제
+        if (names.length > 0) {
+          await supabase.from('students').delete().in('name', names);
+        }
+      } else {
+        // 반만 제거: 해당 반 학생들의 class_name을 null로 초기화
+        const csRows = await getClassStudents(deleteConfirm.id);
+        const names = csRows.map(r => r.student_name);
+        if (names.length > 0) {
+          await supabase.from('students').update({ class_name: '' }).in('name', names);
+        }
+      }
+      // class_students 연결 삭제 (ON DELETE CASCADE 없을 경우 대비)
+      await supabase.from('class_students').delete().eq('class_id', deleteConfirm.id);
+      // classes 테이블에서 반 삭제
       await deleteClass(deleteConfirm.id);
       setClasses(prev => prev.filter(c => c.id !== deleteConfirm.id));
       setDeleteConfirm(null);
+      setDeleteOption(null);
     } catch (e) { alert("삭제 실패: " + (e as Error).message); }
     finally { setDeleting(false); }
   };
@@ -409,22 +432,59 @@ export default function ClassesPage() {
         />
       )}
 
-      {/* 삭제 확인 */}
+      {/* 삭제 확인 — 학생 처리 옵션 포함 */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[300] flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="glass w-full max-w-sm rounded-[2rem] border border-rose-200 shadow-2xl p-7 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center mx-auto mb-4">
-              <Trash2 size={20} className="text-rose-500" />
-            </div>
-            <h3 className="text-[16px] font-black text-foreground mb-2">&apos;{deleteConfirm.name}&apos; 삭제</h3>
-            <p className="text-[12px] text-accent mb-6">이 반의 세션, 출결, 과제 데이터가 모두 삭제됩니다.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteConfirm(null)}
-                className="flex-1 h-11 rounded-xl border border-foreground/10 text-[13px] font-black text-accent hover:text-foreground transition-all">취소</button>
-              <button onClick={handleDelete} disabled={deleting}
-                className="flex-1 h-11 rounded-xl bg-rose-500 text-white text-[13px] font-black hover:-translate-y-0.5 transition-all disabled:opacity-30">
-                {deleting ? "삭제 중..." : "삭제"}
-              </button>
+          <div className="glass w-full max-w-sm rounded-[2rem] border border-rose-200 shadow-2xl overflow-hidden">
+            <div className="p-7 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center mx-auto mb-4">
+                <Trash2 size={20} className="text-rose-500" />
+              </div>
+              <h3 className="text-[16px] font-black text-foreground mb-2">&apos;{deleteConfirm.name}&apos; 삭제</h3>
+              <p className="text-[12px] text-accent mb-5">세션 · 출결 · 과제 데이터가 모두 삭제됩니다.</p>
+
+              {/* 학생 처리 선택 */}
+              <p className="text-[12px] font-black text-foreground mb-3">수강생 목록은 어떻게 할까요?</p>
+              <div className="space-y-2 mb-6">
+                <button
+                  onClick={() => setDeleteOption('students')}
+                  className={`w-full p-3.5 rounded-xl border-2 text-left transition-all ${
+                    deleteOption === 'students'
+                      ? 'border-rose-500 bg-rose-50'
+                      : 'border-foreground/10 hover:border-foreground/30'
+                  }`}
+                >
+                  <p className="text-[13px] font-black text-rose-600">수강생 목록에서도 함께 제거</p>
+                  <p className="text-[10px] text-accent mt-0.5">학생 계정 데이터가 완전히 삭제됩니다</p>
+                </button>
+                <button
+                  onClick={() => setDeleteOption('class_only')}
+                  className={`w-full p-3.5 rounded-xl border-2 text-left transition-all ${
+                    deleteOption === 'class_only'
+                      ? 'border-foreground bg-foreground/5'
+                      : 'border-foreground/10 hover:border-foreground/30'
+                  }`}
+                >
+                  <p className="text-[13px] font-black text-foreground">반만 제거 (학생 유지)</p>
+                  <p className="text-[10px] text-accent mt-0.5">학생은 유지되며 ‘반 미배정’ 상태로 이동됩니다</p>
+                </button>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setDeleteConfirm(null); setDeleteOption(null); }}
+                  className="flex-1 h-11 rounded-xl border border-foreground/10 text-[13px] font-black text-accent hover:text-foreground transition-all"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => deleteOption && handleDelete(deleteOption === 'students')}
+                  disabled={!deleteOption || deleting}
+                  className="flex-1 h-11 rounded-xl bg-rose-500 text-white text-[13px] font-black hover:-translate-y-0.5 transition-all disabled:opacity-30"
+                >
+                  {deleting ? '삭제 중...' : '삭제'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

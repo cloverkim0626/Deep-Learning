@@ -6,24 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, LogIn, ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-// 하드코딩된 반 목록 (GUEST 반은 DB에서 동적으로 로드)
-const STATIC_CLASS_DATA = [
-  { 
-    name: "[WOODOK] 고3 금토반", 
-    students: ["김가연 - 백석고", "장서현 - 백석고", "박시연 - 백석고", "이예윤 - 백석고", "이은서 - 검단고", "김슬기 - 검단고", "김가빈 - 원당고"] 
-  },
-  { 
-    name: "[WOODOK] 고2 아라고반", 
-    students: ["이동기", "임다은", "민채이"] 
-  },
-  { 
-    name: "[WOODOK] 고1 아라원당 연합반", 
-    students: ["송시후", "정준", "한상혁"] 
-  },
-];
 
-// GUEST 반 class_name 키워드 (DB에서 이 이름으로 필터)
-const GUEST_CLASS_KEY = "guest반";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -35,40 +18,59 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  // DB에서 불러온 GUEST 학생 목록
+  // 수업관리(classes + class_students)에서 동적 로드한 반 목록
+  const [syncedClasses, setSyncedClasses] = useState<{ name: string; students: string[] }[]>([]);
+  // GUEST 학생 목록
   const [guestStudents, setGuestStudents] = useState<string[]>([]);
-  const [loadingGuest, setLoadingGuest] = useState(false);
+  const [loadingDb, setLoadingDb] = useState(false);
 
-  // 컴포넌트 마운트시 GUEST 반 학생 DB에서 로드
   useEffect(() => {
-    const fetchGuest = async () => {
-      setLoadingGuest(true);
+    const fetchAll = async () => {
+      setLoadingDb(true);
       try {
-        const { data, error: err } = await supabase
-          .from('students')
-          .select('name, class_name')
-          .ilike('class_name', `%guest%`)
-          .order('name', { ascending: true });
-        if (!err && data && data.length > 0) {
-          setGuestStudents(data.map((s: { name: string; class_name: string }) => s.name));
-        } else {
-          setGuestStudents([]);
+        // 1) classes 테이블의 모든 반 로드
+        const { data: classRows } = await supabase
+          .from('classes')
+          .select('id, academy_name, name')
+          .order('opened_at', { ascending: true });
+
+        // 2) 각 반의 학생 목록을 students.class_name 기준으로 로드 (단일 소스)
+        const classResults: { name: string; students: string[] }[] = [];
+        for (const cls of classRows || []) {
+          const { data: stuRows } = await supabase
+            .from('students')
+            .select('name')
+            .eq('class_name', cls.name)
+            .order('name', { ascending: true });
+
+          const prefix = cls.academy_name ? `[${cls.academy_name}] ` : '';
+          classResults.push({
+            name: `${prefix}${cls.name}`,
+            students: (stuRows || []).map((r: { name: string }) => r.name),
+          });
         }
+        setSyncedClasses(classResults);
+
+        // 3) GUEST 학생 (students 테이블)
+        const { data: guestData } = await supabase
+          .from('students')
+          .select('name')
+          .ilike('class_name', '%guest%')
+          .order('name', { ascending: true });
+        setGuestStudents((guestData || []).map((s: { name: string }) => s.name));
       } finally {
-        setLoadingGuest(false);
+        setLoadingDb(false);
       }
     };
-    fetchGuest();
+    fetchAll();
   }, []);
 
-  // 최종 CLASS_DATA: 정적 반 + GUEST 반(동적)
+  // 최종 CLASS_DATA: classes 테이블 반 + GUEST
   const CLASS_DATA = [
-    ...STATIC_CLASS_DATA,
-    {
-      name: "[WOODOK] GUEST",
-      students: guestStudents,
-    },
+    ...syncedClasses,
+    { name: "[WOODOK] GUEST", students: guestStudents },
   ];
+
 
   const handleLogin = async () => {
     setError("");
@@ -120,6 +122,8 @@ function LoginForm() {
   const currentClassObj = CLASS_DATA.find(c => c.name === selectedClass);
   const studentsInClass = currentClassObj?.students || [];
   const isGuestClass = selectedClass === "[WOODOK] GUEST";
+  // 수업관리 동기화 반 여부 (로딩 중 UI용)
+  const isSyncedClass = syncedClasses.some(cls => cls.name === selectedClass);
 
   return (
     <div className="w-full max-w-sm mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000">
@@ -171,15 +175,20 @@ function LoginForm() {
                 <select value={selectedStudent} onChange={e => setSelectedStudent(e.target.value)}
                   className="w-full h-16 px-6 bg-white border border-foreground/10 rounded-3xl appearance-none font-bold text-[15px] text-foreground focus:ring-4 focus:ring-foreground/5 outline-none transition-all shadow-sm cursor-pointer">
                   <option value="" disabled>
-                    {isGuestClass && loadingGuest ? "불러오는 중..." : "이름을 선택해 주세요"}
+                    {loadingDb && (isGuestClass || isSyncedClass) ? "불러오는 중..." : "이름을 선택해 주세요"}
                   </option>
                   {studentsInClass.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
                 <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-accent" size={18} />
               </div>
-              {isGuestClass && !loadingGuest && studentsInClass.length === 0 && (
+              {isGuestClass && !loadingDb && studentsInClass.length === 0 && (
                 <p className="text-[11px] text-amber-500 font-bold pl-4">
                   등록된 체험 학생이 없습니다. 선생님께 문의하세요.
+                </p>
+              )}
+              {isSyncedClass && !loadingDb && studentsInClass.length === 0 && (
+                <p className="text-[11px] text-amber-500 font-bold pl-4">
+                  등록된 학생이 없습니다. 수업관리에서 학생을 등록해 주세요.
                 </p>
               )}
             </div>

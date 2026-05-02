@@ -9,9 +9,9 @@ import {
   getStudents, createStudent, updateStudent,
   deleteStudent, resetStudentPassword, type StudentData
 } from "@/lib/database-service";
+import { getClasses, addStudentToClass } from "@/lib/class-service";
+import { supabase } from "@/lib/supabase";
 
-// ─── Constants ─────────────────────────────────────────────────────────────────
-const CLASSES = ["전체", "고3 금토반", "고2 아라고반", "고1 아라원당 연합반", "GUEST"];
 const GRADES = [1, 2, 3];
 const GENDERS = [
   { value: 'M', label: '남' },
@@ -35,16 +35,17 @@ type SortField = 'name' | 'class_name' | 'enrolled_at' | 'school';
 
 // ─── Student Form Modal ───────────────────────────────────────────────────────
 function StudentModal({
-  student, onClose, onSave
+  student, onClose, onSave, classList
 }: {
   student: Partial<Student> | null;
   onClose: () => void;
   onSave: (data: StudentData) => Promise<void>;
+  classList: string[];
 }) {
   const isEdit = !!student?.id;
   const [form, setForm] = useState<StudentData & { password: string }>({
     name: student?.name || '',
-    class_name: student?.class_name || CLASSES[1],
+    class_name: student?.class_name || classList[0] || '',
     school: student?.school || '',
     grade: student?.grade || 3,
     phone: student?.phone || '',
@@ -110,7 +111,7 @@ function StudentModal({
               onChange={e => set('class_name', e.target.value)}
               className="w-full h-12 px-4 rounded-xl border border-foreground/10 bg-accent-light text-[14px] font-bold outline-none"
             >
-              {CLASSES.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
+              {classList.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 
@@ -230,10 +231,13 @@ export default function AdminStudentsPage() {
   const [search, setSearch] = useState('');
   const [filterClass, setFilterClass] = useState('전체');
   const [sortField, setSortField] = useState<SortField>('name');
+  // 수업관리 classes 테이블에서 동적 로드 (초기값 빈 배열, 로드 후 채워짐)
+  const [classList, setClassList] = useState<string[]>([]);
   // undefined = modal closed, null = add new, Student = edit
   const [modalStudent, setModalStudent] = useState<Partial<Student> | null | undefined>(undefined);
   const [resettingId, setResettingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirmStudent, setDeleteConfirmStudent] = useState<Student | null>(null);
 
   const loadStudents = useCallback(async () => {
     setIsLoading(true);
@@ -247,13 +251,49 @@ export default function AdminStudentsPage() {
     }
   }, []);
 
+  // classes 테이블에서 반 목록 로드 (GUEST는 항상 마지막에 고정)
+  useEffect(() => {
+    getClasses()
+      .then(rows => {
+        const names = rows && rows.length > 0 ? rows.map(r => r.name) : [];
+        // GUEST는 항상 포함 (체험 계정용)
+        if (!names.includes('GUEST')) names.push('GUEST');
+        setClassList(names);
+      })
+      .catch(() => { setClassList(['GUEST']); });
+  }, []);
+
   useEffect(() => { loadStudents(); }, [loadStudents]);
 
   const handleSave = async (data: StudentData) => {
     if (modalStudent?.id) {
+      // ─── 편집 ───
       await updateStudent(modalStudent.id, data);
+      // 반이 변경된 경우 → class_students 자동 동기화
+      const oldClass = modalStudent.class_name;
+      if (oldClass !== data.class_name && modalStudent.name) {
+        // 1) 기존 class_students 항목 전부 제거
+        await supabase
+          .from('class_students')
+          .delete()
+          .eq('student_name', modalStudent.name);
+        // 2) 새 반의 class_students에 추가
+        const allClasses = await getClasses();
+        const matched = allClasses.find(c => c.name === data.class_name);
+        if (matched) {
+          await addStudentToClass(matched.id, modalStudent.name, data.class_name);
+        }
+      }
     } else {
-      await createStudent(data);
+      // ─── 신규 등록 ───
+      const created = await createStudent(data);
+      try {
+        const allClasses = await getClasses();
+        const matched = allClasses.find(c => c.name === data.class_name);
+        if (matched) {
+          await addStudentToClass(matched.id, created.name, data.class_name);
+        }
+      } catch { /* class_students 실패 시 에러만 로그 */ }
     }
     await loadStudents();
   };
@@ -272,11 +312,11 @@ export default function AdminStudentsPage() {
   };
 
   const handleDelete = async (student: Student) => {
-    if (!confirm(`${student.name} 학생을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
     setDeletingId(student.id);
     try {
       await deleteStudent(student.id);
-      await loadStudents();
+      setStudents(prev => prev.filter(s => s.id !== student.id));
+      setDeleteConfirmStudent(null);
     } catch (err: unknown) {
       alert("삭제 실패: " + (err as Error).message);
     } finally {
@@ -306,7 +346,11 @@ export default function AdminStudentsPage() {
   const genderLabel = (g?: string) => g === 'M' ? '남' : g === 'F' ? '여' : '';
 
   // Group by class for rendering
-  const displayClasses = filterClass === '전체' ? CLASSES.slice(1) : [filterClass];
+  // 전체 보기 시: classes + GUEST + 반미배정(빈 class_name) 포함
+  const allDisplayClasses = filterClass === '전체'
+    ? [...classList.filter(c => c !== 'GUEST'), 'GUEST', '__unassigned__']
+    : [filterClass];
+  const displayClasses = allDisplayClasses;
 
   return (
     <div className="p-8 md:p-12 pb-24 max-w-6xl mx-auto h-full overflow-y-auto custom-scrollbar">
@@ -347,7 +391,7 @@ export default function AdminStudentsPage() {
 
         <div className="flex flex-wrap gap-3 items-center">
           <span className="text-[10px] font-black text-accent uppercase tracking-widest">반 필터:</span>
-          {CLASSES.map(c => {
+          {['전체', ...classList].map(c => {
             const count = c === '전체' ? students.length : students.filter(s => s.class_name === c).length;
             return (
               <button
@@ -359,7 +403,7 @@ export default function AdminStudentsPage() {
                     : 'bg-white border border-foreground/5 text-accent hover:text-foreground'
                 }`}
               >
-                {c === '전체' ? '전체' : c.replace('[WOODOK] ', '')} ({count})
+                {c === '전체' ? '전체' : c} ({count})
               </button>
             );
           })}
@@ -393,16 +437,23 @@ export default function AdminStudentsPage() {
         </div>
       ) : (
         <div className="space-y-10">
-          {displayClasses.map(cls => {
-            const clsStudents = filtered.filter(s => s.class_name === cls);
+          {displayClasses.map((cls: string) => {
+            // __unassigned__: 반이 배정되지 않은 학생
+            const isUnassigned = cls === '__unassigned__';
+            const clsStudents = isUnassigned
+              ? filtered.filter(s => !s.class_name || s.class_name.trim() === '')
+              : filtered.filter(s => s.class_name === cls);
             if (clsStudents.length === 0) return null;
-            const colorClass = CLASS_COLORS[cls] || 'bg-gray-100 text-gray-600 border-gray-200';
+            const displayCls = isUnassigned ? '반 미배정' : cls;
+            const colorClass = CLASS_COLORS[cls] || (isUnassigned
+              ? 'bg-gray-100 text-gray-500 border-gray-200'
+              : 'bg-gray-100 text-gray-600 border-gray-200');
             return (
               <div key={cls}>
                 {/* Class Header */}
                 <div className="flex items-center gap-3 mb-4 px-2">
                   <GraduationCap size={16} className="text-accent" />
-                  <h2 className="text-[13px] font-black text-foreground tracking-wider">{cls}</h2>
+                  <h2 className="text-[13px] font-black text-foreground tracking-wider">{displayCls}</h2>
                   <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border ${colorClass}`}>
                     {clsStudents.length}명
                   </span>
@@ -470,7 +521,7 @@ export default function AdminStudentsPage() {
                             {resettingId === student.id ? '초기화 중...' : 'PW 초기화'}
                           </button>
                           <button
-                            onClick={() => handleDelete(student)}
+                            onClick={() => setDeleteConfirmStudent(student)}
                             disabled={deletingId === student.id}
                             className="flex items-center gap-1.5 text-[11px] font-black text-red-400 hover:text-red-600 border border-red-100 bg-red-50 px-3 py-2 rounded-xl active:scale-95 transition-all disabled:opacity-40"
                           >
@@ -488,13 +539,42 @@ export default function AdminStudentsPage() {
         </div>
       )}
 
-      {/* Edit/Add Modal */}
       {modalStudent !== undefined && (
         <StudentModal
           student={modalStudent}
           onClose={() => setModalStudent(undefined)}
           onSave={handleSave}
+          classList={classList}
         />
+      )}
+
+      {/* 학생 삭제 확인 모달 */}
+      {deleteConfirmStudent && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="glass w-full max-w-sm rounded-[2rem] border border-rose-200 shadow-2xl p-7 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={20} className="text-rose-500" />
+            </div>
+            <h3 className="text-[16px] font-black text-foreground mb-1">{deleteConfirmStudent.name} 삭제</h3>
+            <p className="text-[12px] text-accent mb-2">{deleteConfirmStudent.class_name}</p>
+            <p className="text-[12px] text-rose-500 font-bold mb-6">이 학생의 모든 데이터가 삭제됩니다.<br/>되돌릴 수 없습니다.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmStudent(null)}
+                className="flex-1 h-11 rounded-xl border border-foreground/10 text-[13px] font-black text-accent hover:text-foreground transition-all"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirmStudent)}
+                disabled={deletingId === deleteConfirmStudent.id}
+                className="flex-1 h-11 rounded-xl bg-rose-500 text-white text-[13px] font-black hover:-translate-y-0.5 transition-all disabled:opacity-30"
+              >
+                {deletingId === deleteConfirmStudent.id ? '삭제 중...' : '삭제 확인'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

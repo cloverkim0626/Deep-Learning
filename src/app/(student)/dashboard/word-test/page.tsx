@@ -1033,39 +1033,69 @@ export default function WordTestPage() {
         getTestSessionsByStudent(name).catch(() => []),
       ]);
       const st = sessions as { set_id?: string; completed_at?: string | null; correct_count?: number; total_questions?: number; test_type?: string }[];
-      // vocab 계열이 아닌 유의어/반의어 평정 흉수 (vocab_drill 제외)
-      const isSynType = (t?: string) => t === 'synonym' || t === 'antonym' || t === 'card_game';
-      setSynonymPassedSetIds(new Set(
-        st.filter(s => s.completed_at && s.set_id && isSynType(s.test_type))
-          .filter(s => s.total_questions && s.total_questions > 0 ? (s.correct_count ?? 0) / s.total_questions >= 0.9 : false)
-          .map(s => s.set_id as string)
-      ));
-      setVocabPassedSetIds(new Set(
-        st.filter(s => s.completed_at && s.set_id && s.test_type === 'vocab')
-          .filter(s => s.total_questions && s.total_questions > 0 ? (s.correct_count ?? 0) / s.total_questions >= 0.9 : false)
-          .map(s => s.set_id as string)
-      ));
-      setAllSets((assignments || []).filter(Boolean).map((s: {
-        id: string; workbook?: string; chapter?: string; label: string;
-        passage_number?: string; sub_category?: string; sub_sub_category?: string;
-        words?: { id: string; word: string; pos_abbr: string; korean: string; context?: string; context_korean?: string; synonyms: string | string[]; antonyms: string | string[]; test_synonym?: boolean; test_antonym?: boolean }[]
-      }) => ({
-        id: s.id,
-        workbook: s.workbook || '배당 교재',
-        chapter: [s.chapter || s.sub_category || '', s.sub_sub_category || ''].filter(Boolean).join(' · '),
-        passageNumber: s.passage_number ? `${s.passage_number}번` : '',
-        label: s.label,
-        words: (s.words || []).map(w => ({
-          id: w.id, word: w.word, posAbbr: w.pos_abbr, korean: w.korean,
-          context: w.context, contextKorean: w.context_korean,
-          synonyms: parseList(w.synonyms), antonyms: parseList(w.antonyms),
-          testSynonym: w.test_synonym ?? false, testAntonym: w.test_antonym ?? false,
-        }))
-      })).sort((a, b) => {
-        const sa = [a.workbook, a.chapter, a.passageNumber].join(' ');
-        const sb = [b.workbook, b.chapter, b.passageNumber].join(' ');
-        return sa.localeCompare(sb, 'ko');
-      }));
+
+      // ── PASS 판정: (set_id, typeGroup) 별 최고 정답 세션 1개만 사용 ──
+      // 같은 세트를 여러 번 응시해도 중복 집계 안 됨
+      const getTypeGroup = (t?: string) =>
+        (!t || t === 'vocab' || t === 'vocab_drill') ? 'vocab' : 'syn';
+
+      const bestMap: Record<string, { correct: number; total: number }> = {};
+      for (const s of st) {
+        if (!s.completed_at || !s.set_id || !s.total_questions || !s.correct_count) continue;
+        const tg = getTypeGroup(s.test_type);
+        const key = `${s.set_id}::${tg}`;
+        const prev = bestMap[key];
+        if (!prev || s.correct_count > prev.correct) {
+          bestMap[key] = { correct: s.correct_count, total: s.total_questions };
+        }
+      }
+
+      const synPassedIds = new Set<string>();
+      const vocabPassedIds = new Set<string>();
+      for (const [key, { correct, total }] of Object.entries(bestMap)) {
+        if (total === 0 || correct / total < 0.9) continue;
+        const [setId, tg] = key.split('::');
+        if (tg === 'syn') synPassedIds.add(setId);
+        else vocabPassedIds.add(setId);
+      }
+      setSynonymPassedSetIds(synPassedIds);
+      setVocabPassedSetIds(vocabPassedIds);
+
+      // ── 유/반의어 + 뜻쓰기 모두 통과한 세트는 목록에서 즉시 제외 ──
+      // (DB completed 처리 타이밍 관계없이 바로 반영)
+      const fullyPassedIds = new Set([...synPassedIds].filter(id => vocabPassedIds.has(id)));
+
+      // DB 완료 처리 비동기 트리거 (화면 반영은 이미 위에서 처리)
+      if (fullyPassedIds.size > 0) {
+        for (const id of fullyPassedIds) {
+          autoCompleteAssignmentIfAllPassed(name, id).catch(() => {});
+        }
+      }
+
+      setAllSets((assignments || []).filter(Boolean)
+        // 유/반의어 + 뜻쓰기 모두 통과한 세트는 목록에서 즉시 제외
+        .filter((s: { id: string }) => !fullyPassedIds.has(s.id))
+        .map((s: {
+          id: string; workbook?: string; chapter?: string; label: string;
+          passage_number?: string; sub_category?: string; sub_sub_category?: string;
+          words?: { id: string; word: string; pos_abbr: string; korean: string; context?: string; context_korean?: string; synonyms: string | string[]; antonyms: string | string[]; test_synonym?: boolean; test_antonym?: boolean }[]
+        }) => ({
+          id: s.id,
+          workbook: s.workbook || '배당 교재',
+          chapter: [s.chapter || s.sub_category || '', s.sub_sub_category || ''].filter(Boolean).join(' · '),
+          passageNumber: s.passage_number ? `${s.passage_number}번` : '',
+          label: s.label,
+          words: (s.words || []).map(w => ({
+            id: w.id, word: w.word, posAbbr: w.pos_abbr, korean: w.korean,
+            context: w.context, contextKorean: w.context_korean,
+            synonyms: parseList(w.synonyms), antonyms: parseList(w.antonyms),
+            testSynonym: w.test_synonym ?? false, testAntonym: w.test_antonym ?? false,
+          }))
+        })).sort((a, b) => {
+          const sa = [a.workbook, a.chapter, a.passageNumber].join(' ');
+          const sb = [b.workbook, b.chapter, b.passageNumber].join(' ');
+          return sa.localeCompare(sb, 'ko');
+        }));
     } catch (err) { console.error('세트 로딩 실패:', err); setAllSets([]); }
     setPhase("intro");
   }, []);
@@ -1126,17 +1156,23 @@ export default function WordTestPage() {
     const name = getStudentName();
     const idsToMark = selectedSetId ? [selectedSetId] : selectedSetIds.filter(id => id !== WRONG_DRILL_ID);
     try {
-      const synCount = gameWords.filter(w => w.testSynonym && w.synonyms.length > 0).length;
-      const antCount = gameWords.filter(w => w.testAntonym && w.antonyms.length > 0).length;
-      const totalWords = synCount + antCount;
       if (selectedSetId) {
+        // 단일 세트: gameWords가 해당 세트의 단어들
+        const synCount = gameWords.filter(w => w.testSynonym && w.synonyms.length > 0).length;
+        const antCount = gameWords.filter(w => w.testAntonym && w.antonyms.length > 0).length;
+        const totalWords = synCount + antCount;
         const session = await createTestSession({ student_name: name, set_id: selectedSetId, total_questions: totalWords, test_type: 'card_game' });
         if (session?.id) await completeTestSession(session.id, totalWords);
       } else {
-        // 멀티세트: 세트별로 세션 저장 (다음 로드 시 badge 유지)
+        // 멀티세트: 각 set_id 별로 해당 세트의 단어수만 기록 (이중집계 방지)
         for (const id of idsToMark) {
-          createTestSession({ student_name: name, set_id: id, total_questions: totalWords, test_type: 'card_game' })
-            .then(s => s?.id && completeTestSession(s.id, totalWords)).catch(() => {});
+          const setWords = allSets.find(s => s.id === id)?.words || [];
+          const setSynCount = setWords.filter(w => w.testSynonym && w.synonyms.length > 0).length;
+          const setAntCount = setWords.filter(w => w.testAntonym && w.antonyms.length > 0).length;
+          const setTotal = setSynCount + setAntCount;
+          if (setTotal === 0) continue;
+          createTestSession({ student_name: name, set_id: id, total_questions: setTotal, test_type: 'card_game' })
+            .then(s => s?.id && completeTestSession(s.id, setTotal)).catch(() => {});
         }
       }
     } catch { /* noop */ }

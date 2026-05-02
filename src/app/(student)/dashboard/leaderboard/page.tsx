@@ -1,15 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Trophy, Medal, RefreshCw, Flame } from "lucide-react";
+import { Trophy, Medal, RefreshCw, Flame, Crown } from "lucide-react";
 
 type Period = 'today' | 'week' | 'month';
 type RankEntry = { name: string; displayName: string; score: number; rank: number };
+type HofEntry = { rank: number; name: string; displayName: string; score: number; className: string; month: number; year: number };
 
 const PERIOD_LABELS: Record<Period, string> = {
   today: '오늘',
   week: '이번 주',
   month: '이번 달',
+};
+
+const MONTH_LABELS: Record<number, string> = {
+  1:'1월',2:'2월',3:'3월',4:'4월',5:'5월',6:'6월',
+  7:'7월',8:'8월',9:'9월',10:'10월',11:'11월',12:'12월',
 };
 
 function getMedalStyle(rank: number) {
@@ -19,9 +25,58 @@ function getMedalStyle(rank: number) {
   return { bg: '', text: 'text-foreground', icon: `${rank}`, glow: '' };
 }
 
+// ─── 명예의 전당 섹션 ────────────────────────────────────────────
+function HallOfFameSection({ entries }: { entries: HofEntry[] }) {
+  if (entries.length === 0) return null;
+  const monthLabel = entries[0] ? `${entries[0].year}년 ${MONTH_LABELS[entries[0].month]} MVP` : '';
+
+  const rankColors = [
+    { from: 'from-amber-400', to: 'to-yellow-300', border: 'border-amber-300/60', text: 'text-amber-900', badge: 'bg-amber-400' },
+    { from: 'from-slate-300', to: 'to-slate-200', border: 'border-slate-300/60', text: 'text-slate-700', badge: 'bg-slate-400' },
+    { from: 'from-orange-300', to: 'to-amber-200', border: 'border-orange-300/60', text: 'text-orange-800', badge: 'bg-orange-400' },
+  ];
+
+  return (
+    <div className="mx-5 mb-4 shrink-0">
+      {/* 헤더 */}
+      <div className="flex items-center gap-2 mb-2.5">
+        <Crown size={13} className="text-amber-500" strokeWidth={2.5} />
+        <span className="text-[11px] font-black text-amber-600 tracking-widest uppercase">{monthLabel}</span>
+        <div className="flex-1 h-px bg-amber-200/60" />
+      </div>
+      {/* 포디움 카드 */}
+      <div className="flex gap-2">
+        {entries.map((entry) => {
+          const c = rankColors[(entry.rank - 1)] || rankColors[2];
+          const initials = entry.displayName.slice(0, 1);
+          return (
+            <div
+              key={entry.rank}
+              className={`flex-1 rounded-2xl bg-gradient-to-br ${c.from} ${c.to} border ${c.border} p-3 text-center`}
+            >
+              <div className={`w-8 h-8 rounded-xl ${c.badge} flex items-center justify-center mx-auto mb-1.5 text-white font-black text-[14px] shadow-sm`}>
+                {initials}
+              </div>
+              <p className={`text-[11px] font-black ${c.text} truncate`}>{entry.displayName}</p>
+              <p className={`text-[9px] font-bold ${c.text} opacity-70 mt-0.5`}>{entry.score}점</p>
+            </div>
+          );
+        })}
+        {/* 빈 자리 채우기 */}
+        {Array.from({ length: 3 - entries.length }).map((_, i) => (
+          <div key={`empty-${i}`} className="flex-1 rounded-2xl border border-dashed border-foreground/10 p-3 text-center flex items-center justify-center">
+            <span className="text-[10px] text-accent/30 font-bold">미정</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function LeaderboardPage() {
   const [period, setPeriod] = useState<Period>('week');
   const [ranking, setRanking] = useState<RankEntry[]>([]);
+  const [hallOfFame, setHallOfFame] = useState<HofEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [myName, setMyName] = useState('');
   const [studentClass, setStudentClass] = useState('');
@@ -45,7 +100,8 @@ export default function LeaderboardPage() {
       const res = await fetch(`/api/leaderboard?${params}`);
       const data = await res.json();
       setRanking(data.ranking || []);
-    } catch { setRanking([]); }
+      setHallOfFame(data.hallOfFame || []);
+    } catch { setRanking([]); setHallOfFame([]); }
     setLoading(false);
   }, [period, studentClass]);
 
@@ -57,13 +113,13 @@ export default function LeaderboardPage() {
     <div className="flex flex-col h-full">
       {/* 헤더 */}
       <div className="px-5 pt-6 pb-4 shrink-0">
-        <div className="flex items-center gap-3 mb-5">
+        <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg">
             <Trophy size={20} className="text-white" strokeWidth={2.5} />
           </div>
           <div>
             <h1 className="text-[18px] font-black text-foreground">리더보드</h1>
-            <p className="text-[11px] text-accent font-bold">{studentClass ? `${studentClass} 반 기준` : '전체 기준'} · 정답 단어 수 합산</p>
+            <p className="text-[11px] text-accent font-bold">{studentClass ? `${studentClass} 기준` : '전체 기준'} · 정답 단어 수 합산</p>
           </div>
           <button onClick={load} className="ml-auto w-9 h-9 rounded-xl bg-foreground/5 flex items-center justify-center text-accent hover:bg-foreground/10 transition-all">
             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
@@ -83,7 +139,10 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      {/* 내 순위 배너 (항상 상단 고정) */}
+      {/* 명예의 전당 */}
+      <HallOfFameSection entries={hallOfFame} />
+
+      {/* 내 순위 배너 */}
       {myRank && (
         <div className="mx-5 mb-3 px-5 py-3.5 rounded-2xl bg-foreground text-background flex items-center gap-3 shrink-0">
           <Flame size={18} className="text-orange-300" />
