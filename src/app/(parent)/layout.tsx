@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -201,7 +201,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
         style={{ background: AURORA.header, borderColor: AURORA.border, backdropFilter: "blur(16px)" }}>
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: AURORA.primary }}>Report Portal</p>
-          <p className="text-[16px] font-black" style={{ color: '#e2ffe8' }}>{session.studentName} ?숇?紐⑤떂 ?몝</p>
+          <p className="text-[16px] font-black" style={{ color: '#e2ffe8' }}>{session.studentName} 학부모님</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => { setShowTrophy(true); loadLeaderboard(lbPeriod); }}

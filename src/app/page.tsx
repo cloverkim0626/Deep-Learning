@@ -230,20 +230,52 @@ export default function Home() {
 
         {/* CTA Buttons */}
         <div className="flex flex-col w-full gap-3">
-          {/* 학습 입장 */}
+          {/* 학습 입장 - 블랙홀 컨셉 */}
+          <style>{`
+            @keyframes bhPulse {
+              0%,100%{opacity:0.7;transform:scale(1)}
+              50%{opacity:1;transform:scale(1.03)}
+            }
+            @keyframes bhSpin {
+              0%{transform:rotate(0deg)}
+              100%{transform:rotate(360deg)}
+            }
+          `}</style>
           <Link
             href="/login?role=student"
-            className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] shadow-2xl hover:-translate-y-0.5 transition-all duration-500 overflow-hidden"
-            style={{background:'linear-gradient(135deg, rgba(30,90,200,0.72) 0%, rgba(10,50,140,0.82) 100%)', border:'1px solid rgba(100,170,255,0.28)', backdropFilter:'blur(12px)'}}
+            className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-500"
+            style={{
+              background:'#000000',
+              boxShadow:'0 4px 40px rgba(0,0,0,0.8), inset 0 0 60px rgba(20,20,60,0.5)',
+            }}
           >
-            <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-1000" style={{background:'rgba(120,190,255,0.1)'}} />
-            <div className="flex items-center gap-2 font-semibold text-[15px] mb-1 relative z-10 text-white">
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest" style={{background:'rgba(255,255,255,0.15)', color:'rgba(180,220,255,0.9)'}}>STUDENT</span>
-              <span className="text-[13px]">학습 공간 입장</span>
+            {/* 블랙홀 코어 - 중심 빛 */}
+            <div className="absolute pointer-events-none" style={{
+              top:'50%', right:'-10%', width:'120px', height:'120px',
+              background:'radial-gradient(ellipse, rgba(60,40,180,0.5) 0%, rgba(20,10,80,0.3) 30%, transparent 70%)',
+              borderRadius:'50%', filter:'blur(20px)',
+              transform:'translateY(-50%)',
+              animation:'bhPulse 4s ease-in-out infinite',
+            }}/>
+            {/* 강착 원반 - 빛의 테 */}
+            <div className="absolute pointer-events-none" style={{
+              top:'50%', right:'-5%', width:'80px', height:'80px',
+              background:'conic-gradient(from 0deg, transparent 0%, rgba(80,60,255,0.15) 20%, rgba(120,80,255,0.25) 40%, transparent 60%, rgba(60,40,200,0.1) 80%, transparent 100%)',
+              borderRadius:'50%', filter:'blur(8px)',
+              transform:'translateY(-50%)',
+              animation:'bhSpin 8s linear infinite',
+            }}/>
+            {/* 중력 왜곡 - 미묘한 렌즈 */}
+            <div className="absolute inset-0 pointer-events-none" style={{
+              background:'radial-gradient(ellipse 60% 100% at 95% 50%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.8) 100%)',
+            }}/>
+            <div className="flex items-center gap-2 font-semibold text-[15px] mb-1 relative z-10">
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest" style={{background:'rgba(255,255,255,0.08)', color:'rgba(200,180,255,0.8)', border:'1px solid rgba(255,255,255,0.08)'}}>STUDENT</span>
+              <span className="text-[13px] text-white">학습 공간 입장</span>
             </div>
-            <p className="text-[11px] font-normal relative z-10 leading-relaxed" style={{color:'rgba(180,220,255,0.65)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
-            <div className="absolute bottom-4 right-4 w-8 h-8 rounded-full flex items-center justify-center" style={{border:'1px solid rgba(255,255,255,0.2)'}}>
-              <ArrowRight strokeWidth={2} size={14} className="text-white/70 group-hover:translate-x-0.5 transition-transform" />
+            <p className="text-[11px] font-normal relative z-10 leading-relaxed" style={{color:'rgba(180,160,255,0.5)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
+            <div className="absolute bottom-4 right-4 w-8 h-8 rounded-full flex items-center justify-center relative z-10" style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)'}}>
+              <ArrowRight strokeWidth={2} size={14} className="text-white/40 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all" />
             </div>
           </Link>
 
@@ -264,52 +296,46 @@ export default function Home() {
               50%{transform:translate(12%,-8%) scale(1.15);opacity:0.95}
             }
             @keyframes auroraRipple {
-              0%,100%{opacity:0.4;transform:scaleX(1)}
-              50%{opacity:0.9;transform:scaleX(1.04)}
-            }
-            @keyframes auroraStarTwinkle {
-              0%,100%{opacity:0;transform:scale(0.5)}
-              50%{opacity:1;transform:scale(1)}
+              0%,100%{opacity:0.3;transform:scaleX(1)}
+              50%{opacity:0.7;transform:scaleX(1.04)}
             }
           `}</style>
           <Link
             href="/login/parent"
-            className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] shadow-2xl hover:-translate-y-1 transition-all duration-500 overflow-hidden"
+            className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] hover:-translate-y-1 transition-all duration-500 overflow-hidden"
             style={{
               background:'linear-gradient(160deg, #020b18 0%, #041a1a 50%, #080318 100%)',
-              border:'1px solid rgba(0,255,160,0.25)',
-              backdropFilter:'blur(14px)',
-              boxShadow:'0 8px 40px rgba(0,200,120,0.15), 0 0 0 1px rgba(0,255,160,0.1)',
+              boxShadow:'0 8px 40px rgba(0,0,0,0.4)',
             }}
           >
-            {/* ── 오로라 레이어 1: 에메랄드 그린 ── */}
+            {/* 오로라 레이어 1 */}
             <div className="absolute pointer-events-none" style={{
               top:'-40%', left:'-20%', width:'70%', height:'160%',
               background:'radial-gradient(ellipse, rgba(0,255,150,0.18) 0%, transparent 65%)',
               borderRadius:'50%', filter:'blur(22px)',
               animation:'auroraShift1 8s ease-in-out infinite',
             }}/>
-            {/* ── 오로라 레이어 2: 청록 ── */}
+            {/* 오로라 레이어 2 */}
             <div className="absolute pointer-events-none" style={{
               top:'-20%', right:'-15%', width:'60%', height:'120%',
               background:'radial-gradient(ellipse, rgba(0,200,255,0.22) 0%, transparent 65%)',
               borderRadius:'50%', filter:'blur(20px)',
               animation:'auroraShift2 11s ease-in-out infinite',
             }}/>
-            {/* ── 오로라 레이어 3: 보라/파랑 ── */}
+            {/* 오로라 레이어 3 */}
             <div className="absolute pointer-events-none" style={{
               bottom:'-30%', left:'30%', width:'70%', height:'130%',
               background:'radial-gradient(ellipse, rgba(120,60,255,0.22) 0%, transparent 65%)',
               borderRadius:'50%', filter:'blur(25px)',
               animation:'auroraShift3 13s ease-in-out infinite',
             }}/>
-            {/* ── 오로라 수평 리플 (빛의 커튼) ── */}
+            {/* 수평 리플 */}
             {[
-              {top:'20%', color:'rgba(0,255,180,0.18)', w:'90%', d:'4.5s', delay:'0s'},
-              {top:'45%', color:'rgba(0,180,255,0.14)', w:'75%', d:'6s', delay:'1.5s'},
-              {top:'68%', color:'rgba(100,80,255,0.12)', w:'85%', d:'5s', delay:'0.8s'},
+              {top:'20%', color:'rgba(0,255,180,0.14)', w:'90%', d:'4.5s', delay:'0s'},
+              {top:'45%', color:'rgba(0,180,255,0.10)', w:'75%', d:'6s', delay:'1.5s'},
+              {top:'68%', color:'rgba(100,80,255,0.09)', w:'85%', d:'5s', delay:'0.8s'},
             ].map((r,i) => (
-              <div key={i} className="absolute left-0 pointer-events-none rounded-full" style={{
+              <div key={i} className="absolute left-0 pointer-events-none" style={{
                 top:r.top, width:r.w, height:'1px',
                 background:`linear-gradient(90deg, transparent 0%, ${r.color} 30%, ${r.color} 70%, transparent 100%)`,
                 filter:'blur(3px)',
@@ -317,35 +343,18 @@ export default function Home() {
                 animationDelay:r.delay,
               }}/>
             ))}
-            {/* ── 별빛 반짝임 ── */}
-            {[
-              {top:'15%',left:'80%',s:'0.7s',delay:'0s'},
-              {top:'60%',left:'90%',s:'1.1s',delay:'0.4s'},
-              {top:'30%',left:'70%',s:'0.9s',delay:'0.8s'},
-              {top:'80%',left:'85%',s:'1.3s',delay:'0.2s'},
-            ].map((st,i) => (
-              <div key={i} className="absolute pointer-events-none" style={{
-                top:st.top, left:st.left, width:'3px', height:'3px',
-                background:'white', borderRadius:'50%',
-                boxShadow:'0 0 4px 1px rgba(150,255,220,0.8)',
-                animation:`auroraStarTwinkle ${st.s} ease-in-out infinite`,
-                animationDelay:st.delay,
-              }}/>
-            ))}
-            {/* ── 콘텐츠 ── */}
+            {/* 콘텐츠 */}
             <div className="relative z-10 flex items-center gap-2 font-semibold text-[15px] mb-1">
               <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest"
-                style={{background:'rgba(0,255,160,0.12)', color:'rgba(150,255,210,0.7)', border:'1px solid rgba(0,255,160,0.2)'}}>
+                style={{background:'rgba(0,255,160,0.10)', color:'rgba(140,255,200,0.65)'}}>
                 REPORT
               </span>
               <span className="text-[13px] font-black" style={{color:'#e2ffe8'}}>리포트 열람하기</span>
             </div>
-            <p className="relative z-10 text-[11px] font-normal leading-relaxed" style={{color:'rgba(150,255,210,0.65)'}}>
-              일간·월간 리포트 · 학습 현황 · 질의응답
-            </p>
+            <p className="relative z-10 text-[11px] font-normal leading-relaxed" style={{color:'rgba(150,255,210,0.55)'}}>일간·월간 리포트 · 학습 현황 · 질의응답</p>
             <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all group-hover:scale-110"
-              style={{background:'rgba(0,255,160,0.12)', border:'1px solid rgba(0,255,160,0.3)'}}>
-              <ArrowRight strokeWidth={2} size={14} style={{color:'#00ffa8'}}
+              style={{background:'rgba(0,255,160,0.08)'}}>
+              <ArrowRight strokeWidth={2} size={14} style={{color:'rgba(0,255,160,0.6)'}}
                 className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </Link>

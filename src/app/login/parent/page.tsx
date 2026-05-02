@@ -83,12 +83,6 @@ export default function ParentLoginPage() {
             0%,100%{opacity:0.5; transform:scaleX(1) skewY(0deg)}
             50%{opacity:1; transform:scaleX(1.06) skewY(0.5deg)}
           }
-          @keyframes starBlink {
-            0%,100%{opacity:0;transform:scale(0.3)} 50%{opacity:1;transform:scale(1)}
-          }
-          @keyframes starBlink2 {
-            0%,100%{opacity:0.2;transform:scale(0.6)} 50%{opacity:1;transform:scale(1.2)}
-          }
         `}</style>
 
         {/* ── 주요 오로라 글로우 블롭 5개 ── */}
