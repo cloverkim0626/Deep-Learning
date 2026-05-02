@@ -117,8 +117,4 @@ h1, h2, h3, .serif {
   animation: fadeInUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* font-black utility override for stronger weight */
-.font-black {
-  font-weight: 900;
-  letter-spacing: -0.02em;
-}
+
