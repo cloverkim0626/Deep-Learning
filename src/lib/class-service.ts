@@ -56,7 +56,8 @@ export type AttendanceRow = {
   created_at: string;
 };
 
-export type HwType = 'general' | 'vocab_test' | 'passage_read' | 'essay';
+export type HwType = 'general' | 'vocab_test' | 'passage_read' | 'essay' | 'test_prep' | 'other';
+
 
 export type HomeworkSlot = {
   id: string;
@@ -127,6 +128,7 @@ export type WeekData = {
   checks: Record<string, Record<string, HomeworkCheck>>; // slot_id → student → check
   slotStudents: Record<string, string[]>; // slot_id → assigned student names (empty = all)
   lessonNotes: Record<string, string>;   // session_id → note
+  rolloverChecks: Record<string, HomeworkCheck[]>; // date → checks whose rollover_date = this date
 };
 
 // ─── Helper: Date Utils ───────────────────────────────────────────────────────
@@ -147,7 +149,10 @@ export function addDays(d: Date, n: number): Date {
 }
 
 export function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 const DAY_OFFSET: Record<string, number> = {
@@ -443,18 +448,22 @@ export async function setSlotStudents(slotId: string, studentNames: string[]): P
 
 export async function getSlotStudents(slotIds: string[]): Promise<HomeworkSlotStudent[]> {
   if (slotIds.length === 0) return [];
-  const { data, error } = await supabase
-    .from('homework_slot_students').select('*').in('slot_id', slotIds);
-  if (error) throw error;
-  return (data || []) as HomeworkSlotStudent[];
+  try {
+    const { data, error } = await supabase
+      .from('homework_slot_students').select('*').in('slot_id', slotIds);
+    if (error) return []; // table may not exist yet
+    return (data || []) as HomeworkSlotStudent[];
+  } catch { return []; }
 }
 
 export async function getLessonNotes(sessionIds: string[]): Promise<LessonNote[]> {
   if (sessionIds.length === 0) return [];
-  const { data, error } = await supabase
-    .from('lesson_notes').select('*').in('session_id', sessionIds);
-  if (error) throw error;
-  return (data || []) as LessonNote[];
+  try {
+    const { data, error } = await supabase
+      .from('lesson_notes').select('*').in('session_id', sessionIds);
+    if (error) return [];
+    return (data || []) as LessonNote[];
+  } catch { return []; }
 }
 
 export async function upsertLessonNote(sessionId: string, note: string): Promise<void> {
@@ -478,6 +487,20 @@ export async function getHomeworkChecks(slotIds: string[]): Promise<HomeworkChec
     .from('homework_checks').select('*').in('slot_id', slotIds);
   if (error) throw error;
   return (data || []) as HomeworkCheck[];
+}
+
+/** 이월 과제: 특정 날짜들에 rollover_date가 해당하는 delayed checks 조회 */
+export async function getRolloverChecksForWeek(weekDates: string[]): Promise<HomeworkCheck[]> {
+  if (weekDates.length === 0) return [];
+  try {
+    const { data, error } = await supabase
+      .from('homework_checks')
+      .select('*')
+      .eq('status', 'delayed')
+      .in('rollover_date', weekDates);
+    if (error) return [];
+    return (data || []) as HomeworkCheck[];
+  } catch { return []; }
 }
 
 export async function upsertHomeworkCheck(payload: {

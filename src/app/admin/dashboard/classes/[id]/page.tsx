@@ -12,7 +12,7 @@ import {
   getAttendanceForSessions, upsertAttendance, markAllPresent,
   getHomeworkSlotsForSessions, createHomeworkSlotBatch, deleteHomeworkSlot,
   setSlotStudents, getSlotStudents, getLessonNotes, upsertLessonNote,
-  getHomeworkChecks, upsertHomeworkCheck,
+  getHomeworkChecks, getRolloverChecksForWeek, upsertHomeworkCheck,
   getAttendanceSummaryForClass, getHomeworkSummaryForClass, updateClass,
   getMonday, addDays, toDateStr, getDateForDay, getWeekLabel,
   ClassRow, ClassStudent, ClassSession, AttendanceRow,
@@ -23,24 +23,35 @@ import { getStudents } from "@/lib/database-service";
 
 // ─── Color + Style helpers ────────────────────────────────────────────────────
 const C: Record<string, { bg: string; text: string; border: string; badge: string; light: string }> = {
-  indigo: { bg: "bg-indigo-50", text: "text-indigo-700", border: "border-indigo-200", badge: "bg-indigo-500", light: "bg-indigo-100" },
-  rose:   { bg: "bg-rose-50",   text: "text-rose-700",   border: "border-rose-200",   badge: "bg-rose-500",   light: "bg-rose-100"   },
-  teal:   { bg: "bg-teal-50",   text: "text-teal-700",   border: "border-teal-200",   badge: "bg-teal-500",   light: "bg-teal-100"   },
-  amber:  { bg: "bg-amber-50",  text: "text-amber-700",  border: "border-amber-200",  badge: "bg-amber-500",  light: "bg-amber-100"  },
-  violet: { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200", badge: "bg-violet-500", light: "bg-violet-100" },
+  indigo: { bg: "bg-indigo-950/30", text: "text-indigo-400", border: "border-indigo-500/30", badge: "bg-indigo-500", light: "bg-indigo-500/10" },
+  rose:   { bg: "bg-rose-950/30",   text: "text-rose-400",   border: "border-rose-500/30",   badge: "bg-rose-500",   light: "bg-rose-500/10"   },
+  teal:   { bg: "bg-teal-950/30",   text: "text-teal-400",   border: "border-teal-500/30",   badge: "bg-teal-500",   light: "bg-teal-500/10"   },
+  amber:  { bg: "bg-amber-950/30",  text: "text-amber-400",  border: "border-amber-500/30",  badge: "bg-amber-500",  light: "bg-amber-500/10"  },
+  violet: { bg: "bg-violet-950/30", text: "text-violet-400", border: "border-violet-500/30", badge: "bg-violet-500", light: "bg-violet-500/10" },
 };
 
 const ATT_STYLE: Record<AttendanceStatus, string> = {
-  present: "bg-emerald-100 text-emerald-700 border border-emerald-200",
-  late:    "bg-amber-100 text-amber-700 border border-amber-200",
-  absent:  "bg-rose-100 text-rose-700 border border-rose-200",
+  present: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-black",
+  late:    "bg-amber-500/15 text-amber-400 border border-amber-500/30 font-black",
+  absent:  "bg-rose-500/15 text-rose-400 border border-rose-500/30 font-black",
 };
 const ATT_LABEL: Record<AttendanceStatus, string> = {
-  present: "✅ 출석", late: "⏰ 지각", absent: "❌ 결석",
+  present: "출석", late: "지각", absent: "결석",
+};
+const ATT_SHORT: Record<AttendanceStatus, string> = {
+  present: "출", late: "지", absent: "결",
 };
 
-const HW_TYPE_LABEL: Record<HwType, string> = {
-  general: "일반", vocab_test: "단어테스트", passage_read: "지문읽기", essay: "서술형",
+// 과제 종류 (테스트는 테스트 버튼으로 별도 처리)
+const HW_TYPES: { value: HwType; label: string }[] = [
+  { value: 'general',      label: '문제풀이' },
+  { value: 'passage_read', label: '워크북' },
+  { value: 'test_prep',    label: '테스트준비' },
+  { value: 'other',        label: '기타' },
+];
+const HW_TYPE_LABEL: Record<string, string> = {
+  general: '문제풀이', passage_read: '워크북', test_prep: '테스트준비',
+  essay: '지문복습', other: '기타', vocab_test: '단어테스트',
 };
 
 // ─── Attendance Quick Popup ───────────────────────────────────────────────────
@@ -269,9 +280,11 @@ function AddHomeworkModal({ session, allStudents, onClose, onAdded }: {
     finally { setSaving(false); }
   };
 
-  const HW_COLORS: Record<HwType, string> = {
-    general: 'bg-blue-100 text-blue-700', vocab_test: 'bg-amber-100 text-amber-700',
-    passage_read: 'bg-teal-100 text-teal-700', essay: 'bg-purple-100 text-purple-700',
+  const HW_COLORS: Record<string, string> = {
+    general: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+    passage_read: 'bg-teal-500/15 text-teal-300 border-teal-500/30',
+    test_prep: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+    other: 'bg-slate-500/15 text-slate-300 border-slate-500/30',
   };
 
   return (
@@ -293,10 +306,10 @@ function AddHomeworkModal({ session, allStudents, onClose, onAdded }: {
               </div>
               <input value={item.title} onChange={e => updateItem(item.id, { title: e.target.value })} placeholder="과제 제목" autoFocus={idx === 0}
                 className="w-full h-10 px-3 rounded-xl border border-foreground/10 bg-transparent text-[13px] font-bold outline-none focus:border-foreground/30" />
-              <div className="flex gap-2 flex-wrap">
-                {(Object.entries(HW_TYPE_LABEL) as [HwType, string][]).map(([t, label]) => (
+              <div className="flex gap-1.5 flex-wrap">
+                {HW_TYPES.map(({ value: t, label }) => (
                   <button key={t} onClick={() => updateItem(item.id, { hw_type: t })}
-                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black border-2 transition-all ${item.hw_type === t ? 'bg-foreground text-background border-foreground' : `${HW_COLORS[t]} border-transparent`}`}>{label}</button>
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-black border-2 transition-all ${item.hw_type === t ? 'bg-foreground text-background border-foreground' : `${HW_COLORS[t] ?? 'bg-foreground/8 text-foreground/50'} border-transparent`}`}>{label}</button>
                 ))}
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -620,7 +633,189 @@ function ReportPanel({ classId }: { classId: string }) {
   );
 }
 
-// ─── 이월 팝업 ─────────────────────────────────────────────────────────────────
+// ─── 테스트 세션 모달 (칼럼헤더 테스트 버튼) ─────────────────────────────────
+type TestEntry = { score: string; isPass: boolean | null; absent: boolean; absentReason: string; rolloverDate: string };
+
+function TestSessionModal({ session, students, existingSlot, existingChecks, onClose, onSaved }: {
+  session: ClassSession;
+  students: ClassStudent[];
+  existingSlot: HomeworkSlot | null;
+  existingChecks: Record<string, HomeworkCheck>;
+  onClose: () => void;
+  onSaved: (slot: HomeworkSlot, checks: Record<string, HomeworkCheck>) => void;
+}) {
+  const [testName, setTestName] = useState(existingSlot?.title || '단어테스트');
+  const [maxScore, setMaxScore] = useState(existingSlot?.max_score?.toString() || '');
+  const [passScore, setPassScore] = useState(existingSlot?.pass_score?.toString() || '');
+  const [isPF, setIsPF] = useState(existingSlot?.is_pf ?? false);
+  const [activeTab, setActiveTab] = useState(0);
+  const [entries, setEntries] = useState<Record<string, TestEntry>>(() => {
+    const init: Record<string, TestEntry> = {};
+    students.forEach(s => {
+      const c = existingChecks[s.student_name];
+      init[s.student_name] = { score: c?.score?.toString() || '', isPass: c?.is_pass ?? null, absent: c?.status === 'skipped', absentReason: c?.delay_reason || '결석', rolloverDate: c?.rollover_date || '' };
+    });
+    return init;
+  });
+  const [saving, setSaving] = useState(false);
+
+  const updateEntry = (name: string, patch: Partial<TestEntry>) =>
+    setEntries(prev => ({ ...prev, [name]: { ...prev[name], ...patch } }));
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // 슬롯 생성 또는 재사용
+      let slot = existingSlot;
+      if (!slot) {
+        const [newSlot] = await createHomeworkSlotBatch([{
+          session_id: session.id, title: testName.trim() || '단어테스트', hw_type: 'vocab_test',
+          max_score: maxScore ? Number(maxScore) : null,
+          pass_score: passScore ? Number(passScore) : null, is_pf: isPF,
+        }]);
+        slot = newSlot;
+      }
+      // 모든 학생 check 저장
+      const newChecks: Record<string, HomeworkCheck> = {};
+      await Promise.all(students.map(async s => {
+        const e = entries[s.student_name];
+        const status = e.absent ? 'skipped' as HwStatus : 'done' as HwStatus;
+        const autoPass = !isPF && passScore && e.score ? Number(e.score) >= Number(passScore) : null;
+        const payload = {
+          slot_id: slot!.id, student_name: s.student_name, status,
+          score: !e.absent && e.score ? Number(e.score) : null,
+          is_pass: e.absent ? null : (isPF ? e.isPass : autoPass),
+          delay_reason: e.absent ? e.absentReason : null,
+          rollover_date: e.absent && e.rolloverDate ? e.rolloverDate : null,
+        };
+        await upsertHomeworkCheck(payload);
+        newChecks[s.student_name] = { ...(existingChecks[s.student_name] || {} as HomeworkCheck), ...payload };
+      }));
+      onSaved(slot!, newChecks);
+    } catch (err) { alert((err as Error).message); }
+    finally { setSaving(false); }
+  };
+
+  const curStudent = students[activeTab];
+  const curEntry = curStudent ? entries[curStudent.student_name] : null;
+  const autoPass = curEntry && !isPF && passScore && curEntry.score
+    ? Number(curEntry.score) >= Number(passScore) : null;
+
+  return (
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[350] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="glass w-full max-w-lg max-h-[90vh] rounded-3xl border border-blue-500/20 shadow-2xl flex flex-col" style={{background: 'hsl(220 20% 10%)'}}>
+        {/* 헤더 */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-foreground/8 shrink-0">
+          <div>
+            <h3 className="text-[14px] font-black text-foreground">🎯 테스트 결과 기록</h3>
+            <p className="text-[11px] text-accent mt-0.5">{session.session_date}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-foreground/8 text-accent"><X size={14} /></button>
+        </div>
+
+        {/* 테스트 설정 */}
+        <div className="px-5 py-3 border-b border-foreground/6 bg-blue-50/40 shrink-0 space-y-2">
+          <input value={testName} onChange={e => setTestName(e.target.value)} placeholder="테스트명"
+            className="w-full h-9 px-3 rounded-xl border border-blue-500/20 bg-blue-500/10 text-[13px] font-bold outline-none text-blue-200" />
+          <div className="flex gap-2 items-center">
+            <input type="number" value={maxScore} onChange={e => setMaxScore(e.target.value)} placeholder="만점"
+              className="w-20 h-8 px-2 rounded-xl border border-blue-500/20 bg-blue-500/10 text-[12px] outline-none text-center text-blue-200" />
+            {!isPF && <input type="number" value={passScore} onChange={e => setPassScore(e.target.value)} placeholder="통과기준"
+              className="w-20 h-8 px-2 rounded-xl border border-blue-200 bg-white text-[12px] outline-none text-center" />}
+            <label className="flex items-center gap-1.5 cursor-pointer ml-auto">
+              <input type="checkbox" checked={isPF} onChange={e => setIsPF(e.target.checked)} className="rounded" />
+              <span className="text-[11px] font-bold text-blue-700">P/F</span>
+            </label>
+          </div>
+        </div>
+
+        {/* 학생 탭 */}
+        <div className="flex overflow-x-auto shrink-0 border-b border-foreground/6 px-2 pt-2 gap-1">
+          {students.map((s, i) => {
+            const e = entries[s.student_name];
+            const done = e.absent || !!e.score || e.isPass !== null;
+            return (
+              <button key={s.student_name} onClick={() => setActiveTab(i)}
+                className={`shrink-0 px-3 py-1.5 rounded-t-xl text-[11px] font-black border-b-2 transition-all whitespace-nowrap ${
+                  activeTab === i ? 'text-blue-700 border-blue-500 bg-blue-50' :
+                  done ? 'text-emerald-600 border-emerald-300 bg-emerald-50/50' :
+                  'text-accent border-transparent hover:text-foreground'
+                }`}>
+                {s.student_name} {done ? '✓' : ''}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 탭 컨텐츠 */}
+        {curStudent && curEntry && (
+          <div className="flex-1 px-5 py-5 space-y-4">
+            <p className="text-[13px] font-black text-foreground">{curStudent.student_name}</p>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={curEntry.absent} onChange={e => updateEntry(curStudent.student_name, { absent: e.target.checked })} className="w-4 h-4 rounded" />
+              <span className="text-[12px] font-bold text-rose-600">미응시</span>
+            </label>
+            {curEntry.absent && (
+              <div className="space-y-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest">미응시 사유</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {(['결석', '미암기', '기타'] as const).map(r => (
+                    <button key={r} onClick={() => updateEntry(curStudent.student_name, { absentReason: r })}
+                      className={`py-1.5 rounded-lg text-[11px] font-black border-2 transition-all ${curEntry.absentReason === r ? 'bg-rose-500 text-white border-rose-500' : 'border-rose-500/30 text-rose-400 hover:bg-rose-500/20'}`}>
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-rose-400/70 mb-1">연기 일자 (선택)</p>
+                  <input type="date" value={curEntry.rolloverDate} onChange={e => updateEntry(curStudent.student_name, { rolloverDate: e.target.value })}
+                    className="w-full h-8 px-2 rounded-lg border border-rose-500/20 bg-transparent text-[12px] outline-none" />
+                </div>
+              </div>
+            )}
+            {!curEntry.absent && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <input type="number" value={curEntry.score} onChange={e => updateEntry(curStudent.student_name, { score: e.target.value })}
+                    placeholder="점수" max={maxScore || undefined}
+                    className="w-28 h-12 px-3 rounded-xl border border-blue-500/30 bg-blue-500/10 text-[18px] font-black outline-none text-center text-blue-200" />
+                  {maxScore && <span className="text-[14px] font-black text-accent">/ {maxScore}</span>}
+                </div>
+                {isPF ? (
+                  <div className="flex gap-2">
+                    <button onClick={() => updateEntry(curStudent.student_name, { isPass: true })}
+                      className={`flex-1 py-2 rounded-xl text-[12px] font-black border-2 ${curEntry.isPass === true ? 'bg-emerald-500 text-white border-emerald-500' : 'border-emerald-200 text-emerald-600'}`}>Pass ✓</button>
+                    <button onClick={() => updateEntry(curStudent.student_name, { isPass: false })}
+                      className={`flex-1 py-2 rounded-xl text-[12px] font-black border-2 ${curEntry.isPass === false ? 'bg-rose-500 text-white border-rose-500' : 'border-rose-200 text-rose-600'}`}>Fail ✗</button>
+                  </div>
+                ) : autoPass !== null && (
+                  <p className={`text-[12px] font-black text-center ${autoPass ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {autoPass ? '✅ 통과' : `❌ 미통과 (기준 ${passScore}점)`}
+                  </p>
+                )}
+                <div className="flex gap-1.5">
+                  {activeTab > 0 && <button onClick={() => setActiveTab(i => i - 1)} className="flex-1 h-8 rounded-xl border border-foreground/10 text-[11px] font-black text-accent">← 이전</button>}
+                  {activeTab < students.length - 1 && <button onClick={() => setActiveTab(i => i + 1)} className="flex-1 h-8 rounded-xl bg-blue-50 border border-blue-200 text-[11px] font-black text-blue-700">다음 →</button>}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 저장 버튼 */}
+        <div className="px-5 py-4 border-t border-foreground/8 flex gap-3 shrink-0">
+          <button onClick={onClose} className="flex-1 h-11 rounded-xl border border-foreground/10 text-[13px] font-black text-accent">취소</button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex-1 h-11 rounded-xl bg-blue-600 text-white text-[13px] font-black hover:-translate-y-0.5 transition-all disabled:opacity-30">
+            {saving ? '저장 중...' : `전체 저장 (${students.length}명)`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function RolloverPopup({ slotId, studentName, slotTitle, existingCheck, onClose, onSaved }: {
   slotId: string; studentName: string; slotTitle: string;
   existingCheck: HomeworkCheck | null;
@@ -792,6 +987,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
   const [rolloverPopup, setRolloverPopup] = useState<{ slotId: string; studentName: string; slotTitle: string; existingCheck: HomeworkCheck | null } | null>(null);
   const [testResultPopup, setTestResultPopup] = useState<{ slot: HomeworkSlot; studentName: string; existingCheck: HomeworkCheck | null } | null>(null);
+  const [addTestModal, setAddTestModal] = useState<WeekColumn | null>(null);
 
   // ── 초기 로드 ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -868,7 +1064,16 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       const lessonNotesMap: Record<string, string> = {};
       for (const n of noteRows) lessonNotesMap[n.session_id] = n.note;
 
-      setWeekData({ columns, attMap, slots: slotMap, checks: checkMap, slotStudents: slotStudentsMap, lessonNotes: lessonNotesMap });
+      // 이월 과제: rollover_date가 이번 주에 해당하는 delayed checks
+      const rolloverRaws = weekDates.length > 0 ? await getRolloverChecksForWeek(weekDates) : [];
+      const rolloverMap: Record<string, HomeworkCheck[]> = {};
+      for (const r of rolloverRaws) {
+        const d = r.rollover_date!;
+        if (!rolloverMap[d]) rolloverMap[d] = [];
+        rolloverMap[d].push(r);
+      }
+
+      setWeekData({ columns, attMap, slots: slotMap, checks: checkMap, slotStudents: slotStudentsMap, lessonNotes: lessonNotesMap, rolloverChecks: rolloverMap });
     } catch (e) { console.error(e); }
     finally { setWeekLoading(false); }
   }, [classId]);
@@ -956,7 +1161,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
     <div className="flex flex-col h-full overflow-hidden">
 
       {/* ── 헤더 ─────────────────────────────────────────────────────────── */}
-      <div className={`px-6 py-4 border-b border-foreground/10 glass shrink-0`}>
+      <div className="px-5 py-3 border-b shrink-0" style={{borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(10,12,18,0.8)'}}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 min-w-0">
             <button onClick={() => router.push("/admin/dashboard/classes")}
@@ -1016,7 +1221,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       {tab === 'weekly' && (
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* 주간 네비게이션 */}
-          <div className="px-6 py-3 border-b border-foreground/5 flex items-center justify-between shrink-0 bg-accent-light/10">
+          <div className="px-5 py-2 border-b flex items-center justify-between shrink-0" style={{borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(8,10,14,0.6)'}}>
             <button onClick={() => setWeekStart(d => addDays(d, -7))}
               className="flex items-center gap-1 h-8 px-3 rounded-xl border border-foreground/10 text-[12px] font-black text-accent hover:text-foreground hover:border-foreground/30 transition-all">
               <ChevronLeft size={14} /> 이전 주
@@ -1049,14 +1254,14 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           ) : (
             /* ── 주간 그리드 ── */
-            <div className="flex-1 overflow-auto custom-scrollbar">
+            <div className="flex-1 overflow-auto custom-scrollbar" style={{background: '#0d0f14'}}>
               <table className="min-w-full border-separate border-spacing-0">
-                <thead className="sticky top-0 z-20">
+                <thead className="sticky top-0 z-20" style={{background: '#0d0f14'}}>
                   <tr>
                     {/* 학생 컬럼 헤더 */}
-                    <th className="sticky left-0 z-30 bg-background border-b border-r border-foreground/10 px-4 py-3 text-left min-w-[120px]">
-                      <p className="text-[10px] font-black text-accent uppercase tracking-widest">학생</p>
-                      <p className="text-[10px] text-accent/50">{students.length}명</p>
+                    <th className="sticky left-0 z-30 border-b border-r px-2 py-2 text-left min-w-[80px] max-w-[100px]" style={{background: '#0d0f14', borderColor: 'rgba(255,255,255,0.08)'}}>
+                      <p className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">학생</p>
+                      <p className="text-[9px] text-foreground/25">{students.length}명</p>
                     </th>
                     {/* 날짜별 컬럼 헤더 */}
                     {weekData.columns.map(col => {
@@ -1065,28 +1270,32 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                       const colColor = col.is_clinic ? 'text-teal-600' : c.text;
                       return (
                         <th key={col.date}
-                          className={`border-b border-r border-foreground/10 px-3 py-2 min-w-[160px] ${today ? 'bg-foreground/4' : 'bg-background'}`}>
+                          className="border-b border-r px-2 py-2 min-w-[140px]" style={{background: today ? 'rgba(99,102,241,0.08)' : '#0d0f14', borderColor: 'rgba(255,255,255,0.08)'}}>
                           {/* 날짜 제목 */}
-                          <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center justify-between mb-1">
                             <div>
-                              <p className={`text-[12px] font-black ${today ? colColor : 'text-foreground'}`}>
+                              <p className={`text-[11px] font-black ${today ? colColor : 'text-foreground/70'}`}>
                                 {col.dayName} {col.date.slice(5).replace('-', '/')}
-                                {col.is_clinic && <span className="ml-1 text-[9px] bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded font-black">클리닉</span>}
-                                {today && <span className="ml-1 text-[9px] bg-foreground text-background px-1.5 py-0.5 rounded font-black">오늘</span>}
+                                {col.is_clinic && <span className="ml-1 text-[8px] bg-teal-500/20 text-teal-400 px-1 py-0.5 rounded font-black">클리닉</span>}
+                                {today && <span className="ml-1 text-[8px] bg-foreground/80 text-background px-1 py-0.5 rounded font-black">오늘</span>}
                               </p>
-                              <p className="text-[10px] text-accent/60">{col.time}{col.end_time ? `~${col.end_time}` : ''}</p>
+                              <p className="text-[9px] text-foreground/30">{col.time}{col.end_time ? `~${col.end_time}` : ''}</p>
                             </div>
                           </div>
                           {/* 세션 액션 버튼들 */}
                           {hasSes ? (
                             <div className="flex gap-1 flex-wrap">
                               <button onClick={() => handleMarkAllPresent(col, col.session!)}
-                                className="flex items-center gap-1 h-6 px-2 bg-emerald-500 text-white rounded-lg text-[10px] font-black hover:-translate-y-0.5 transition-all">
-                                <Check size={9} /> 전체출석
+                                className="flex items-center gap-1 h-5 px-1.5 bg-emerald-500/80 text-white rounded-md text-[9px] font-black hover:bg-emerald-500 transition-all">
+                                <Check size={8} /> 전체출석
                               </button>
                               <button onClick={() => setAddHwModal(col)}
-                                className="flex items-center gap-1 h-6 px-2 bg-foreground/10 text-foreground rounded-lg text-[10px] font-black hover:bg-foreground/20 transition-all">
-                                <Plus size={9} /> 과제
+                                className="flex items-center gap-1 h-5 px-1.5 bg-blue-500/15 text-blue-300 border border-blue-500/30 rounded-md text-[9px] font-black hover:bg-blue-500/25 transition-all">
+                                <Plus size={8} /> 과제
+                              </button>
+                              <button onClick={() => setAddTestModal(col)}
+                                className="flex items-center gap-1 h-5 px-1.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 rounded-md text-[9px] font-black hover:bg-amber-500/25 transition-all">
+                                🎯 테스트
                               </button>
                               <button onClick={async () => {
                                 if (!confirm("이 세션을 삭제할까요?")) return;
@@ -1095,13 +1304,13 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                   ...prev,
                                   columns: prev.columns.map(cc => cc.date === col.date ? { ...cc, session: null } : cc),
                                 } : null);
-                              }} className="h-6 px-1.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                                <Trash2 size={9} />
+                              }} className="h-5 px-1 text-red-400/50 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all">
+                                <Trash2 size={8} />
                               </button>
                             </div>
                           ) : (
                             <button onClick={() => handleCreateSession(col)}
-                              className={`h-6 px-2 rounded-lg text-[10px] font-black border transition-all hover:-translate-y-0.5 ${col.date <= toDateStr(new Date()) ? 'border-foreground/20 text-foreground bg-foreground/5 hover:bg-foreground/10' : 'border-foreground/10 text-accent/40'}`}>
+                              className={`h-5 px-2 rounded-md text-[9px] font-black border transition-all hover:-translate-y-0.5 ${col.date <= toDateStr(new Date()) ? 'border-foreground/20 text-foreground/60 bg-foreground/5 hover:bg-foreground/10' : 'border-foreground/8 text-foreground/20'}`}>
                               {col.date <= toDateStr(new Date()) ? '+ 수업 기록' : '예정'}
                             </button>
                           )}
@@ -1124,16 +1333,13 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                   ) : students.map((stu, si) => (
                     <tr key={stu.student_name} className={si % 2 === 0 ? '' : 'bg-foreground/1.5'}>
                       {/* 학생 이름 셀 */}
-                      <td className="sticky left-0 bg-background border-b border-r border-foreground/8 px-4 py-2 z-10"
-                        style={{ background: si % 2 === 0 ? undefined : 'hsl(var(--foreground)/0.015)' }}>
+                      <td className="sticky left-0 border-b border-r px-2 py-1.5 z-10 min-w-[80px] max-w-[100px]"
+                        style={{ background: si % 2 === 0 ? '#0d0f14' : '#0f1117', borderColor: 'rgba(255,255,255,0.06)' }}>
                         <div className="flex items-center justify-between group">
-                          <div>
-                            <p className="text-[12px] font-black text-foreground">{stu.student_name}</p>
-                            <p className="text-[9px] text-accent">{stu.student_class}</p>
-                          </div>
+                          <p className="text-[11px] font-black text-foreground/90 leading-tight truncate">{stu.student_name}</p>
                           <button onClick={() => setRemoveConfirm(stu.student_name)}
-                            className="opacity-0 group-hover:opacity-100 p-1 text-red-300 hover:text-red-500 transition-all">
-                            <X size={10} />
+                            className="opacity-0 group-hover:opacity-100 p-0.5 text-red-300 hover:text-red-500 transition-all shrink-0 ml-0.5">
+                            <X size={9} />
                           </button>
                         </div>
                       </td>
@@ -1153,18 +1359,18 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
 
                         return (
                           <td key={col.date}
-                            className={`border-b border-r border-foreground/8 px-2 py-1.5 align-top ${isToday(col.date) ? 'bg-foreground/3' : ''}`}>
+                            className="border-b border-r px-1.5 py-1 align-top" style={{borderColor: 'rgba(255,255,255,0.05)', background: isToday(col.date) ? 'rgba(99,102,241,0.05)' : (si % 2 === 0 ? '#0d0f14' : '#0f1117')}}>
                             {col.session ? (
-                              <div className="flex flex-col gap-1 min-w-[150px]">
-                                {/* 출결 버튼 */}
+                              <div className="flex flex-col gap-0.5 min-w-[130px]">
+                                {/* 출결 버튼 - 컴팩트 */}
                                 <button
                                   onClick={() => setAttPopup({ date: col.date, studentName: stu.student_name, session: col.session })}
-                                  className={`w-full text-center px-2 py-1.5 rounded-xl text-[11px] font-black transition-all hover:-translate-y-0.5 ${att ? ATT_STYLE[att.status] : 'border border-dashed border-foreground/20 text-foreground/30 hover:border-foreground/40'}`}>
+                                  className={`w-full text-center px-1.5 py-1 rounded-lg text-[10px] font-black transition-all hover:opacity-80 ${att ? ATT_STYLE[att.status] : 'border border-dashed border-foreground/15 text-foreground/20 hover:border-foreground/30'}`}>
                                   {att ? (<>
-                                    {ATT_LABEL[att.status]}
-                                    {att.status === 'late' && att.late_arrival_time && <span className="block text-[9px] opacity-70">{att.late_arrival_time}</span>}
-                                    {att.status === 'absent' && att.makeup_type && <span className="block text-[9px] opacity-70">{att.makeup_type === 'direct' ? '직접보강' : '영상보강'}</span>}
-                                  </>) : '미기록'}
+                                    <span>{ATT_SHORT[att.status]}</span>
+                                    {att.status === 'late' && att.late_arrival_time && <span className="ml-1 text-[8px] opacity-60">{att.late_arrival_time.slice(0,5)}</span>}
+                                    {att.status === 'absent' && att.makeup_type && <span className="ml-1 text-[8px] opacity-60">{att.makeup_type === 'direct' ? '보강' : '영상'}</span>}
+                                  </>) : '—'}
                                 </button>
 
                                 {/* 일반과제 체크 */}
@@ -1172,24 +1378,36 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                   const chk = weekData.checks[slot.id]?.[stu.student_name];
                                   const status = chk?.status || 'pending';
                                   return (
-                                    <div key={slot.id} className="flex items-center gap-1">
+                                    <div key={slot.id} className="flex items-center gap-0.5">
                                       <button
                                         onClick={async () => {
                                           const newStatus: HwStatus = status === 'done' ? 'pending' : 'done';
                                           await upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: newStatus });
                                           setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id] || {}), [stu.student_name]: { ...(chk || {}), slot_id: slot.id, student_name: stu.student_name, status: newStatus } as HomeworkCheck } } } : prev);
                                         }}
-                                        className={`flex-1 text-left px-2 py-1 rounded-lg text-[10px] font-bold transition-all truncate max-w-[100px] ${
-                                          status === 'done' ? 'bg-emerald-100 text-emerald-700 line-through opacity-70' :
-                                          status === 'delayed' ? 'bg-amber-100 text-amber-700' : 'bg-foreground/6 text-foreground/60 hover:bg-foreground/12'
+                                        className={`flex-1 text-left px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all truncate ${
+                                          status === 'done' ? 'bg-emerald-500/15 text-emerald-400 line-through opacity-70' :
+                                          status === 'delayed' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/20' :
+                                          'bg-foreground/5 text-foreground/50 hover:bg-foreground/10 border border-foreground/8'
                                         }`}>
-                                        {status === 'done' ? '✅' : status === 'delayed' ? '⏩' : '☐'} {slot.title}
+                                        {status === 'done' ? '✓' : status === 'delayed' ? '⏩' : '○'} {slot.title}
                                       </button>
                                       {status !== 'done' && (
-                                        <button onClick={() => setRolloverPopup({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk || null })}
-                                          className="shrink-0 px-1.5 py-1 rounded-lg text-[9px] font-black bg-orange-50 text-orange-500 hover:bg-orange-100 transition-all border border-orange-200">
-                                          이월
-                                        </button>
+                                        <>
+                                          <button onClick={async () => {
+                                            await upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: 'done' });
+                                            setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id] || {}), [stu.student_name]: { ...(chk || {}), slot_id: slot.id, student_name: stu.student_name, status: 'done' } as HomeworkCheck } } } : prev);
+                                          }}
+                                            className="shrink-0 px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 transition-all border border-emerald-500/20"
+                                            title="완료 처리">
+                                            ✓완
+                                          </button>
+                                          <button onClick={() => setRolloverPopup({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk || null })}
+                                            className="shrink-0 px-1 py-0.5 rounded-md text-[8px] font-black bg-orange-500/15 text-orange-400 hover:bg-orange-500/25 transition-all border border-orange-500/20"
+                                            title="이월 처리">
+                                            ⏩이
+                                          </button>
+                                        </>
                                       )}
                                     </div>
                                   );
@@ -1217,6 +1435,28 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                 {mySlots.length === 0 && sessionSlots.length > 0 && (
                                   <p className="text-[9px] text-foreground/25 text-center py-0.5">배당없음</p>
                                 )}
+                                {/* 이월된 과제 표시 */}
+                                {(weekData.rolloverChecks[col.date] || [])
+                                  .filter(rc => rc.student_name === stu.student_name)
+                                  .map(rc => (
+                                    <div key={rc.id || rc.slot_id + rc.student_name} className="flex items-center gap-0.5">
+                                      <div className="flex-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-orange-500/10 text-orange-300 border border-orange-500/20 truncate">
+                                        ⏩ 이월과제
+                                      </div>
+                                      <button onClick={async () => {
+                                        await upsertHomeworkCheck({ slot_id: rc.slot_id, student_name: stu.student_name, status: 'done', rollover_date: null });
+                                        setWeekData(prev => {
+                                          if (!prev) return prev;
+                                          const newRollovers = { ...prev.rolloverChecks };
+                                          newRollovers[col.date] = (newRollovers[col.date] || []).filter(r => !(r.slot_id === rc.slot_id && r.student_name === stu.student_name));
+                                          return { ...prev, rolloverChecks: newRollovers, checks: { ...prev.checks, [rc.slot_id]: { ...(prev.checks[rc.slot_id] || {}), [stu.student_name]: { ...(rc as HomeworkCheck), status: 'done', rollover_date: null } } } };
+                                        });
+                                      }}
+                                        className="shrink-0 px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20">
+                                        ✓완
+                                      </button>
+                                    </div>
+                                  ))}
                               </div>
                             ) : (
                               <div className="text-center text-[10px] text-foreground/20 py-1">—</div>
@@ -1228,15 +1468,15 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                   ))}
 
                   {/* 수업내역 + 과제목록 행 */}
-                  <tr className="bg-foreground/3">
-                    <td className="sticky left-0 bg-foreground/5 border-t border-b border-r border-foreground/10 px-4 py-2 z-10">
+                  <tr>
+                    <td className="sticky left-0 border-t border-b border-r px-4 py-2 z-10" style={{background: '#080a0e', borderColor: 'rgba(255,255,255,0.08)'}}>
                       <p className="text-[9px] font-black text-accent uppercase tracking-widest">📋 수업내역</p>
                     </td>
                     {weekData.columns.map(col => {
                       const sessionNote = col.session ? (weekData.lessonNotes[col.session.id] || '') : '';
                       const slots = col.session ? (weekData.slots[col.session.id] || []) : [];
                       return (
-                        <td key={col.date} className="border-t border-b border-r border-foreground/8 px-2 py-2 align-top">
+                        <td key={col.date} className="border-t border-b border-r px-2 py-2 align-top" style={{background: '#080a0e', borderColor: 'rgba(255,255,255,0.07)'}}>
                           {col.session ? (
                             <div className="space-y-1.5 min-w-[150px]">
                               <textarea
@@ -1248,7 +1488,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                 }}
                                 rows={2}
                                 placeholder="수업 내용 메모..."
-                                className="w-full px-2 py-1.5 rounded-lg border border-foreground/10 bg-background text-[10px] outline-none focus:border-foreground/30 resize-none"
+                                className="w-full px-2 py-1.5 rounded-lg border border-white/8 bg-white/3 text-[10px] outline-none focus:border-white/20 resize-none text-white/60"
                               />
                               {slots.map(slot => (
                                 <div key={slot.id} className="flex items-center justify-between gap-1 px-2 py-1 rounded-lg bg-background border border-foreground/8">
@@ -1399,6 +1639,31 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
               checks: { ...prev.checks, [testResultPopup.slot.id]: { ...(prev.checks[testResultPopup.slot.id] || {}), [testResultPopup.studentName]: check } }
             } : prev);
             setTestResultPopup(null);
+          }}
+        />
+      )}
+
+      {/* ─── 테스트 추가 모달 (헤더 버튼) ─────────────────────────────── */}
+      {addTestModal && addTestModal.session && (
+        <TestSessionModal
+          session={addTestModal.session}
+          students={students}
+          existingSlot={null}
+          existingChecks={{}}
+          onClose={() => setAddTestModal(null)}
+          onSaved={(slot, checks) => {
+            setWeekData(prev => {
+              if (!prev || !addTestModal.session) return prev;
+              const sid = addTestModal.session.id;
+              const newChecks = { ...prev.checks };
+              newChecks[slot.id] = checks;
+              return {
+                ...prev,
+                slots: { ...prev.slots, [sid]: [...(prev.slots[sid] || []), slot] },
+                checks: newChecks,
+              };
+            });
+            setAddTestModal(null);
           }}
         />
       )}
