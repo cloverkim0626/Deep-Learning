@@ -31,9 +31,9 @@ const C: Record<string, { bg: string; text: string; border: string; badge: strin
 };
 
 const ATT_STYLE: Record<AttendanceStatus, string> = {
-  present: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-black",
-  late:    "bg-amber-500/15 text-amber-400 border border-amber-500/30 font-black",
-  absent:  "bg-rose-500/15 text-rose-400 border border-rose-500/30 font-black",
+  present: "bg-emerald-100 text-emerald-700 border border-emerald-300 font-black",
+  late:    "bg-amber-100 text-amber-700 border border-amber-300 font-black",
+  absent:  "bg-rose-100 text-rose-700 border border-rose-300 font-black",
 };
 const ATT_LABEL: Record<AttendanceStatus, string> = {
   present: "출석", late: "지각", absent: "결석",
@@ -1322,7 +1322,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       {tab === 'weekly' && (
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* 주간 네비게이션 */}
-          <div className="px-5 py-2 border-b flex items-center justify-between shrink-0" style={{borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(8,10,14,0.6)'}}>
+          <div className="px-5 py-2 border-b flex items-center justify-between shrink-0" style={{borderColor: '#e2e8f0', background: '#ffffff'}}>
             <button onClick={() => setWeekStart(d => addDays(d, -7))}
               className="flex items-center gap-1 h-8 px-3 rounded-xl border border-foreground/10 text-[12px] font-black text-accent hover:text-foreground hover:border-foreground/30 transition-all">
               <ChevronLeft size={14} /> 이전 주
@@ -1355,14 +1355,14 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           ) : (
             /* ── 주간 그리드 ── */
-            <div className="flex-1 overflow-auto custom-scrollbar" style={{background: '#0d0f14'}}>
+            <div className="flex-1 overflow-auto custom-scrollbar" style={{background: '#f8fafc'}}>
               <table className="min-w-full border-separate border-spacing-0">
-                <thead className="sticky top-0 z-20" style={{background: '#0d0f14'}}>
+                <thead className="sticky top-0 z-20" style={{background: '#f8fafc'}}>
                   <tr>
                     {/* 학생 컬럼 헤더 */}
-                    <th className="sticky left-0 z-30 border-b border-r px-2 py-2 text-left min-w-[80px] max-w-[100px]" style={{background: '#0d0f14', borderColor: 'rgba(255,255,255,0.08)'}}>
+                    <th className="sticky left-0 z-30 border-b border-r px-2 py-2 text-left min-w-[80px] max-w-[100px]" style={{background: '#f8fafc', borderColor: '#e2e8f0'}}>
                       <p className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">학생</p>
-                      <p className="text-[9px] text-foreground/25">{students.length}명</p>
+                      <p className="text-[9px] text-slate-400">{students.length}명</p>
                     </th>
                     {/* 날짜별 컬럼 헤더 */}
                     {weekData.columns.map(col => {
@@ -1371,16 +1371,16 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                       const colColor = col.is_clinic ? 'text-teal-600' : c.text;
                       return (
                         <th key={col.date}
-                          className="border-b border-r px-2 py-2 min-w-[140px]" style={{background: today ? 'rgba(99,102,241,0.08)' : '#0d0f14', borderColor: 'rgba(255,255,255,0.08)'}}>
+                          className="border-b border-r px-2 py-2 min-w-[140px]" style={{background: today ? '#eef2ff' : '#f8fafc', borderColor: '#e2e8f0'}}>
                           {/* 날짜 제목 */}
                           <div className="flex items-center justify-between mb-1">
                             <div>
-                              <p className={`text-[11px] font-black ${today ? colColor : 'text-foreground/70'}`}>
+                              <p className={`text-[11px] font-black ${today ? colColor : 'text-slate-700'}`}>
                                 {col.dayName} {col.date.slice(5).replace('-', '/')}
-                                {col.is_clinic && <span className="ml-1 text-[8px] bg-teal-500/20 text-teal-400 px-1 py-0.5 rounded font-black">클리닉</span>}
-                                {today && <span className="ml-1 text-[8px] bg-foreground/80 text-background px-1 py-0.5 rounded font-black">오늘</span>}
+                                {col.is_clinic && <span className="ml-1 text-[8px] bg-teal-100 text-teal-700 px-1 py-0.5 rounded font-black">클리닉</span>}
+                                {today && <span className="ml-1 text-[8px] bg-slate-800 text-white px-1 py-0.5 rounded font-black">오늘</span>}
                               </p>
-                              <p className="text-[9px] text-foreground/30">{col.time}{col.end_time ? `~${col.end_time}` : ''}</p>
+                              <p className="text-[9px] text-slate-400">{col.time}{col.end_time ? `~${col.end_time}` : ''}</p>
                             </div>
                           </div>
                           {/* 세션 액션 버튼들 */}
@@ -1391,11 +1391,11 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                 <Check size={8} /> 전체출석
                               </button>
                               <button onClick={() => setAddHwModal(col)}
-                                className="flex items-center gap-1 h-5 px-1.5 bg-blue-500/15 text-blue-300 border border-blue-500/30 rounded-md text-[9px] font-black hover:bg-blue-500/25 transition-all">
+                                className="flex items-center gap-1 h-5 px-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-md text-[9px] font-black hover:bg-blue-100 transition-all">
                                 <Plus size={8} /> 과제
                               </button>
                               <button onClick={() => setAddTestModal(col)}
-                                className="flex items-center gap-1 h-5 px-1.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 rounded-md text-[9px] font-black hover:bg-amber-500/25 transition-all">
+                                className="flex items-center gap-1 h-5 px-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-md text-[9px] font-black hover:bg-amber-100 transition-all">
                                 🎯 테스트
                               </button>
                               <button onClick={async () => {
@@ -1411,7 +1411,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                             </div>
                           ) : (
                             <button onClick={() => handleCreateSession(col)}
-                              className={`h-5 px-2 rounded-md text-[9px] font-black border transition-all hover:-translate-y-0.5 ${col.date <= toDateStr(new Date()) ? 'border-foreground/20 text-foreground/60 bg-foreground/5 hover:bg-foreground/10' : 'border-foreground/8 text-foreground/20'}`}>
+                              className={`h-5 px-2 rounded-md text-[9px] font-black border transition-all hover:-translate-y-0.5 ${col.date <= toDateStr(new Date()) ? 'border-slate-300 text-slate-600 bg-white hover:bg-slate-50' : 'border-slate-200 text-slate-300'}`}>
                               {col.date <= toDateStr(new Date()) ? '+ 수업 기록' : '예정'}
                             </button>
                           )}
@@ -1435,9 +1435,9 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                     <tr key={stu.student_name} className={si % 2 === 0 ? '' : 'bg-foreground/1.5'}>
                       {/* 학생 이름 셀 */}
                       <td className="sticky left-0 border-b border-r px-2 py-1.5 z-10 min-w-[80px] max-w-[100px]"
-                        style={{ background: si % 2 === 0 ? '#0d0f14' : '#0f1117', borderColor: 'rgba(255,255,255,0.06)' }}>
+                        style={{ background: si % 2 === 0 ? '#ffffff' : '#f8fafc', borderColor: '#e2e8f0' }}>
                         <div className="flex items-center justify-between group">
-                          <p className="text-[11px] font-black text-foreground/90 leading-tight truncate">{stu.student_name}</p>
+                          <p className="text-[11px] font-black text-slate-700 leading-tight truncate">{stu.student_name}</p>
                           <button onClick={() => setRemoveConfirm(stu.student_name)}
                             className="opacity-0 group-hover:opacity-100 p-0.5 text-red-300 hover:text-red-500 transition-all shrink-0 ml-0.5">
                             <X size={9} />
@@ -1460,13 +1460,13 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
 
                         return (
                           <td key={col.date}
-                            className="border-b border-r px-1.5 py-1 align-top" style={{borderColor: 'rgba(255,255,255,0.05)', background: isToday(col.date) ? 'rgba(99,102,241,0.05)' : (si % 2 === 0 ? '#0d0f14' : '#0f1117')}}>
+                            className="border-b border-r px-1.5 py-1 align-top" style={{borderColor: '#e2e8f0', background: isToday(col.date) ? '#eef2ff' : (si % 2 === 0 ? '#ffffff' : '#f8fafc')}}>
                             {col.session ? (
                               <div className="flex flex-col gap-0.5 min-w-[130px]">
                                 {/* 출결 버튼 - 컴팩트 */}
                                 <button
                                   onClick={() => setAttPopup({ date: col.date, studentName: stu.student_name, session: col.session })}
-                                  className={`w-full text-center px-1.5 py-1 rounded-lg text-[10px] font-black transition-all hover:opacity-80 ${att ? ATT_STYLE[att.status] : 'border border-dashed border-foreground/15 text-foreground/20 hover:border-foreground/30'}`}>
+                                  className={`w-full text-center px-1.5 py-1 rounded-lg text-[10px] font-black transition-all hover:opacity-80 ${att ? ATT_STYLE[att.status] : 'border border-dashed border-slate-300 text-slate-400 hover:border-slate-400'}`}>
                                   {att ? (<>
                                     <span>{ATT_SHORT[att.status]}</span>
                                     {att.status === 'late' && att.late_arrival_time && <span className="ml-1 text-[8px] opacity-60">{att.late_arrival_time.slice(0,5)}</span>}
@@ -1499,7 +1499,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                             await upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: 'done' });
                                             setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id] || {}), [stu.student_name]: { ...(chk || {}), slot_id: slot.id, student_name: stu.student_name, status: 'done' } as HomeworkCheck } } } : prev);
                                           }}
-                                            className="shrink-0 px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 transition-all border border-emerald-500/20"
+                                            className="shrink-0 px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all border border-emerald-200"
                                             title="완료 처리">
                                             ✓완
                                           </button>
@@ -1534,14 +1534,14 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                 })}
 
                                 {mySlots.length === 0 && sessionSlots.length > 0 && (
-                                  <p className="text-[9px] text-foreground/25 text-center py-0.5">배당없음</p>
+                                  <p className="text-[9px] text-slate-400 text-center py-0.5">배당없음</p>
                                 )}
                                 {/* 이월된 과제 표시 */}
                                 {(weekData.rolloverChecks[col.date] || [])
                                   .filter(rc => rc.student_name === stu.student_name)
                                   .map(rc => (
                                     <div key={rc.id || rc.slot_id + rc.student_name} className="flex items-center gap-0.5">
-                                      <div className="flex-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-orange-500/10 text-orange-300 border border-orange-500/20 truncate">
+                                      <div className="flex-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-200 truncate">
                                         ⏩ 이월과제
                                       </div>
                                       <button onClick={async () => {
@@ -1553,14 +1553,14 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                           return { ...prev, rolloverChecks: newRollovers, checks: { ...prev.checks, [rc.slot_id]: { ...(prev.checks[rc.slot_id] || {}), [stu.student_name]: { ...(rc as HomeworkCheck), status: 'done', rollover_date: null } } } };
                                         });
                                       }}
-                                        className="shrink-0 px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20">
+                                        className="shrink-0 px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200">
                                         ✓완
                                       </button>
                                     </div>
                                   ))}
                               </div>
                             ) : (
-                              <div className="text-center text-[10px] text-foreground/20 py-1">—</div>
+                              <div className="text-center text-[10px] text-slate-300 py-1">—</div>
                             )}
                           </td>
                         );
@@ -1570,14 +1570,14 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
 
                   {/* 수업내역 + 과제목록 행 */}
                   <tr>
-                    <td className="sticky left-0 border-t border-b border-r px-4 py-2 z-10" style={{background: '#080a0e', borderColor: 'rgba(255,255,255,0.08)'}}>
+                    <td className="sticky left-0 border-t border-b border-r px-4 py-2 z-10" style={{background: '#f1f5f9', borderColor: '#e2e8f0'}}>
                       <p className="text-[9px] font-black text-accent uppercase tracking-widest">📋 수업내역</p>
                     </td>
                     {weekData.columns.map(col => {
                       const sessionNote = col.session ? (weekData.lessonNotes[col.session.id] || '') : '';
                       const slots = col.session ? (weekData.slots[col.session.id] || []) : [];
                       return (
-                        <td key={col.date} className="border-t border-b border-r px-2 py-2 align-top" style={{background: '#080a0e', borderColor: 'rgba(255,255,255,0.07)'}}>
+                        <td key={col.date} className="border-t border-b border-r px-2 py-2 align-top" style={{background: '#f1f5f9', borderColor: '#e2e8f0'}}>
                           {col.session ? (
                             <div className="space-y-1.5 min-w-[150px]">
                               <textarea
@@ -1589,7 +1589,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                 }}
                                 rows={2}
                                 placeholder="수업 내용 메모..."
-                                className="w-full px-2 py-1.5 rounded-lg border border-white/8 bg-white/3 text-[10px] outline-none focus:border-white/20 resize-none text-white/60"
+                                className="w-full px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-[10px] outline-none focus:border-slate-400 resize-none text-slate-600"
                               />
                               {slots.map(slot => (
                                 <div key={slot.id} className="flex items-center justify-between gap-1 px-2 py-1 rounded-lg bg-background border border-foreground/8">
@@ -1611,7 +1611,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                 </div>
                               ))}
                             </div>
-                          ) : <p className="text-[9px] text-foreground/20 text-center">—</p>}
+                          ) : <p className="text-[9px] text-slate-400 text-center">—</p>}
                         </td>
                       );
                     })}
