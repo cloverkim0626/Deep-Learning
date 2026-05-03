@@ -67,91 +67,80 @@ export default function Home() {
         }
       `}</style>
       <div className="absolute inset-0 pointer-events-none overflow-hidden"
-        style={{background:'linear-gradient(180deg,#081820 0%,#0a2030 20%,#0c2840 50%,#091c2c 80%,#060e18 100%)'}}>
+        style={{background:'linear-gradient(180deg,#040e18 0%,#071828 18%,#0a2438 45%,#0c3050 70%,#061420 100%)'}}>
 
-        {/* 수면 입수 — 따뜻한 호박빛 (Shape of Water 특유의 황금빛) */}
+        {/* ── 수면 황금빛 입수 ── */}
         <div style={{
-          position:'absolute', top:0, left:'48%', transform:'translateX(-50%)',
-          width:'260px', height:'120px',
-          background:'radial-gradient(ellipse at 50% 0%, rgba(255,200,80,0.14) 0%, rgba(180,220,255,0.08) 40%, transparent 70%)',
-          filter:'blur(12px)', animation:'sotCaustic 4.5s ease-in-out infinite',
+          position:'absolute', top:0, left:'50%', transform:'translateX(-50%)',
+          width:'320px', height:'160px',
+          background:'radial-gradient(ellipse at 50% 0%, rgba(255,215,100,0.18) 0%, rgba(100,220,240,0.1) 45%, transparent 72%)',
+          filter:'blur(18px)', animation:'sotCaustic 5s ease-in-out infinite',
         }}/>
 
-        {/* 메인 수중 빛줄기 — 청록색 */}
+        {/* ── 중심 발광 상승 — 포스터의 핵심 청록 빛기둥 ── */}
+        <div style={{
+          position:'absolute', bottom:0, left:'50%', transform:'translateX(-50%)',
+          width:'380px', height:'85%',
+          background:'linear-gradient(0deg,rgba(15,160,200,0.22) 0%,rgba(10,140,180,0.12) 35%,rgba(5,100,150,0.04) 65%,transparent 100%)',
+          filter:'blur(28px)', animation:'sotGlow 10s ease-in-out infinite',
+        }}/>
+        {/* 코어 밝은 기둥 */}
         <div className="sot-ray" style={{
-          width:'300px', height:'90%', marginLeft:'-150px',
-          background:'linear-gradient(180deg,rgba(0,200,180,0.13) 0%,rgba(0,160,200,0.07) 35%,rgba(0,100,160,0.03) 65%,transparent 100%)',
-          filter:'blur(20px)', '--ra':'-0.5deg','--pd':'8s',
+          width:'90px', height:'80%', marginLeft:'-45px',
+          background:'linear-gradient(180deg,rgba(160,240,255,0.24) 0%,rgba(60,210,240,0.14) 30%,rgba(20,170,210,0.06) 60%,transparent 100%)',
+          filter:'blur(6px)', '--ra':'0deg','--pd':'7s',
         } as React.CSSProperties}/>
-        {/* 코어 밝은 줄기 */}
         <div className="sot-ray" style={{
-          width:'70px', height:'75%', marginLeft:'-35px',
-          background:'linear-gradient(180deg,rgba(180,240,230,0.2) 0%,rgba(100,220,200,0.09) 40%,transparent 100%)',
-          filter:'blur(5px)', '--ra':'0.3deg','--pd':'6s',
+          width:'320px', height:'92%', marginLeft:'-160px',
+          background:'linear-gradient(180deg,rgba(20,180,210,0.1) 0%,rgba(10,150,190,0.06) 40%,transparent 100%)',
+          filter:'blur(22px)', '--ra':'-0.8deg','--pd':'9s',
         } as React.CSSProperties}/>
 
-        {/* 보조 광선 */}
-        {[{l:'20%',r:'-2deg',d:'6.5s'},{l:'38%',r:'-0.5deg',d:'5s'},{l:'62%',r:'1.5deg',d:'5.8s'},{l:'80%',r:'3deg',d:'7.5s'}].map((t,i)=>(
+        {/* ── 보조 광선 ── */}
+        {[{l:'18%',r:'-3deg',d:'6s'},{l:'34%',r:'-1deg',d:'4.5s'},{l:'66%',r:'1.5deg',d:'5.5s'},{l:'82%',r:'4deg',d:'7s'}].map((t,i)=>(
           <div key={i} style={{
-            position:'absolute', top:0, left:t.l, width:'35px', height:'65%',
-            background:'linear-gradient(180deg,rgba(0,200,180,0.16) 0%,transparent 100%)',
-            filter:'blur(7px)', transformOrigin:'top center',
-            transform:`rotate(${t.r})`,
-            animation:`sotCaustic ${t.d} ease-in-out infinite`,
-            animationDelay:`${i*0.6}s`,
+            position:'absolute', top:0, left:t.l, width:'30px', height:'70%',
+            background:'linear-gradient(180deg,rgba(40,200,230,0.18) 0%,transparent 100%)',
+            filter:'blur(8px)', transformOrigin:'top center', transform:`rotate(${t.r})`,
+            animation:`sotCaustic ${t.d} ease-in-out infinite`, animationDelay:`${i*0.7}s`,
           }}/>
         ))}
 
-        {/* 생물발광 포인트들 (Shape of Water의 파란 반짝임) */}
+        {/* ── 생물발광 — 포스터의 파란 반짝임들 ── */}
         {[
-          {x:'15%',y:'35%',s:80,d:'5.2s'},{x:'82%',y:'28%',s:60,d:'7s'},
-          {x:'70%',y:'62%',s:50,d:'6.1s'},{x:'28%',y:'70%',s:70,d:'4.8s'},
-          {x:'50%',y:'45%',s:90,d:'8s'},{x:'90%',y:'50%',s:45,d:'5.5s'},
+          {x:'12%',y:'32%',s:100,d:'5.5s',c:'rgba(20,200,240,0.2)'},
+          {x:'80%',y:'25%',s:75,d:'7.2s',c:'rgba(30,210,230,0.16)'},
+          {x:'68%',y:'58%',s:60,d:'6.3s',c:'rgba(10,180,220,0.18)'},
+          {x:'25%',y:'68%',s:85,d:'4.9s',c:'rgba(40,220,250,0.15)'},
+          {x:'50%',y:'40%',s:110,d:'8.5s',c:'rgba(15,190,225,0.12)'},
+          {x:'88%',y:'48%',s:55,d:'5.8s',c:'rgba(50,215,240,0.14)'},
         ].map((b,i)=>(
           <div key={i} style={{
-            position:'absolute', left:b.x, top:b.y,
-            width:b.s+'px', height:b.s+'px',
-            background:'radial-gradient(ellipse,rgba(0,220,200,0.18) 0%,rgba(0,180,220,0.06) 50%,transparent 75%)',
-            borderRadius:'50%', filter:'blur(8px)',
-            animation:`sotBio ${b.d} ease-in-out infinite`,
-            animationDelay:`${i*0.8}s`,
+            position:'absolute', left:b.x, top:b.y, width:b.s+'px', height:b.s+'px',
+            background:`radial-gradient(ellipse,${b.c} 0%,transparent 70%)`,
+            borderRadius:'50%', filter:'blur(10px)',
+            animation:`sotBio ${b.d} ease-in-out infinite`, animationDelay:`${i*0.9}s`,
           }}/>
         ))}
 
-        {/* 따뜻한 호박 발광 — 델 토로 특유의 감성 */}
-        <div style={{
-          position:'absolute', bottom:'15%', left:'25%',
-          width:'180px', height:'180px',
-          background:'radial-gradient(ellipse,rgba(255,160,40,0.08) 0%,rgba(220,120,20,0.03) 50%,transparent 70%)',
-          borderRadius:'50%', filter:'blur(20px)',
-          animation:'sotGlow 9s ease-in-out infinite 2s',
-        }}/>
-        <div style={{
-          position:'absolute', bottom:'25%', right:'20%',
-          width:'120px', height:'120px',
-          background:'radial-gradient(ellipse,rgba(255,180,60,0.07) 0%,transparent 65%)',
-          borderRadius:'50%', filter:'blur(16px)',
-          animation:'sotGlow 12s ease-in-out infinite',
-        }}/>
-
-        {/* 수류 물결 — 깊고 느린 흐름 */}
+        {/* ── 수류 물결 ── */}
         <div style={{
           position:'absolute', inset:0,
-          background:'radial-gradient(ellipse 110% 40% at 35% 55%,rgba(0,150,180,0.07) 0%,transparent 55%)',
-          animation:'sotRipple 14s ease-in-out infinite',
+          background:'radial-gradient(ellipse 120% 45% at 40% 60%,rgba(10,140,180,0.09) 0%,transparent 55%)',
+          animation:'sotRipple 16s ease-in-out infinite',
         }}/>
         <div style={{
           position:'absolute', inset:0,
-          background:'radial-gradient(ellipse 90% 35% at 65% 42%,rgba(0,180,160,0.05) 0%,transparent 50%)',
-          animation:'sotRipple 20s ease-in-out infinite reverse',
-          animationDelay:'4s',
+          background:'radial-gradient(ellipse 100% 38% at 60% 38%,rgba(20,160,195,0.07) 0%,transparent 52%)',
+          animation:'sotRipple 22s ease-in-out infinite reverse', animationDelay:'5s',
         }}/>
 
-        {/* 깊이감 하단 그라데이션 */}
-        <div className="absolute bottom-0 left-0 right-0 h-[35%]" style={{background:'linear-gradient(0deg,rgba(4,10,18,0.75) 0%,transparent 100%)'}}/>
-        {/* 전체 청록 틴트 */}
-        <div className="absolute inset-0" style={{background:'radial-gradient(ellipse 70% 55% at 50% 50%,rgba(0,100,140,0.12) 0%,transparent 70%)'}}/>
+        {/* ── 하단 깊이감 ── */}
+        <div className="absolute bottom-0 left-0 right-0 h-[40%]" style={{background:'linear-gradient(0deg,rgba(3,8,14,0.8) 0%,transparent 100%)'}}/>
+        {/* ── 전체 청록 틴트 (포스터 특유의 투명한 청록 물) ── */}
+        <div className="absolute inset-0" style={{background:'radial-gradient(ellipse 85% 65% at 50% 55%,rgba(10,130,175,0.16) 0%,rgba(5,80,130,0.06) 55%,transparent 80%)'}}/>
       </div>
+
 
 
       <div className="z-10 w-full max-w-sm mx-auto flex flex-col items-center gap-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
@@ -224,83 +213,98 @@ export default function Home() {
 
         {/* CTA Buttons */}
         <div className="flex flex-col w-full gap-3">
-          {/* 학습 입장 — Instagram 컨셉 */}
+          {/* 학습 입장 — SotW 청록 Ocean */}
           <style>{`
-            @keyframes igShimmer {
-              0%{background-position:0% 50%}
-              50%{background-position:100% 50%}
-              100%{background-position:0% 50%}
+            @keyframes oceanShimmer {
+              0%,100%{opacity:0.6;transform:translateX(0) scale(1)}
+              50%{opacity:1;transform:translateX(3px) scale(1.05)}
             }
-            @keyframes igPulse {
-              0%,100%{opacity:0.5;transform:scale(1)}
-              50%{opacity:0.85;transform:scale(1.08)}
+            @keyframes oceanRay {
+              0%,100%{opacity:0.4;transform:scaleY(1)}
+              50%{opacity:0.75;transform:scaleY(1.08)}
             }
           `}</style>
           <Link
             href="/login?role=student"
-            className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-1 hover:shadow-2xl transition-all duration-500"
+            className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-1 transition-all duration-500"
             style={{
-              background:'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
-              backgroundSize:'200% 200%',
-              animation:'igShimmer 6s ease infinite',
-              boxShadow:'0 6px 35px rgba(220,39,67,0.4), 0 2px 8px rgba(240,148,51,0.3)',
-              border:'1px solid rgba(255,255,255,0.2)',
+              background:'linear-gradient(145deg,#082840 0%,#0d3d5c 40%,#0f4a6e 75%,#0a3050 100%)',
+              boxShadow:'0 6px 32px rgba(10,140,190,0.35), 0 2px 8px rgba(5,80,140,0.4), inset 0 1px 0 rgba(120,220,255,0.15)',
+              border:'1px solid rgba(40,180,220,0.25)',
             }}
           >
-            {/* 상단 하이라이트 광택 */}
+            {/* 수중 발광 — 아래에서 올라오는 청록 빛 */}
             <div className="absolute inset-0 pointer-events-none" style={{
-              background:'linear-gradient(180deg,rgba(255,255,255,0.18) 0%,transparent 50%)',
+              background:'linear-gradient(0deg,rgba(15,160,210,0.28) 0%,rgba(10,130,180,0.12) 45%,transparent 80%)',
             }}/>
-            {/* 우측 빛 보케 */}
+            {/* 상단 수면 하이라이트 */}
             <div className="absolute pointer-events-none" style={{
-              top:'-30%', right:'-10%', width:'160px', height:'160px',
-              background:'radial-gradient(ellipse,rgba(255,255,255,0.2) 0%,transparent 65%)',
-              borderRadius:'50%', filter:'blur(20px)',
-              animation:'igPulse 5s ease-in-out infinite',
+              top:'-20%', left:'20%', width:'200px', height:'100px',
+              background:'radial-gradient(ellipse,rgba(140,230,255,0.18) 0%,transparent 65%)',
+              borderRadius:'50%', filter:'blur(18px)',
+              animation:'oceanRay 7s ease-in-out infinite',
+            }}/>
+            {/* 생물발광 우측 */}
+            <div className="absolute pointer-events-none" style={{
+              top:'10%', right:'-5%', width:'120px', height:'120px',
+              background:'radial-gradient(ellipse,rgba(30,200,240,0.2) 0%,transparent 65%)',
+              borderRadius:'50%', filter:'blur(16px)',
+              animation:'oceanShimmer 5s ease-in-out infinite',
             }}/>
             <div className="flex items-center gap-2 font-semibold text-[15px] mb-1 relative z-10">
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest" style={{background:'rgba(255,255,255,0.22)',color:'rgba(255,255,255,0.95)',border:'1px solid rgba(255,255,255,0.3)'}}>STUDENT</span>
-              <span className="text-[13px] font-black" style={{color:'rgba(255,255,255,0.97)'}}>학습 공간 입장</span>
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest" style={{background:'rgba(30,200,240,0.18)',color:'rgba(160,240,255,0.95)',border:'1px solid rgba(40,200,240,0.3)'}}>STUDENT</span>
+              <span className="text-[13px] font-black" style={{color:'rgba(210,245,255,0.97)'}}>학습 공간 입장</span>
             </div>
-            <p className="text-[11px] font-semibold relative z-10 leading-relaxed" style={{color:'rgba(255,255,255,0.7)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
-            <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(255,255,255,0.2)',border:'1px solid rgba(255,255,255,0.35)'}}>
-              <ArrowRight strokeWidth={2.5} size={14} className="group-hover:translate-x-0.5 transition-all" style={{color:'rgba(255,255,255,0.95)'}} />
+            <p className="text-[11px] font-semibold relative z-10 leading-relaxed" style={{color:'rgba(100,210,240,0.65)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
+            <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(20,180,220,0.15)',border:'1px solid rgba(40,200,240,0.3)'}}>
+              <ArrowRight strokeWidth={2.5} size={14} className="group-hover:translate-x-0.5 transition-all" style={{color:'rgba(140,230,255,0.9)'}} />
             </div>
           </Link>
 
-          {/* 리포트 열람 - 파스텔 노스텔지아 */}
+          {/* 리포트 열람 — 여름 풀내음 frosted glass */}
+          <style>{`
+            @keyframes summerBreeze {
+              0%,100%{opacity:0.4;transform:translate(0,0) scale(1)}
+              50%{opacity:0.65;transform:translate(2px,3px) scale(1.04)}
+            }
+          `}</style>
           <Link
             href="/login/parent"
             className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-500"
             style={{
-              background:'linear-gradient(145deg, #f4efe5 0%, #eae8dc 45%, #e2e6d8 100%)',
-              boxShadow:'0 4px 22px rgba(130,145,105,0.13), inset 0 1px 0 rgba(255,255,255,0.8)',
-              border:'1px solid rgba(175,185,155,0.28)',
+              background:'rgba(235,248,232,0.18)',
+              backdropFilter:'blur(18px)',
+              WebkitBackdropFilter:'blur(18px)',
+              boxShadow:'0 4px 24px rgba(60,120,60,0.18), inset 0 1px 0 rgba(255,255,255,0.35)',
+              border:'1px solid rgba(160,210,155,0.32)',
             }}
           >
-            {/* 봄 햇살 코어 - 상단 우측 */}
+            {/* 풀밭 녹음 보케 — 창문 너머 여름 */}
             <div className="absolute pointer-events-none" style={{
-              top:'-30%', right:'-12%', width:'150px', height:'150px',
-              background:'radial-gradient(ellipse, rgba(195,218,168,0.3) 0%, rgba(172,200,148,0.12) 45%, transparent 72%)',
-              borderRadius:'50%', filter:'blur(30px)',
-              animation:'springGlow 12s ease-in-out infinite 2s',
+              top:'-25%', right:'-10%', width:'160px', height:'160px',
+              background:'radial-gradient(ellipse,rgba(120,210,110,0.28) 0%,rgba(80,180,80,0.1) 45%,transparent 70%)',
+              borderRadius:'50%', filter:'blur(24px)',
+              animation:'summerBreeze 9s ease-in-out infinite',
             }}/>
-            {/* 아이보리 크림 보케 */}
+            <div className="absolute pointer-events-none" style={{
+              bottom:'-20%', left:'-8%', width:'130px', height:'130px',
+              background:'radial-gradient(ellipse,rgba(100,200,95,0.22) 0%,transparent 68%)',
+              borderRadius:'50%', filter:'blur(20px)',
+              animation:'summerBreeze 12s ease-in-out infinite 3s',
+            }}/>
+            {/* 햇살 오버레이 */}
             <div className="absolute inset-0 pointer-events-none" style={{
-              background:'radial-gradient(ellipse 100% 65% at 88% 78%, rgba(218,220,188,0.22) 0%, rgba(230,225,200,0.08) 45%, transparent 65%)',
+              background:'linear-gradient(135deg,rgba(255,255,255,0.12) 0%,transparent 55%)',
             }}/>
-            {/* 콘텐츠 */}
             <div className="relative z-10 flex items-center gap-2 font-semibold text-[15px] mb-1">
               <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest"
-                style={{background:'rgba(140,155,115,0.12)', color:'rgba(80,95,58,0.75)', border:'1px solid rgba(150,165,125,0.22)'}}>
-                REPORT
-              </span>
-              <span className="text-[13px] font-black" style={{color:'#3a4530'}}>리포트 열람하기</span>
+                style={{background:'rgba(255,255,255,0.25)',color:'rgba(50,100,45,0.9)',border:'1px solid rgba(160,210,155,0.4)'}}>REPORT</span>
+              <span className="text-[13px] font-black" style={{color:'rgba(230,248,225,0.97)'}}>리포트 열람하기</span>
             </div>
-            <p className="relative z-10 text-[11px] font-normal leading-relaxed" style={{color:'rgba(70,85,50,0.5)'}}>일간·월간 리포트 · 학습 현황 · 질의응답</p>
+            <p className="relative z-10 text-[11px] font-semibold leading-relaxed" style={{color:'rgba(180,230,175,0.75)'}}>일간·월간 리포트 · 학습 현황 · 질의응답</p>
             <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all group-hover:scale-110"
-              style={{background:'rgba(148,162,125,0.1)', border:'1px solid rgba(155,170,130,0.25)'}}>
-              <ArrowRight strokeWidth={2} size={14} style={{color:'rgba(90,108,68,0.6)'}}
+              style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(160,215,155,0.35)'}}>
+              <ArrowRight strokeWidth={2} size={14} style={{color:'rgba(200,240,195,0.9)'}}
                 className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </Link>
