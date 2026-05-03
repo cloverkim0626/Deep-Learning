@@ -133,23 +133,23 @@ export default function ParentQnA() {
 
       {/* 헤더 */}
       <div className="px-5 pt-6 pb-4 shrink-0 flex items-center justify-between"
-        style={{ background: "rgba(10,5,30,0.6)", backdropFilter: "blur(16px)", borderBottom: "1px solid rgba(120,80,255,0.2)" }}>
+        style={{ background: "rgba(245,241,234,0.92)", backdropFilter: "blur(16px)", borderBottom: "1px solid rgba(155,180,140,0.22)" }}>
         <div>
-          <h1 className="text-2xl font-black" style={{ color: "rgba(220,210,255,0.95)" }}>Q&amp;A 채팅방</h1>
-          <p className="text-[12px] mt-0.5 font-semibold" style={{ color: "rgba(160,130,255,0.6)" }}>학습 관련 질문을 자유롭게 남겨주세요 💬</p>
+          <h1 className="text-2xl font-black" style={{ color: '#2d3d2d' }}>Q&amp;A 채팅방</h1>
+          <p className="text-[12px] mt-0.5 font-semibold" style={{ color: "rgba(90,125,85,0.6)" }}>학습 관련 질문을 자유롭게 남겨주세요 💬</p>
         </div>
         <button onClick={() => setShowModal(true)}
           className="w-12 h-12 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
-          style={{ background: "rgba(120,80,255,0.2)", border: "1px solid rgba(120,80,255,0.4)", color: "rgba(200,180,255,0.9)" }}>
+          style={{ background: "rgba(155,185,140,0.15)", border: "1px solid rgba(155,180,140,0.35)", color: "rgba(74,112,85,0.85)" }}>
           <Plus size={22} strokeWidth={3} />
         </button>
       </div>
 
       {/* 채팅방 라벨 */}
       <div className="flex items-center gap-3 px-6 py-3 shrink-0">
-        <div style={{ flex:1, height:1, background:"rgba(120,80,255,0.15)" }} />
-        <span className="text-[11px] font-bold px-3 py-0.5 rounded-full" style={{ background:"rgba(80,50,180,0.2)", color:"rgba(180,150,255,0.7)", border:"1px solid rgba(120,80,255,0.2)" }}>학부모 Q&amp;A</span>
-        <div style={{ flex:1, height:1, background:"rgba(120,80,255,0.15)" }} />
+        <div style={{ flex:1, height:1, background:"rgba(155,180,140,0.2)" }} />
+        <span className="text-[11px] font-bold px-3 py-0.5 rounded-full" style={{ background:"rgba(155,185,140,0.12)", color:"rgba(74,112,85,0.65)", border:"1px solid rgba(155,180,140,0.25)" }}>학부모 Q&amp;A</span>
+        <div style={{ flex:1, height:1, background:"rgba(155,180,140,0.2)" }} />
       </div>
 
       {/* 포스트 목록 */}
