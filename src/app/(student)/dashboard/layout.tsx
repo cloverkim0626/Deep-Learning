@@ -1186,7 +1186,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto w-full pb-[100px] flex flex-col">
+      <main className="flex-1 min-h-0 overflow-y-auto w-full pb-[100px]">
         {children}
       </main>
 
@@ -1200,7 +1200,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         }}>
         <NavButton href="/dashboard" icon={<BookOpen size={22} />} label="단어학습" isActive={pathname === "/dashboard"} />
         <NavButton href="/dashboard/essay" icon={<PenTool size={22} />} label="서술형" isActive={pathname.startsWith("/dashboard/essay")} />
-        <NavButton href="/dashboard/ai-teacher" icon={<Bot size={22} />} label="AI튜터" isActive={pathname.startsWith("/dashboard/ai-teacher")} />
+        <NavButton href="/dashboard/ai-teacher" icon={<Bot size={22} />} label="Genie" isActive={pathname.startsWith("/dashboard/ai-teacher")} />
         <NavButton href="/dashboard/qna" icon={<MessageCircle size={22} />} label="질의응답" isActive={pathname.startsWith("/dashboard/qna")} />
         <NavButton href="/dashboard/clinic" icon={<CalendarPlus size={22} />} label="클리닉" isActive={pathname.startsWith("/dashboard/clinic")} />
       </nav>

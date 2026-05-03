@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { getAllPassagesForEssay, getEssayPromptTemplates } from "@/lib/database-service";
@@ -565,16 +565,16 @@ export default function EssayPage() {
               : <div className="space-y-2">
                   {filtered.map(p => (
                     <button key={p.id} onClick={() => pickPassage(p)}
-                      className="w-full text-left px-4 py-3.5 rounded-2xl border border-foreground/8 hover:border-indigo-200 hover:bg-indigo-50/20 transition-all group">
+                      className="w-full text-left px-4 py-3.5 rounded-2xl transition-all group" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.14)' }}>
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-[10px] text-accent/35 font-bold mb-0.5">
+                          <p className="text-[10px] font-bold mb-0.5" style={{ color: 'rgba(180,155,255,0.80)' }}>
                             {[p.workbook, p.chapter, p.sub_sub_category].filter(Boolean).join(" · ")}
                           </p>
-                          <p className="text-[13px] font-bold text-foreground truncate">
+                          <p className="text-[13px] font-bold truncate" style={{ color: '#ffffff' }}>
                             {p.passage_number ? `${p.passage_number}번 · ` : ""}{p.label || "지문"}
                           </p>
-                          <p className="text-[10px] text-accent/30 mt-0.5">
+                          <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.50)' }}>
                             {p.essay_sentences?.length
                               ? `구조화 문장 ${p.essay_sentences.length}개`
                               : p.full_text
@@ -608,7 +608,7 @@ export default function EssayPage() {
               <FileText size={14} className="text-indigo-400 shrink-0" />
               <div className="min-w-0">
                 <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">선택된 지문</p>
-                <p className="text-[13px] font-bold text-foreground truncate">{selectedPassage.label}</p>
+                <p className="text-[13px] font-bold truncate" style={{ color: '#ffffff' }}>{selectedPassage.label}</p>
               </div>
             </div>
             <p className="text-[10px] font-black text-accent/35 uppercase tracking-widest pt-1">서술형 유형</p>

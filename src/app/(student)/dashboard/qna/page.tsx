@@ -191,11 +191,11 @@ export default function QnAPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-0 flex-1 bg-transparent animate-in fade-in duration-500">
+    <div className="flex flex-col bg-transparent animate-in fade-in duration-500">
 
-      {/* 헤더 */}
-      <div className="px-5 pt-6 pb-4 shrink-0 flex items-center justify-between"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+      {/* 헤더 - sticky */}
+      <div className="sticky top-0 z-10 px-5 pt-6 pb-4 flex items-center justify-between"
+        style={{ background: 'linear-gradient(180deg, rgba(10,8,22,0.97) 80%, transparent 100%)', borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <div>
           <h1 className="text-[22px] font-black text-white leading-tight">Q&amp;A</h1>
           <p className="text-[11px] mt-0.5 font-medium" style={{ color: "rgba(180,160,255,0.6)" }}>궁금한 점을 자유롭게 질문해봐 💬</p>
@@ -207,8 +207,8 @@ export default function QnAPage() {
         </button>
       </div>
 
-      {/* 포스트 목록 */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 custom-scrollbar pb-10 pt-3" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignContent: 'flex-start' }}>
+      {/* 포스트 목록 — 자연 높이, main이 스크롤 */}
+      <div className="px-4 pt-3 pb-6" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {isLoading ? (
           <div className="text-center py-20 font-bold animate-pulse" style={{ color: "rgba(255,255,255,0.4)" }}>불러오는 중...</div>
         ) : posts.length === 0 ? (
