@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BookOpen, Briefcase, Zap, Brain, Sparkles, X, Layers, Flame, BarChart2, HelpCircle, Search } from "lucide-react";
+import { ArrowRight, BookOpen, Briefcase, Zap, Brain, Sparkles, X, Layers, Flame, BarChart2, HelpCircle, Search, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import TrialApplicationForm from "@/components/TrialApplicationForm";
+import ContactModal from "@/components/ContactModal";
 
 function getDday() {
   const today = new Date();
@@ -22,6 +23,7 @@ export default function Home() {
   const [passageCount, setPassageCount] = useState<number | null>(null);
   const [showGuide, setShowGuide] = useState(false);
   const [showTrialForm, setShowTrialForm] = useState(false);
+  const [showContact, setShowContact] = useState(false);
 
   useEffect(() => {
     supabase.from('word_sets').select('id', { count: 'exact', head: true })
@@ -37,6 +39,21 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 relative overflow-hidden">
+
+      {/* DM 플로팅 버튼 — 우상단 */}
+      <button
+        onClick={() => setShowContact(true)}
+        className="fixed top-5 right-5 z-40 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 active:scale-95"
+        style={{
+          background: "linear-gradient(135deg,#1e293b,#334155)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.35), 0 0 0 1.5px rgba(255,255,255,0.08)",
+        }}
+        aria-label="문의하기">
+        <MessageCircle size={19} className="text-white" strokeWidth={1.8} />
+        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 border-2 border-[#08080f]">
+          <span className="animate-ping absolute inset-0 rounded-full bg-red-400 opacity-75" />
+        </span>
+      </button>
 
       {/* ── IG 다크 Ambient 배경 ── */}
       <style>{`
@@ -537,9 +554,14 @@ export default function Home() {
         </div>
       )}
 
-      {/* ═══ Trial Application Form ═══════════════════════════════════════════ */}
+      {/* ═══ Trial Application Form ═════════════════════════════════════════════ */}
       {showTrialForm && (
         <TrialApplicationForm onClose={() => setShowTrialForm(false)} />
+      )}
+
+      {/* ═══ Contact Modal ═══════════════════════════════════════════════════════ */}
+      {showContact && (
+        <ContactModal onClose={() => setShowContact(false)} />
       )}
     </main>
   );
