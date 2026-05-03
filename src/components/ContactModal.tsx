@@ -62,47 +62,41 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
         {/* ── MENU ── */}
         {view === "menu" && (
           <>
-            {/* IG 헤더 */}
-            <div className="shrink-0 relative overflow-hidden" style={{background:"linear-gradient(135deg,#405DE6,#833AB4,#E1306C,#F77737)"}}>
-              <div className="px-5 pt-4 pb-5">
-                <div className="flex justify-between items-center mb-2">
+            {/* IG 헤더 - 선생님 사진 오른쪽에 크게 */}
+            <div className="shrink-0 relative" style={{background:"linear-gradient(135deg,#405DE6,#833AB4,#E1306C,#F77737)", minHeight:110, overflow:"visible"}}>
+              <div className="px-5 pt-4 pb-5 pr-[120px]">
+                <div className="flex justify-between items-start mb-1">
                   <span className="text-white/60 text-[9px] font-black tracking-[3px] uppercase">Contact</span>
                   <button onClick={onClose} className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center"><X size={13} className="text-white"/></button>
                 </div>
-                <p className="text-white text-[18px] font-black leading-tight">무엇을 도와드릴까요?</p>
-                <p className="text-white/65 text-[10px] mt-0.5">모든 상담은 무료로 진행됩니다.</p>
-              </div>
-              <div style={{height:14,background:"#fff",borderRadius:"50% 50% 0 0 / 100% 100% 0 0",marginTop:"-2px"}}/>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
-              {/* 김효진T SNS */}
-              <div>
-                <div className="flex items-end gap-3 mb-2">
-                  {/* 선생님 사진 */}
-                  <img src="/teacher-photo.png" alt="김효진T" className="w-16 h-20 object-contain object-bottom flex-shrink-0" style={{filter:"drop-shadow(0 2px 8px rgba(0,0,0,0.10))"}}/>
-                  <div className="flex-1 pb-1">
-                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2">김효진T SNS</p>
-                    <div className="flex gap-5">
-                      {[
-                        { label:"Instagram", color:"#E1306C", svg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> },
-                        { label:"KakaoTalk", color:"#3A1D1D", svg:<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.48 3 2 6.58 2 11c0 2.76 1.56 5.2 3.96 6.72L5 21l3.8-2.05A11 11 0 0 0 12 19c5.52 0 10-3.58 10-8s-4.48-8-10-8z"/></svg> },
-                        { label:"Blog", color:"#03c75a", svg:<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2H3V5zm0 6h12v2H3v-2zm0 6h18v2H3v-2z"/></svg> },
-                      ].map(s => (
-                        <button key={s.label} className="flex flex-col items-center gap-1 hover:scale-110 transition-transform" style={{color:s.color}}>
-                          {s.svg}
-                          <span className="text-[8px] font-black text-slate-400">{s.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <p className="text-white text-[18px] font-black leading-tight">무엇을<br/>도와드릴까요?</p>
+                <p className="text-white/65 text-[10px] mt-1">모든 상담은 무료로 진행됩니다.</p>
+                {/* SNS 아이콘 - 헤더 하단 왼쪽 */}
+                <div className="flex gap-4 mt-3">
+                  {[
+                    { label:"IG", color:"#fff", svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> },
+                    { label:"Talk", color:"#FFE600", svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.48 3 2 6.58 2 11c0 2.76 1.56 5.2 3.96 6.72L5 21l3.8-2.05A11 11 0 0 0 12 19c5.52 0 10-3.58 10-8s-4.48-8-10-8z"/></svg> },
+                    { label:"Blog", color:"#5bf560", svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2H3V5zm0 6h12v2H3v-2zm0 6h18v2H3v-2z"/></svg> },
+                  ].map(s=>(
+                    <button key={s.label} className="flex flex-col items-center gap-0.5 hover:scale-110 transition-transform opacity-90 hover:opacity-100" style={{color:s.color}}>
+                      {s.svg}
+                      <span className="text-[7px] font-black" style={{color:"rgba(255,255,255,0.6)"}}>{s.label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
+              {/* 선생님 사진 - 헤더 오른쪽, 아래로 튀어나옴 */}
+              <img src="/teacher-photo.png" alt="김효진T"
+                className="absolute bottom-0 right-0 object-contain object-bottom pointer-events-none"
+                style={{height:160, width:110, filter:"drop-shadow(-3px 0 12px rgba(0,0,0,0.25))"}}
+              />
+              {/* 곡선 경계 */}
+              <div style={{height:16,background:"#fff",borderRadius:"50% 50% 0 0 / 100% 100% 0 0",marginTop:0, position:"relative", zIndex:1}}/>
+            </div>
 
-              <div style={{height:1,background:"#f1f5f9"}}/>
-
-              {/* 메뉴 항목 */}
-              <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest px-1">문의 · 신청</p>
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
+              {/* 김효진T SNS label */}
+              <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest px-1 pt-1">문의 · 신청</p>
               {[
                 { id:"trial", icon:"✨", label:"앱 체험 신청", desc:"3일 체험 계정 무료 발급", color:"#6366f1", bg:"#eef2ff", action:()=>{onClose();onTrialRequest();} },
                 { id:"enroll", icon:"🏫", label:"등록 · 청강 문의", desc:"수업 상담, 청강 신청, 교재 샘플", color:"#8b5cf6", bg:"#f5f3ff", action:()=>setView("enroll") },
