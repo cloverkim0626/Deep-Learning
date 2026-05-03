@@ -23,8 +23,6 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
   const [name, setName] = useState(""); const [gender, setGender] = useState<"남"|"여"|"">("");
   const [phone, setPhone] = useState("");
   // step2
-  const [textbook, setTextbook] = useState("");
-  // step3
   const [wantsCons, setWantsCons] = useState(false);
   const [wantsAudit, setWantsAudit] = useState(false);
   const [auditClass, setAuditClass] = useState("");
@@ -32,7 +30,6 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
   const [loading, setLoading] = useState(false); const [err, setErr] = useState("");
 
   const can1 = aType && school && grade && name && gender && phone.length >= 10;
-  const can2 = textbook.trim().length > 0;
 
   const submit = async () => {
     setLoading(true); setErr("");
@@ -41,7 +38,6 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
         name, school, grade, phone,
         inquiry_type: "enrollment_audit",
         detail_message: [
-          `교재: ${textbook}`,
           wantsCons ? "상담 신청" : "",
           wantsAudit ? `청강 신청: ${auditClass}` : "",
           wantsSample ? "교재 샘플 신청" : "",
@@ -56,7 +52,7 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
     finally { setLoading(false); }
   };
 
-  const reset = () => { setStep(1);setAType("");setSchool("");setGrade("");setName("");setGender("");setPhone("");setTextbook("");setWantsCons(false);setWantsAudit(false);setAuditClass("");setWantsSample(false);setErr(""); };
+  const reset = () => { setStep(1);setAType("");setSchool("");setGrade("");setName("");setGender("");setPhone("");setWantsCons(false);setWantsAudit(false);setAuditClass("");setWantsSample(false);setErr(""); };
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-200">
@@ -152,9 +148,9 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
                   <p className="text-[9px] font-medium" style={{color:"#8b5cf6"}}>수업 상담 · 청강 · 교재 샘플</p>
                 </div>
               </div>
-              {/* step bar */}
+              {/* step bar 2단계 */}
               <div className="flex gap-1 mt-3">
-                {[1,2,3].map(s=><div key={s} className="h-1 flex-1 rounded-full transition-all" style={{background:s<=step?"#8b5cf6":"#f1f5f9"}}/>)}
+                {[1,2].map(s=><div key={s} className="h-1 flex-1 rounded-full transition-all" style={{background:s<=step?"#8b5cf6":"#f1f5f9"}}/>)}
               </div>
             </div>
 
@@ -199,17 +195,6 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
               )}
 
               {step === 2 && (
-                <div>
-                  <div className="rounded-xl px-3 py-2.5 mb-3 text-[10px] leading-relaxed" style={{background:"rgba(139,92,246,0.05)",border:"1px solid rgba(139,92,246,0.12)"}}>
-                    <p className="font-black text-slate-700 mb-0.5">📚 교재 정보가 중요해요!</p>
-                    <p className="text-slate-500">지문 배당 기준이 됩니다. 교재명과 현재 진도를 구체적으로 적어주세요.</p>
-                  </div>
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">현재 교재 & 진도 <span className="text-rose-400">*</span></label>
-                  <textarea value={textbook} onChange={e=>setTextbook(e.target.value)} placeholder="예) 수능특강 영어 7강 / 마더텅 2회독 중" rows={3} className="w-full px-3 py-2.5 rounded-xl border-2 text-[12px] font-bold outline-none resize-none" style={{borderColor:textbook?"#8b5cf6":"#e2e8f0",color:"#1e293b"}}/>
-                </div>
-              )}
-
-              {step === 3 && (
                 <div className="space-y-2">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">원하시는 항목을 선택해 주세요</p>
                   {[
@@ -248,8 +233,8 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
 
             <div className="shrink-0 px-5 pb-4 pt-2.5 flex gap-2" style={{borderTop:"1px solid #f1f5f9"}}>
               {step>1&&<button onClick={()=>setStep(s=>s-1)} className="h-11 px-4 rounded-xl border-2 text-[12px] font-black" style={{borderColor:"#e2e8f0",color:"#64748b"}}><ArrowLeft size={13}/></button>}
-              {step<3
-                ?<button onClick={()=>setStep(s=>s+1)} disabled={step===1?!can1:!can2} className="flex-1 h-11 rounded-xl text-[12px] font-black text-white flex items-center justify-center gap-1.5 transition-all hover:-translate-y-0.5 disabled:opacity-30 disabled:pointer-events-none" style={{background:"linear-gradient(90deg,#8b5cf6,#6366f1)"}}>다음 <ArrowRight size={13}/></button>
+              {step<2
+                ?<button onClick={()=>setStep(s=>s+1)} disabled={step===1?!can1:false} className="flex-1 h-11 rounded-xl text-[12px] font-black text-white flex items-center justify-center gap-1.5 transition-all hover:-translate-y-0.5 disabled:opacity-30 disabled:pointer-events-none" style={{background:"linear-gradient(90deg,#8b5cf6,#6366f1)"}}>다음 <ArrowRight size={13}/></button>
                 :<button onClick={submit} disabled={loading} className="flex-1 h-11 rounded-xl text-[12px] font-black text-white flex items-center justify-center gap-1.5 transition-all hover:-translate-y-0.5 disabled:opacity-50" style={{background:"linear-gradient(90deg,#8b5cf6,#6366f1)"}}>
                   {loading?<span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin"/>:<>신청 완료 🎉</>}
                 </button>}
