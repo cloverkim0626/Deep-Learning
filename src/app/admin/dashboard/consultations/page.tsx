@@ -13,9 +13,12 @@ type Application = {
   gender: string;
   phone: string;
   current_textbook: string;
+  vocab_difficulties: string;
+  desired_features: string;
   wants_consultation: boolean;
-  wants_trial_class: boolean;
+  wants_audit_class: boolean;
   trial_class_preference: string | null;
+  wants_trial_class: boolean;
   status: string;
   admin_note: string;
 };
@@ -211,24 +214,40 @@ export default function ConsultationsPage() {
                     </div>
 
                     {/* 신청 내역 */}
-                    {(app.wants_consultation || app.wants_trial_class) && (
-                      <div className="flex gap-2">
-                        {app.wants_consultation && (
-                          <div className="flex-1 rounded-xl px-3 py-2.5 flex items-center gap-2"
-                            style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)" }}>
-                            <MessageSquare size={12} className="text-emerald-500" />
-                            <p className="text-[11px] font-black text-emerald-700">상담 신청</p>
-                          </div>
-                        )}
+                    {(app.wants_consultation || app.wants_audit_class || app.wants_trial_class) && (
+                      <div className="flex gap-2 flex-wrap">
                         {app.wants_trial_class && (
-                          <div className="flex-1 rounded-xl px-3 py-2.5 flex items-center gap-2"
+                          <div className="flex-1 rounded-xl px-3 py-2.5 flex items-center gap-2 min-w-[100px]"
                             style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.2)" }}>
-                            <GraduationCap size={12} className="text-indigo-500" />
-                            <p className="text-[11px] font-black text-indigo-700">
-                              앱 체험{app.trial_class_preference ? ` · ${app.trial_class_preference}` : ""}
-                            </p>
+                            <span className="text-[11px] font-black text-indigo-700">📱 앱 체험</span>
                           </div>
                         )}
+                        {app.wants_consultation && (
+                          <div className="flex-1 rounded-xl px-3 py-2.5 flex items-center gap-2 min-w-[100px]"
+                            style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                            <span className="text-[11px] font-black text-emerald-700">💬 수업 상담</span>
+                          </div>
+                        )}
+                        {app.wants_audit_class && (
+                          <div className="flex-1 rounded-xl px-3 py-2.5 flex items-center gap-2 min-w-[100px]"
+                            style={{ background: "rgba(131,58,180,0.06)", border: "1px solid rgba(131,58,180,0.2)" }}>
+                            <span className="text-[11px] font-black text-purple-700">🏫 청강{app.trial_class_preference ? ` · ${app.trial_class_preference}` : ""}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 설문 결과 */}
+                    {app.vocab_difficulties && (
+                      <div className="rounded-xl px-4 py-3" style={{ background: "#fff7ed", border: "1px solid #fed7aa" }}>
+                        <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">단어 외울 때 힘든 점</p>
+                        <p className="text-[12px] text-slate-700 leading-relaxed">{app.vocab_difficulties}</p>
+                      </div>
+                    )}
+                    {app.desired_features && (
+                      <div className="rounded-xl px-4 py-3" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">원하는 앱 기능</p>
+                        <p className="text-[12px] text-slate-700 leading-relaxed">{app.desired_features}</p>
                       </div>
                     )}
 
