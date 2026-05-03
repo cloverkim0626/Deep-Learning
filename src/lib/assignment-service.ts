@@ -252,18 +252,18 @@ export async function autoCompleteAssignmentIfAllPassed(
   setId: string
 ): Promise<boolean> {
   try {
-    // 1. 해당 학생-set_id 활성 배당 조회
-    const { data: assignment } = await supabase
+    // 1. 해당 학생-set_id 배당 조회 (active/null 인 것만 - completed 는 이미 처리됨)
+    const { data: assignments } = await supabase
       .from('set_assignments')
       .select('id, status')
       .eq('student_name', studentName)
       .eq('set_id', setId)
-      .or('status.eq.active,status.is.null')
-      .single();
+      .or('status.eq.active,status.is.null');
 
-    if (!assignment) return false;
+    if (!assignments || assignments.length === 0) return false;
+    const assignment = assignments[0]; // 첫 번째만 처리
 
-    // 2. 해당 set_id의 통과 세션 조회 (기간 제한 없음 - 언제 통과해도 인정)
+    // 2. 해당 set_id의 통과 세션 조회
     const { data: sessions } = await supabase
       .from('test_sessions')
       .select('test_type, correct_count, total_questions')
@@ -280,19 +280,35 @@ export async function autoCompleteAssignmentIfAllPassed(
       ['vocab', 'vocab_drill'].includes(s.test_type) &&
       s.total_questions > 0 && s.correct_count / s.total_questions >= 0.9;
 
-    const synPassed = sessions.some(isSynPass);
+    // 유반의어 데이터 존재 여부 확인
+    const { data: wordSet } = await supabase
+      .from('word_sets')
+      .select('id, words(test_synonym, test_antonym)')
+      .eq('id', setId)
+      .single();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const hasSynData = (wordSet as any)?.words?.some((w: { test_synonym?: boolean; test_antonym?: boolean }) => w.test_synonym || w.test_antonym) ?? true;
+
+    const synPassed = hasSynData ? sessions.some(isSynPass) : true;
     const vocabPassed = sessions.some(isVocabPass);
 
-    if (!synPassed || !vocabPassed) return false;
+    if (!vocabPassed || !synPassed) return false;
 
     // 3. 자동 완료 처리
-    await supabase
+    const { error } = await supabase
       .from('set_assignments')
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('id', assignment.id);
 
+    if (error) {
+      console.error('[autoComplete] update error:', error);
+      return false;
+    }
     return true;
-  } catch {
+  } catch (err) {
+    console.error('[autoComplete] exception:', err);
     return false;
   }
 }
+
