@@ -128,15 +128,6 @@ function LoginForm() {
   return (
     <div className="w-full max-w-sm mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 px-7 py-8 relative z-10">
 
-      {/* 학생 전용 — 포스터 blur 오버레이 (인물 가리기) */}
-      {role === 'student' && (
-        <div aria-hidden className="fixed inset-0 -z-10 pointer-events-none"
-          style={{
-            backdropFilter:'blur(38px)',
-            WebkitBackdropFilter:'blur(38px)',
-            background:'rgba(8,22,40,0.55)',
-          }}/>
-      )}
 
       <Link href="/" className="mb-12 flex items-center gap-2 text-[12px] font-black tracking-[0.2em] transition-all uppercase"
         style={{color:'rgba(100,210,240,0.7)'}}>
@@ -244,10 +235,22 @@ function LoginBg({ isStudent }: { isStudent: boolean }) {
     <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
       {isStudent ? (
         <>
-          <div style={{ position:'absolute', inset:0, background:'rgba(5,15,30,0.22)' }}/>
+          {/* 전체 틴트 — 이미지 노출은 살리되 텍스트 대비만 확보 */}
+          <div style={{ position:'absolute', inset:0, background:'rgba(8,14,26,0.38)' }}/>
+          {/* 비네트 — 가장자리 어둡게 */}
           <div style={{
-            position:'absolute', bottom:0, left:0, right:0, height:'60%',
-            background:'linear-gradient(0deg, rgba(3,10,22,0.72) 0%, transparent 100%)',
+            position:'absolute', inset:0,
+            background:'radial-gradient(ellipse 85% 90% at 50% 50%, transparent 50%, rgba(0,0,0,0.55) 100%)',
+          }}/>
+          {/* 상단 다크 — 로고/타이틀 대비 */}
+          <div style={{
+            position:'absolute', top:0, left:0, right:0, height:'45%',
+            background:'linear-gradient(180deg, rgba(5,10,20,0.60) 0%, transparent 100%)',
+          }}/>
+          {/* 하단 그라디언트 — 입력폼 영역 대비 */}
+          <div style={{
+            position:'absolute', bottom:0, left:0, right:0, height:'55%',
+            background:'linear-gradient(0deg, rgba(5,10,20,0.72) 0%, rgba(5,10,20,0.15) 75%, transparent 100%)',
           }}/>
         </>
       ) : (
@@ -279,7 +282,7 @@ function LoginPageInner() {
       style={{
         backgroundImage: isStudent ? "url('/student-login-bg.jpg')" : "url('/sotw-poster.jpg')",
         backgroundSize: 'cover',
-        backgroundPosition: isStudent ? 'center top' : 'center center',
+        backgroundPosition: isStudent ? 'center 30%' : 'center center',
         backgroundRepeat: 'no-repeat',
       }}>
       <LoginBg isStudent={isStudent} />
