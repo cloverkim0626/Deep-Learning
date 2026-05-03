@@ -41,7 +41,9 @@ export default function TrialApplicationForm({ onClose }: Props) {
   // Step 2
   const [currentTextbook, setCurrentTextbook] = useState("");
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
+  const [difficultyExtra, setDifficultyExtra] = useState("");
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [featureExtra, setFeatureExtra] = useState("");
 
   // Step 3
   const [wantsConsultation, setWantsConsultation] = useState(false);
@@ -60,8 +62,8 @@ export default function TrialApplicationForm({ onClose }: Props) {
       const { error: dbErr } = await supabase.from("trial_applications").insert([{
         applicant_type: applicantType, school, grade, name, gender, phone,
         current_textbook: currentTextbook,
-        vocab_difficulties: selectedDifficulties.join(", "),
-        desired_features: selectedFeatures.join(", "),
+        vocab_difficulties: [...selectedDifficulties, ...(difficultyExtra.trim() ? [`기타: ${difficultyExtra.trim()}`] : [])].join(", "),
+        desired_features: [...selectedFeatures, ...(featureExtra.trim() ? [`기타: ${featureExtra.trim()}`] : [])].join(", "),
         wants_consultation: wantsConsultation,
         wants_audit_class: wantsAuditClass,
         trial_class_preference: wantsAuditClass ? auditClassPref : null,
@@ -201,7 +203,7 @@ export default function TrialApplicationForm({ onClose }: Props) {
                   😩 단어 외울 때 어떤 점이 힘드셨나요?
                 </label>
                 <p className="text-[10px] text-slate-400 mb-2">해당하는 것 모두 선택해 주세요 (선택 사항)</p>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5 mb-2">
                   {VOCAB_DIFFICULTIES.map(d => {
                     const active = selectedDifficulties.includes(d);
                     return (
@@ -213,6 +215,11 @@ export default function TrialApplicationForm({ onClose }: Props) {
                     );
                   })}
                 </div>
+                <textarea value={difficultyExtra} onChange={e => setDifficultyExtra(e.target.value)}
+                  placeholder="직접 입력 (예: 뜻은 아는데 문장에서 못 씀)"
+                  rows={2}
+                  className="w-full px-3 py-2.5 rounded-xl border text-[12px] outline-none resize-none"
+                  style={{ borderColor: difficultyExtra ? "#E1306C" : "#e2e8f0", color: "#334155" }} />
               </div>
 
               {/* 설문: 원하는 기능 */}
@@ -221,7 +228,7 @@ export default function TrialApplicationForm({ onClose }: Props) {
                   💡 앱에 있었으면 하는 기능은?
                 </label>
                 <p className="text-[10px] text-slate-400 mb-2">솔직하게 알려주시면 반영할게요 😊 (선택 사항)</p>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5 mb-2">
                   {DESIRED_FEATURES.map(f => {
                     const active = selectedFeatures.includes(f);
                     return (
@@ -233,6 +240,11 @@ export default function TrialApplicationForm({ onClose }: Props) {
                     );
                   })}
                 </div>
+                <textarea value={featureExtra} onChange={e => setFeatureExtra(e.target.value)}
+                  placeholder="직접 입력 (예: 지문 해석 단계별 힌트)"
+                  rows={2}
+                  className="w-full px-3 py-2.5 rounded-xl border text-[12px] outline-none resize-none"
+                  style={{ borderColor: featureExtra ? "#405DE6" : "#e2e8f0", color: "#334155" }} />
               </div>
             </>
           )}
