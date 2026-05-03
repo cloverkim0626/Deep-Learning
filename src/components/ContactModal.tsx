@@ -74,7 +74,7 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
               </div>
               {/* 선생님 사진 - 헤더 오른쪽, 아래로 body까지 겹침 */}
               <img src="/teacher-nobg.png" alt="김효진T"
-                style={{position:"absolute", right:8, bottom:-72, height:228, width:"auto", objectFit:"contain", objectPosition:"bottom", filter:"drop-shadow(-4px 0 12px rgba(0,0,0,0.18))", zIndex:10}}
+                style={{position:"absolute", right:8, bottom:-66, height:209, width:"auto", objectFit:"contain", objectPosition:"bottom", filter:"drop-shadow(-4px 0 12px rgba(0,0,0,0.18))", zIndex:10}}
               />
               <div style={{height:16,background:"#fff",borderRadius:"50% 50% 0 0 / 100% 100% 0 0",marginTop:"-1px", position:"relative", zIndex:0}}/>
             </div>
