@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
@@ -38,14 +38,40 @@ const TIME_FILTERS: { value: TimeFilter; label: string; icon: React.ReactNode }[
   { value: '1m', label: '1달', icon: <Calendar size={11} /> },
 ];
 
-// ─── TTS Helper ───────────────────────────────────────────────────────────────
+// ─── TTS Helper — US male voice preferred ─────────────────────────────────────
+function pickUSMaleVoice(): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  // 우선순위: Google US English(남) > Microsoft David > Alex > Daniel > en-US 남성
+  const PREFERRED = ['google us english', 'microsoft david', 'alex', 'daniel', 'thomas', 'fred'];
+  const enUS = voices.filter(v => v.lang.startsWith('en-US') || v.lang.startsWith('en_US'));
+  for (const name of PREFERRED) {
+    const found = enUS.find(v => v.name.toLowerCase().includes(name));
+    if (found) return found;
+  }
+  // 그 외 en-US 중 첫 번째 (보통 구글 US)
+  return enUS[0] || voices.find(v => v.lang.startsWith('en')) || null;
+}
+
 function speakWord(word: string) {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const utt = new SpeechSynthesisUtterance(word);
   utt.lang = "en-US";
-  utt.rate = 0.85;
-  window.speechSynthesis.speak(utt);
+  utt.rate = 0.82;
+  utt.pitch = 0.9; // 남성: pitch 낮게
+  const voice = pickUSMaleVoice();
+  if (voice) utt.voice = voice;
+  // voices 로딩 전일 경우 이벤트 후 재시도
+  if (!window.speechSynthesis.getVoices().length) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      const v2 = pickUSMaleVoice();
+      if (v2) utt.voice = v2;
+      window.speechSynthesis.speak(utt);
+    };
+  } else {
+    window.speechSynthesis.speak(utt);
+  }
 }
 
 // ─── POS full name ────────────────────────────────────────────────────────────

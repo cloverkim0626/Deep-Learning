@@ -215,33 +215,27 @@ export default function QnAPage() {
   let myPostCount = 0; // 미사용 — 단일색으로 통일
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-500" style={{ background: "linear-gradient(180deg, #a8c5d4 0%, #b8d0dc 100%)" }}>
+    <div className="flex flex-col h-full bg-transparent animate-in fade-in duration-500">
 
-      {/* ── 헤더 ── */}
-      <div
-        className="px-5 pt-10 pb-4 shrink-0 flex items-center justify-between shadow-sm"
-        style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.3)" }}
-      >
+      {/* ── IG 스타일 헤더 ── */}
+      <div className="px-5 pt-8 pb-4 shrink-0 flex items-center justify-between"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <div>
-          <h1 className="text-2xl font-black" style={{ color: "#1a2a36" }}>Q&amp;A 게시판</h1>
-          <p className="text-[12px] mt-0.5 font-semibold" style={{ color: "rgba(20,50,70,0.65)" }}>학습 중 궁금한 점을 자유롭게 질문하세요 💬</p>
+          <h1 className="text-[22px] font-black text-white leading-tight">Q&amp;A</h1>
+          <p className="text-[11px] mt-0.5 font-medium" style={{ color: "rgba(180,160,255,0.6)" }}>궁금한 점을 자유롭게 질문해봐 💬</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all outline-none"
-          style={{ background: "#FEE500", color: "#3A1D1D" }}
-        >
-          <Plus size={22} strokeWidth={3} />
+        <button onClick={() => setShowModal(true)}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full font-black text-[12px] text-white hover:scale-105 active:scale-95 transition-all"
+          style={{ background: "linear-gradient(135deg,#405DE6,#833AB4,#E1306C)", boxShadow: "0 4px 16px rgba(225,48,108,0.35)" }}>
+          <Plus size={14} strokeWidth={3} /> 질문
         </button>
       </div>
 
-      {/* ── 채팅방 라벨 ── */}
-      <div className="flex items-center gap-3 px-6 py-3 shrink-0">
-        <div style={{ flex: 1, height: 1, background: "rgba(40,80,100,0.18)" }} />
-        <span className="text-[11px] font-bold px-3 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.35)", color: "rgba(20,50,70,0.7)" }}>
-          Q&amp;A 채팅방
-        </span>
-        <div style={{ flex: 1, height: 1, background: "rgba(40,80,100,0.18)" }} />
+      {/* 섹션 라벨 */}
+      <div className="flex items-center gap-3 px-5 py-2.5 shrink-0">
+        <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.07)" }} />
+        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "rgba(160,130,255,0.5)" }}>posts</span>
+        <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.07)" }} />
       </div>
 
       {/* ── 포스트 목록 ── */}
@@ -253,285 +247,183 @@ export default function QnAPage() {
         ) : posts.map(post => {
           const isMine = isMyPost(post.author);
           const isEditingThisPost = editingPostId === post.id;
-
-          let myBubble = KTALK.myBubbleA; // 항상 하늘색으로 통일
-          if (isMine) { myPostCount++; } // count는 유지(오류 방지)
+          const initial = post.author.length > 1 ? post.author.slice(-2) : post.author.charAt(0);
+          const heartCount = (hearts[post.id] || []).length;
+          const liked = (hearts[post.id] || []).includes(studentName);
 
           return (
-            <div key={post.id} className="flex flex-col items-stretch mb-2">
+            <div key={post.id} className="rounded-[1.4rem] overflow-hidden"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", backdropFilter: "blur(12px)" }}>
 
-              {/* ── 질문 말풍선 행 ── */}
-              <div className="flex items-start gap-2 flex-row">
-
-                {/* 아바타 */}
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-5 text-[13px] font-black"
-                  style={isMine
-                    ? { background: "#FEE500", color: "#3A1D1D" }
-                    : { background: "rgba(255,255,255,0.65)", border: "1.5px solid rgba(255,255,255,0.85)", color: "#4a6a7a" }
-                  }
-                >
-                  {isMine ? studentName[0] : <User size={16} />}
-                </div>
-
-                {/* 말풍선 묶음 */}
-                <div className="flex flex-col items-start gap-1" style={{ width: "80%" }}>
-
-                  {/* 이름 + 지문 */}
-                  <div className="flex items-center gap-1.5 flex-row">
-                    <span className="text-[11px] font-bold" style={{ color: "rgba(20,50,70,0.8)" }}>
-                      {isMine ? `나 (${studentName})` : "익명"}
-                    </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.45)", color: "rgba(20,50,70,0.6)" }}>
-                      📚 {post.passage}
-                    </span>
-                  </div>
-
-                  {/* 말풍선 */}
-                  <div
-                    className="w-full px-4 pt-3 pb-2"
-                    style={{
-                      background: isMine ? myBubble.bg : KTALK.otherBubble.bg,
-                      color: isMine ? myBubble.text : KTALK.otherBubble.text,
-                      borderRadius: BUBBLE_RADIUS,
-                      boxShadow: "0 1px 4px rgba(0,0,0,0.13)",
-                    }}
-                  >
-                    {isEditingThisPost ? (
-                      <textarea
-                        value={editingPostText}
-                        onChange={e => setEditingPostText(e.target.value)}
-                        autoFocus rows={3}
-                        style={{
-                          width: "100%", background: "rgba(255,255,255,0.55)",
-                          border: "1px solid rgba(0,0,0,0.12)", color: "#1a2a36",
-                          borderRadius: 10, padding: "6px 10px",
-                          resize: "vertical" as const, fontSize: 15, lineHeight: 1.6, outline: "none",
-                        }}
-                        onKeyDown={e => { if (e.key === "Escape") handleCancelEditPost(); }}
-                      />
-                    ) : (
-                      <p style={{ fontSize: 15, lineHeight: 1.65, fontWeight: 500, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
-                        {post.question}
-                      </p>
-                    )}
-
-                    {/* 말풍선 하단 */}
-                    <div className="flex items-center justify-between mt-2">
-                      <span
-                        className="text-[9px] font-black px-2 py-0.5 rounded-full"
-                        style={post.status === "answered"
-                          ? { background: "rgba(40,160,70,0.18)", color: "#1a6a2a" }
-                          : { background: "rgba(190,150,0,0.15)", color: "#7a5a00" }
-                        }
-                      >
-                        {post.status === "answered" ? "✓ 답변완료" : "○ 대기중"}
-                      </span>
-
-                      {/* 오른쪽: 하트 박스 + 댓글 박스 */}
-                      <div className="flex items-center gap-1.5">
-                        <HeartBtn targetId={post.id} targetType="post" />
-                        <button
-                          onClick={e => { e.stopPropagation(); toggleAnswers(post.id); }}
-                          className="flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:scale-105"
-                          style={{
-                            background: post.showAnswers ? "rgba(30,80,120,0.18)" : "rgba(0,0,0,0.07)",
-                            border: post.showAnswers ? "1px solid rgba(30,80,120,0.28)" : "1px solid rgba(0,0,0,0.10)",
-                            color: "#1a5070", fontSize: 10, fontWeight: 700,
-                          }}
-                        >
-                          <MessageCircle size={11} strokeWidth={2.5} />
-                          {post.answers.length}
-                          {post.showAnswers ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 시간 + 수정/삭제 */}
-                  <div className="flex items-center gap-1.5 flex-wrap flex-row">
-                    <span className="text-[10px]" style={{ color: "rgba(20,50,70,0.5)" }}>
-                      {new Date(post.createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                    {isMine && !isEditingThisPost && (
-                      <>
-                        <button onClick={e => { e.stopPropagation(); handleStartEditPost(post); }} title="수정"
-                          className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/50 transition-all"
-                          style={{ color: "rgba(20,50,70,0.42)" }}>
-                          <Pencil size={11} />
-                        </button>
-                        <button onClick={e => { e.stopPropagation(); handleDeletePost(post.id); }} title="삭제"
-                          disabled={deletingPostId === post.id}
-                          className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-200/60 transition-all disabled:opacity-30"
-                          style={{ color: "rgba(180,60,60,0.65)" }}>
-                          {deletingPostId === post.id ? <span className="text-[9px] animate-pulse">…</span> : <Trash2 size={11} />}
-                        </button>
-                      </>
-                    )}
-                    {isMine && isEditingThisPost && (
-                      <>
-                        <button onClick={e => { e.stopPropagation(); handleSaveEditPost(post.id); }} title="저장"
-                          disabled={savingPostId === post.id}
-                          className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-green-200/60 transition-all disabled:opacity-30"
-                          style={{ color: "#1a7a2a" }}>
-                          {savingPostId === post.id ? <span className="text-[9px] animate-pulse">…</span> : <Check size={12} />}
-                        </button>
-                        <button onClick={e => { e.stopPropagation(); handleCancelEditPost(); }} title="취소"
-                          className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/50 transition-all"
-                          style={{ color: "rgba(20,50,70,0.42)" }}>
-                          <X size={12} />
-                        </button>
-                      </>
-                    )}
+              {/* 포스트 헤더 — 아바타 + 이름 + 지문 */}
+              <div className="flex items-center gap-3 px-4 py-3"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                <div className="p-[2px] rounded-full shrink-0"
+                  style={{ background: isMine ? "linear-gradient(135deg,#405DE6,#E1306C)" : "rgba(255,255,255,0.15)" }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-black"
+                    style={{ background: "#09090f", color: isMine ? "#c8b4ff" : "rgba(255,255,255,0.6)" }}>
+                    {initial}
                   </div>
                 </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-black leading-none" style={{ color: "rgba(255,255,255,0.9)" }}>
+                    {isMine ? `${post.author} (나)` : post.author}
+                  </p>
+                  <p className="text-[10px] mt-0.5 truncate" style={{ color: "rgba(160,130,255,0.6)" }}>
+                    📚 {post.passage}
+                  </p>
+                </div>
+                <span className="text-[9px] font-black px-2 py-1 rounded-full shrink-0"
+                  style={post.status === "answered"
+                    ? { background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.25)" }
+                    : { background: "rgba(255,200,0,0.12)", color: "#fbbf24", border: "1px solid rgba(255,200,0,0.2)" }}>
+                  {post.status === "answered" ? "답변완료" : "대기중"}
+                </span>
               </div>
 
-              {/* ── 댓글 섹션 ── */}
-              {post.showAnswers && (
-                <div className="mt-2 pl-11 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="flex flex-col gap-2 items-end">
-                    {post.answers.length === 0 && (
-                      <p className="w-full text-center py-2 text-[11px] font-semibold" style={{ color: "rgba(20,50,70,0.4)" }}>
-                        아직 댓글이 없어요 🌱
-                      </p>
-                    )}
+              {/* 본문 */}
+              <div className="px-4 py-3">
+                {isEditingThisPost ? (
+                  <textarea value={editingPostText} onChange={e => setEditingPostText(e.target.value)}
+                    autoFocus rows={3}
+                    className="w-full rounded-xl text-[14px] font-medium resize-none outline-none"
+                    style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.88)", padding: "10px 12px" }}
+                    onKeyDown={e => { if (e.key === "Escape") handleCancelEditPost(); }} />
+                ) : (
+                  <p style={{ fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.82)", whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
+                    {post.question}
+                  </p>
+                )}
+                <p className="text-[10px] mt-2" style={{ color: "rgba(255,255,255,0.25)" }}>
+                  {new Date(post.createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </p>
+              </div>
 
+              {/* IG 액션 바 */}
+              <div className="flex items-center gap-3 px-4 pb-3 pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                <button onClick={e => { e.stopPropagation(); handleHeart(post.id, "post"); }}
+                  className="flex items-center gap-1 transition-all hover:scale-110 active:scale-95">
+                  <span style={{ fontSize: 16 }}>{liked ? "❤️" : "🤍"}</span>
+                  <span className="text-[11px] font-bold" style={{ color: liked ? "#f43f5e" : "rgba(255,255,255,0.35)" }}>{heartCount}</span>
+                </button>
+                <button onClick={e => { e.stopPropagation(); toggleAnswers(post.id); }}
+                  className="flex items-center gap-1 transition-all hover:scale-105">
+                  <MessageCircle size={16} style={{ color: "rgba(255,255,255,0.35)" }} />
+                  <span className="text-[11px] font-bold" style={{ color: "rgba(255,255,255,0.35)" }}>{post.answers.length}</span>
+                </button>
+                {isMine && !isEditingThisPost && (
+                  <>
+                    <button onClick={e => { e.stopPropagation(); handleStartEditPost(post); }}
+                      className="ml-auto w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 transition-all"
+                      style={{ color: "rgba(255,255,255,0.28)" }}><Pencil size={11} /></button>
+                    <button onClick={e => { e.stopPropagation(); handleDeletePost(post.id); }}
+                      disabled={deletingPostId === post.id}
+                      className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-500/20 transition-all disabled:opacity-30"
+                      style={{ color: "rgba(255,100,100,0.5)" }}>
+                      {deletingPostId === post.id ? <span className="text-[9px] animate-pulse">…</span> : <Trash2 size={11} />}
+                    </button>
+                  </>
+                )}
+                {isMine && isEditingThisPost && (
+                  <>
+                    <button onClick={e => { e.stopPropagation(); handleSaveEditPost(post.id); }}
+                      disabled={savingPostId === post.id}
+                      className="ml-auto w-6 h-6 flex items-center justify-center rounded-full hover:bg-green-500/20 transition-all disabled:opacity-30"
+                      style={{ color: "#4ade80" }}>
+                      {savingPostId === post.id ? <span className="text-[9px] animate-pulse">…</span> : <Check size={12} />}
+                    </button>
+                    <button onClick={e => { e.stopPropagation(); handleCancelEditPost(); }}
+                      className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 transition-all"
+                      style={{ color: "rgba(255,255,255,0.28)" }}><X size={12} /></button>
+                  </>
+                )}
+              </div>
+
+              {/* 댓글 섹션 */}
+              {post.showAnswers && (
+                <div className="px-4 pb-4 animate-in fade-in slide-in-from-top-2 duration-300"
+                  style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="flex flex-col gap-2.5 pt-3">
+                    {post.answers.length === 0 && (
+                      <p className="text-center py-2 text-[11px]" style={{ color: "rgba(255,255,255,0.25)" }}>아직 댓글이 없어요 🌱</p>
+                    )}
                     {post.answers.map(ans => {
                       const isMe = ans.author === studentName;
                       const isEditingThis = editingAnswerId === ans.id;
                       const isDeletingThis = deletingAnswerId === ans.id;
-                      const bubbleBg = ans.isTeacher ? KTALK.teacherBubble.bg : isMe ? "#D4F0FF" : KTALK.otherBubble.bg;
-                      const bubbleColor = ans.isTeacher ? KTALK.teacherBubble.text : isMe ? "#0d2d3f" : "#222222";
-
+                      const ansInitial = ans.author.length > 1 ? ans.author.slice(-2) : ans.author.charAt(0);
                       return (
-                        <div key={ans.id} className="flex flex-col items-end" style={{ width: "90%" }}>
-
-                          {/* 이름 행 */}
-                          <div className="flex items-center gap-1.5 mb-1 pr-0.5 self-end">
-                            {ans.isTeacher && (
-                              <span
-                                className="text-[10px] font-black px-2 py-0.5 rounded-full"
-                                style={{ background: "#FFD700", color: "#3a2800", boxShadow: "0 0 5px rgba(255,200,0,0.45)" }}
-                              >
-                                ⭐ 선생님
+                        <div key={ans.id} className="flex items-start gap-2.5">
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5"
+                            style={{ background: ans.isTeacher ? "linear-gradient(135deg,#f59e0b,#d97706)" : isMe ? "linear-gradient(135deg,#405DE6,#833AB4)" : "rgba(255,255,255,0.12)", color: "#fff" }}>
+                            {ans.isTeacher ? "T" : ansInitial}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              {ans.isTeacher && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full" style={{ background: "rgba(245,158,11,0.2)", color: "#fbbf24" }}>⭐ 선생님</span>}
+                              <span className="text-[11px] font-bold" style={{ color: ans.isTeacher ? "#fbbf24" : "rgba(255,255,255,0.65)" }}>
+                                {ans.isTeacher ? "선생님" : isMe ? `${ans.author} (나)` : ans.author}
                               </span>
-                            )}
-                            <div
-                              className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-black"
-                              style={ans.isTeacher
-                                ? { background: "#FEE500", color: "#3A1D1D" }
-                                : isMe
-                                  ? { background: "#FEE500", color: "#3A1D1D" }
-                                  : { background: "rgba(255,255,255,0.7)", color: "#3a5a6a", border: "1px solid rgba(255,255,255,0.9)" }
-                              }
-                            >
-                              {ans.isTeacher ? "🏫" : isMe ? studentName[0] : <User size={10} />}
+                              <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.2)" }}>{ans.time}</span>
                             </div>
-                            <span className="text-[10px] font-bold" style={{ color: ans.isTeacher ? "#7a5a00" : "rgba(20,50,70,0.65)" }}>
-                              {ans.isTeacher ? "선생님" : isMe ? `나 (${studentName})` : "익명"}
-                            </span>
-                          </div>
-
-                          {/* 말풍선 */}
-                          <div
-                            className="w-full px-4 pt-3 pb-2"
-                            style={{
-                              background: bubbleBg, color: bubbleColor,
-                              borderRadius: BUBBLE_RADIUS,
-                              boxShadow: ans.isTeacher
-                                ? "0 2px 10px rgba(255,210,0,0.2), 0 1px 3px rgba(0,0,0,0.08)"
-                                : "0 1px 3px rgba(0,0,0,0.09)",
-                              borderLeft: ans.isTeacher ? "3px solid #FFD700" : "none",
-                            }}
-                          >
                             {isEditingThis ? (
-                              <textarea
-                                value={editingAnswerText}
-                                onChange={e => setEditingAnswerText(e.target.value)}
+                              <textarea value={editingAnswerText} onChange={e => setEditingAnswerText(e.target.value)}
                                 autoFocus rows={2}
-                                style={{
-                                  width: "100%", background: "rgba(255,255,255,0.65)",
-                                  border: "1px solid rgba(0,0,0,0.1)", color: "#1a2a36",
-                                  borderRadius: 8, padding: "4px 8px",
-                                  resize: "vertical" as const, fontSize: 13, outline: "none",
-                                }}
-                                onKeyDown={e => {
-                                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEditAnswer(ans.id); }
-                                  if (e.key === "Escape") handleCancelEditAnswer();
-                                }}
-                              />
+                                className="w-full rounded-lg text-[13px] resize-none outline-none"
+                                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.88)", padding: "6px 10px" }}
+                                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEditAnswer(ans.id); } if (e.key === "Escape") handleCancelEditAnswer(); }} />
                             ) : (
-                              <p style={{ fontSize: 13, lineHeight: 1.65, fontWeight: ans.isTeacher ? 600 : 500, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                                {ans.text}
-                              </p>
+                              <p style={{ fontSize: 13, lineHeight: 1.65, color: "rgba(255,255,255,0.72)", whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{ans.text}</p>
                             )}
-
-                            {/* 하트 박스 — 오른쪽 하단 */}
-                            <div className="flex justify-end mt-1.5">
-                              <HeartBtn targetId={ans.id} targetType="answer" />
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <button onClick={e => { e.stopPropagation(); handleHeart(ans.id, "answer"); }}
+                                className="flex items-center gap-0.5 transition-all hover:scale-110">
+                                <span style={{ fontSize: 12 }}>{(hearts[ans.id] || []).includes(studentName) ? "❤️" : "🤍"}</span>
+                                <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.28)" }}>{(hearts[ans.id] || []).length}</span>
+                              </button>
+                              {isMe && !ans.isTeacher && !isEditingThis && (
+                                <>
+                                  <button onClick={e => { e.stopPropagation(); handleStartEditAnswer(ans); }}
+                                    className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10 transition-all"
+                                    style={{ color: "rgba(255,255,255,0.25)" }}><Pencil size={9} /></button>
+                                  <button onClick={e => { e.stopPropagation(); handleDeleteAnswer(ans.id); }}
+                                    disabled={isDeletingThis}
+                                    className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-500/20 transition-all disabled:opacity-30"
+                                    style={{ color: "rgba(255,100,100,0.4)" }}>
+                                    {isDeletingThis ? <span className="text-[8px] animate-pulse">…</span> : <Trash2 size={9} />}
+                                  </button>
+                                </>
+                              )}
+                              {isMe && !ans.isTeacher && isEditingThis && (
+                                <>
+                                  <button onClick={e => { e.stopPropagation(); handleSaveEditAnswer(ans.id); }}
+                                    className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-green-500/20 transition-all"
+                                    style={{ color: "#4ade80" }}><Check size={10} /></button>
+                                  <button onClick={e => { e.stopPropagation(); handleCancelEditAnswer(); }}
+                                    className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10 transition-all"
+                                    style={{ color: "rgba(255,255,255,0.25)" }}><X size={10} /></button>
+                                </>
+                              )}
                             </div>
-                          </div>
-
-                          {/* 시간 + 수정/삭제 */}
-                          <div className="flex items-center gap-1 mt-0.5 pr-0.5">
-                            <span className="text-[9px]" style={{ color: "rgba(20,50,70,0.42)" }}>{ans.time}</span>
-                            {isMe && !ans.isTeacher && !isEditingThis && (
-                              <>
-                                <button onClick={e => { e.stopPropagation(); handleStartEditAnswer(ans); }} title="수정"
-                                  className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/50 transition-all"
-                                  style={{ color: "rgba(20,50,70,0.38)" }}>
-                                  <Pencil size={9} />
-                                </button>
-                                <button onClick={e => { e.stopPropagation(); handleDeleteAnswer(ans.id); }} title="삭제"
-                                  disabled={isDeletingThis}
-                                  className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-200/60 transition-all disabled:opacity-30"
-                                  style={{ color: "rgba(180,60,60,0.58)" }}>
-                                  {isDeletingThis ? <span className="text-[8px] animate-pulse">…</span> : <Trash2 size={9} />}
-                                </button>
-                              </>
-                            )}
-                            {isMe && !ans.isTeacher && isEditingThis && (
-                              <>
-                                <button onClick={e => { e.stopPropagation(); handleSaveEditAnswer(ans.id); }} title="저장"
-                                  className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-green-200/60 transition-all"
-                                  style={{ color: "#1a7a2a" }}>
-                                  <Check size={10} />
-                                </button>
-                                <button onClick={e => { e.stopPropagation(); handleCancelEditAnswer(); }} title="취소"
-                                  className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/50 transition-all"
-                                  style={{ color: "rgba(20,50,70,0.38)" }}>
-                                  <X size={10} />
-                                </button>
-                              </>
-                            )}
                           </div>
                         </div>
                       );
                     })}
                   </div>
-
-                  {/* 댓글 입력창 */}
-                  <div
-                    className="flex items-center gap-2 mt-3 px-3 py-2 rounded-2xl"
-                    style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.8)" }}
-                  >
-                    <MessageCircle size={14} strokeWidth={2} style={{ color: "rgba(20,60,90,0.38)", flexShrink: 0 }} />
-                    <input
-                      value={commentInput[post.id] || ""}
+                  {/* 댓글 입력 */}
+                  <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-2xl"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" }}>
+                    <input value={commentInput[post.id] || ""}
                       onChange={e => setCommentInput(prev => ({ ...prev, [post.id]: e.target.value }))}
                       onKeyDown={e => e.key === "Enter" && handlePostComment(post.id)}
-                      placeholder="댓글 입력..."
+                      placeholder="댓글 달기..."
                       className="flex-1 bg-transparent text-[13px] font-medium focus:outline-none"
-                      style={{ color: "#1a2a36" }}
-                    />
-                    <button
-                      onClick={e => { e.stopPropagation(); handlePostComment(post.id); }}
+                      style={{ color: "rgba(255,255,255,0.75)" }} />
+                    <button onClick={e => { e.stopPropagation(); handlePostComment(post.id); }}
                       disabled={submittingCommentId === post.id}
-                      className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 disabled:opacity-40 transition-all"
-                      style={{ background: "#FEE500", color: "#3A1D1D" }}
-                    >
-                      <Send size={13} strokeWidth={2.5} />
+                      className="w-7 h-7 rounded-full flex items-center justify-center active:scale-95 disabled:opacity-40 transition-all"
+                      style={{ background: "linear-gradient(135deg,#405DE6,#E1306C)" }}>
+                      <Send size={12} strokeWidth={2.5} className="text-white" />
                     </button>
                   </div>
                 </div>
@@ -540,7 +432,6 @@ export default function QnAPage() {
           );
         })}
       </div>
-
       {/* ── 질문 등록 모달 ── */}
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center animate-in fade-in duration-300">

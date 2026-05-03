@@ -330,42 +330,45 @@ export default function AITeacherPage() {
       )}
 
       {/* Chat History */}
-      <div className="flex-1 overflow-y-auto px-5 custom-scrollbar flex flex-col gap-6 pb-[200px] pt-6">
+      <div className="flex-1 overflow-y-auto px-4 custom-scrollbar flex flex-col gap-4 pb-[200px] pt-4">
         {messages.map((msg, idx) => {
-          const isLastAI = msg === lastAIMsg && msg.sender === "ai";
+          const isLastAI = msg === lastAIMsg && msg.sender === 'ai';
           return (
             <div key={msg.id} className="animate-in fade-in slide-in-from-bottom-2 duration-400">
               {idx > 0 && msg.timestamp - messages[idx - 1].timestamp > 3600000 && (
-                <div className="text-center text-[10px] font-bold text-accent/40 my-3">
-                  {new Date(msg.timestamp).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                <div className="text-center text-[10px] font-bold my-3" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                  {new Date(msg.timestamp).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </div>
               )}
-              <div className={`flex ${msg.sender === "ai" ? "justify-start" : "justify-end"}`}>
-                {msg.sender === "ai" && (
-                  <div className="w-7 h-7 rounded-full bg-foreground text-background flex items-center justify-center shrink-0 mr-2 mt-1">
-                    <Sparkles size={12} strokeWidth={1.5} />
+              <div className={`flex ${msg.sender === 'ai' ? 'justify-start' : 'justify-end'}`}>
+                {msg.sender === 'ai' && (
+                  <div className="p-[2px] rounded-full shrink-0 mr-2 mt-1 self-end"
+                    style={{ background: 'linear-gradient(135deg,#405DE6,#833AB4,#E1306C)' }}>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#09090f' }}>
+                      <Sparkles size={11} strokeWidth={1.5} className="text-white" />
+                    </div>
                   </div>
                 )}
-                <div className="max-w-[85%] flex flex-col gap-2.5">
-                  <div className={`p-5 rounded-[2rem] text-[14px] shadow-sm whitespace-pre-wrap leading-[1.7] ${
-                    msg.sender === "ai"
-                      ? "bg-white border border-foreground/5 text-foreground rounded-tl-sm font-medium"
-                      : "bg-foreground text-background rounded-tr-sm shadow-xl font-medium"
-                  }`}>
+                <div className="max-w-[80%] flex flex-col gap-2">
+                  <div className={`px-4 py-3 text-[13.5px] whitespace-pre-wrap leading-[1.7] ${
+                    msg.sender === 'ai'
+                      ? 'rounded-[1.4rem] rounded-bl-sm font-medium'
+                      : 'rounded-[1.4rem] rounded-br-sm font-medium'
+                  }`} style={msg.sender === 'ai'
+                    ? { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(8px)' }
+                    : { background: 'linear-gradient(135deg,#405DE6,#833AB4)', color: '#fff', boxShadow: '0 4px 20px rgba(64,93,230,0.35)' }}>
                     {msg.text}
                   </div>
                 </div>
               </div>
 
               {isLastAI && msg.options && msg.options.length > 0 && (
-                <div className="flex flex-col gap-1.5 mt-4 ml-9 pr-6 animate-in slide-in-from-left-4 duration-500">
+                <div className="flex flex-col gap-1.5 mt-3 ml-10 pr-4 animate-in slide-in-from-left-4 duration-500">
                   {msg.options.map((opt, optIdx) => (
-                    <button
-                      key={optIdx}
-                      onClick={() => handleOptionClick(opt.text)}
+                    <button key={optIdx} onClick={() => handleOptionClick(opt.text)}
                       disabled={isLoading}
-                      className="text-left text-[12px] font-bold text-foreground bg-white hover:bg-foreground hover:text-background border border-foreground/10 px-5 py-3 rounded-[1.5rem] transition-all active:scale-[0.98] leading-snug shadow-sm disabled:opacity-50"
-                    >
+                      className="text-left text-[12px] font-bold px-4 py-2.5 rounded-2xl transition-all active:scale-[0.98] disabled:opacity-50"
+                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.75)' }}>
                       {opt.text}
                     </button>
                   ))}
@@ -376,58 +379,42 @@ export default function AITeacherPage() {
         })}
 
         {isLoading && (
-          <div className="flex items-center gap-2 ml-9 animate-in fade-in duration-300">
-            <div className="flex gap-1.5">
+          <div className="flex items-center gap-2 ml-10 animate-in fade-in duration-300">
+            <div className="flex gap-1">
               {[0, 150, 300].map(delay => (
-                <div key={delay} className="w-2 h-2 bg-foreground/20 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+                <div key={delay} className="w-2 h-2 rounded-full animate-bounce" style={{ background: 'rgba(160,130,255,0.5)', animationDelay: `${delay}ms` }} />
               ))}
             </div>
-            <span className="text-[11px] text-accent font-bold">Parallax가 생각 중...</span>
+            <span className="text-[11px] font-bold" style={{ color: 'rgba(160,130,255,0.6)' }}>Parallax가 생각 중...</span>
           </div>
         )}
         <div ref={bottomRef} className="h-4" />
       </div>
 
-      {/* Input */}
-      <div className="fixed bottom-[88px] left-0 right-0 w-full max-w-2xl mx-auto px-5 z-20 pb-4">
-        <div className="bg-gradient-to-t from-background via-background/95 to-transparent pt-4">
+      {/* IG DM 스타일 입력창 */}
+      <div className="fixed bottom-[88px] left-0 right-0 w-full max-w-2xl mx-auto px-4 z-20 pb-4">
+        <div className="pt-3" style={{ background: 'linear-gradient(to top, rgba(9,9,15,1) 80%, transparent)' }}>
           <form id="ai-form" onSubmit={handleSend}
-            className="relative bg-white rounded-[2rem] p-2 border border-foreground/10 flex items-end shadow-[0_8px_32px_rgba(0,0,0,0.1)] overflow-hidden">
-            <div className="pl-4 text-accent opacity-30 shrink-0 pb-3">
-              <MessageSquare size={16} />
-            </div>
-            <textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
+            className="relative flex items-end gap-2 px-4 py-2.5 rounded-[2rem]"
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)' }}>
+            <textarea value={input} onChange={e => setInput(e.target.value)}
               disabled={isLoading}
-              placeholder={selectedSet ? `${selectedSet.label}에 대해 질문해봐...` : "영어에 대해 무엇이든 물어봐..."}
-              className="flex-1 bg-transparent border-none outline-none px-3 py-3 text-[14px] font-medium placeholder:text-accent/50 text-foreground w-full shadow-none resize-none min-h-[44px] max-h-[120px]"
+              placeholder={selectedSet ? `${selectedSet.label}에 대해 질문해봐...` : '영어에 대해 무엇이든 물어봐...'}
+              className="flex-1 bg-transparent outline-none text-[14px] font-medium resize-none min-h-[36px] max-h-[100px]"
+              style={{ color: 'rgba(255,255,255,0.88)', caretColor: '#E1306C' }}
               rows={1}
-              onKeyDown={e => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage(input);
-                }
-              }}
-              onInput={e => {
-                const el = e.currentTarget;
-                el.style.height = "auto";
-                el.style.height = Math.min(el.scrollHeight, 120) + "px";
-              }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
+              onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }}
             />
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading}
-              className="w-11 h-11 shrink-0 rounded-[1.3rem] bg-foreground text-background flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-20 shadow-md self-end"
-            >
-              {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} strokeWidth={2.5} />}
+            <button type="submit" disabled={!input.trim() || isLoading}
+              className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
+              style={{ background: 'linear-gradient(135deg,#405DE6,#E1306C)', boxShadow: '0 4px 14px rgba(225,48,108,0.4)' }}>
+              {isLoading ? <Loader2 size={15} className="animate-spin text-white" /> : <Send size={15} strokeWidth={2.5} className="text-white" />}
             </button>
           </form>
-          <p className="text-center text-[10px] text-accent/40 font-bold mt-2">
-            대화 내역은 자동 저장되며 다음 방문 시 이어집니다
-          </p>
         </div>
       </div>
     </div>
   );
 }
+
