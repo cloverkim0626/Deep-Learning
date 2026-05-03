@@ -937,13 +937,17 @@ function TestSessionModal({ session, students, existingSlots, existingChecks, on
 
   const getAutoResult = (e: TestEntry): string => {
     if (!e.included) return 'excluded';
-    if (['absent','late','unattempted','unmemorized_retry'].includes(e.resultCode)) return e.resultCode;
+    const ABSENT = ['absent','late','unattempted','unmemorized_retry'];
+    if (ABSENT.includes(e.resultCode)) return e.resultCode;
     if (['verbal_retest','fail_retry'].includes(e.resultCode)) return e.resultCode;
     if (!e.score) return '';
     if (cfg?.isPF && cfg?.passScore) {
       return Number(e.score) >= Number(cfg.passScore) ? 'pass' : 'fail';
     }
-    return 'scored'; // non-PF: just has a score
+    if (!cfg?.isPF && cfg?.passScore) {
+      return Number(e.score) >= Number(cfg.passScore) ? 'pass' : 'fail';
+    }
+    return 'scored';
   };
 
   const handleSave = async () => {
@@ -1012,10 +1016,13 @@ function TestSessionModal({ session, students, existingSlots, existingChecks, on
   });
   const scores = participating.map(stu2 => Number(entries[stu2.student_name]?.score)).filter((n, i) => !isNaN(n) && participating[i] && entries[participating[i].student_name]?.score !== '');
   const avg = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-  const passCount = cfg?.isPF
-    ? participating.filter(s => entries[s.student_name]?.pfResult === 'pass').length
-    : (cfg?.passScore ? scores.filter(n => n >= Number(cfg.passScore)).length : null);
-  const doneCount = students.filter(s => { const e = entries[s.student_name]; return e?.included && (e.score || e.resultCode || e.pfResult); }).length;
+  const passCount = cfg?.passScore
+    ? participating.filter(s => {
+        const sc = Number(entries[s.student_name]?.score);
+        return !isNaN(sc) && entries[s.student_name]?.score !== '' && sc >= Number(cfg.passScore);
+      }).length
+    : null;
+  const doneCount = students.filter(s => { const e = entries[s.student_name]; return e?.included && (e.score || e.resultCode); }).length;
 
   return (
     <div className="fixed inset-0 backdrop-blur-sm z-[350] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }}>
@@ -1098,52 +1105,109 @@ function TestSessionModal({ session, students, existingSlots, existingChecks, on
         <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1.5" style={{ background: '#f8fafc' }}>
           {students.map(stu => {
             const e = entries[stu.student_name] || { included: true, score: '', resultCode: '', retryDate: '', pfResult: '' };
-            const autoRes = getAutoResult(e);
-            const isFail = cfg?.isPF ? e.pfResult === 'fail' : ['fail','verbal_retest','fail_retry'].includes(autoRes);
-            const isPass = cfg?.isPF ? e.pfResult === 'pass' : autoRes === 'pass';
-            const isAbsent = SKIP_CODES.includes(autoRes);
-            const myScore = e.score ? Number(e.score) : null;
-            const rank = !cfg?.isPF && myScore != null && scores.length > 1 ? scores.filter(s => s > myScore).length + 1 : null;
-            const pct = !cfg?.isPF && myScore != null && cfg?.maxScore ? Math.round(myScore / Number(cfg.maxScore) * 100) : null;
+
+            // ── 자동 P/F 판정 ──────────────────────────────────────────────
+            const scoreNum = e.score !== '' ? Number(e.score) : null;
+            const passNum  = cfg?.passScore ? Number(cfg.passScore) : null;
+            const maxNum   = cfg?.maxScore  ? Number(cfg.maxScore)  : null;
+            // P/F 모드: 점수+기준 모두 있으면 자동 판정, 결석코드 있으면 미응시
+            const ABSENT_CODES = ['absent','late','unattempted','unmemorized_retry'];
+            const isManualAbsent = ABSENT_CODES.includes(e.resultCode);
+            const autoIsPass = cfg?.isPF && scoreNum !== null && passNum !== null && !isManualAbsent
+              ? scoreNum >= passNum : false;
+            const autoIsFail = cfg?.isPF && scoreNum !== null && passNum !== null && !isManualAbsent
+              ? scoreNum < passNum : false;
+            // non-PF: 점수 < passScore면 fail
+            const nonPfIsFail = !cfg?.isPF && scoreNum !== null && passNum !== null && scoreNum < passNum;
+            const nonPfIsPass = !cfg?.isPF && scoreNum !== null && passNum !== null && scoreNum >= passNum;
+            const isAbsent = isManualAbsent;
+
+            // 배경색: PASS=초록, FAIL=빨강, 결석=노랑, 기본=흰
+            const rowBg = !e.included ? '#f8fafc'
+              : (autoIsPass || nonPfIsPass) ? '#f0fdf4'
+              : (autoIsFail || nonPfIsFail) ? '#fef2f2'
+              : isAbsent ? '#fffbeb' : '#fff';
+            const rowBorder = !e.included ? '1.5px solid #f1f5f9'
+              : (autoIsPass || nonPfIsPass) ? '1.5px solid #bbf7d0'
+              : (autoIsFail || nonPfIsFail) ? '1.5px solid #fecaca'
+              : isAbsent ? '1.5px solid #fde68a' : '1.5px solid #f1f5f9';
+
+            // 득점 퍼센티지
+            const pct = scoreNum !== null && maxNum ? Math.round(scoreNum / maxNum * 100) : null;
+            // 순위 (non-PF)
+            const rank = !cfg?.isPF && scoreNum !== null && scores.length > 1 ? scores.filter(s => s > scoreNum!).length + 1 : null;
+
             return (
               <div key={stu.student_name} className="grid items-center rounded-xl px-4 py-3"
                 style={{
                   gridTemplateColumns: '20px 1fr 130px 130px 100px', gap: '12px',
-                  background: !e.included ? '#f8fafc' : isPass ? '#f0fdf4' : isFail ? '#fef2f2' : isAbsent ? '#fffbeb' : '#fff',
-                  opacity: e.included ? 1 : 0.4,
-                  border: isPass ? '1.5px solid #bbf7d0' : isFail ? '1.5px solid #fecaca' : isAbsent ? '1.5px solid #fde68a' : '1.5px solid #f1f5f9',
+                  background: rowBg, opacity: e.included ? 1 : 0.4, border: rowBorder,
                 }}>
                 <input type="checkbox" checked={e.included} onChange={() => upd(stu.student_name, { included: !e.included })}
                   className="w-4 h-4 rounded cursor-pointer accent-indigo-500" />
+
+                {/* 학생명 + 부가정보 */}
                 <div>
                   <p className="text-[13px] font-black truncate" style={{ color: e.included ? '#1e293b' : '#94a3b8' }}>{stu.student_name}</p>
-                  {e.included && !cfg?.isPF && rank != null && <p className="text-[10px] font-bold" style={{ color: '#6366f1' }}>#{rank} · {pct}%</p>}
-                  {e.included && cfg?.isPF && e.pfResult && <p className="text-[10px] font-black" style={{ color: isPass ? '#15803d' : '#dc2626' }}>{isPass ? '✅ PASS' : '❌ FAIL'}</p>}
+                  {e.included && (autoIsPass || nonPfIsPass) && <p className="text-[10px] font-black" style={{ color: '#15803d' }}>✅ PASS {pct != null ? `· ${pct}%` : ''}</p>}
+                  {e.included && (autoIsFail || nonPfIsFail) && <p className="text-[10px] font-black" style={{ color: '#dc2626' }}>❌ FAIL {pct != null ? `· ${pct}%` : ''}</p>}
+                  {e.included && !cfg?.isPF && rank != null && !nonPfIsFail && !nonPfIsPass && <p className="text-[10px] font-bold" style={{ color: '#6366f1' }}>#{rank} · {pct}%</p>}
                 </div>
+
+                {/* 점수 입력 — P/F 모드에서도 항상 표시 */}
                 <div className="flex items-center justify-center gap-1.5">
                   {e.included && !isAbsent && (
-                    cfg?.isPF ? (
-                      <select value={e.pfResult} onChange={ev => upd(stu.student_name, { pfResult: ev.target.value as 'pass' | 'fail' | '' })}
-                        className="w-full h-9 px-2 rounded-xl text-[12px] font-black outline-none text-center cursor-pointer"
-                        style={{ background: e.pfResult === 'pass' ? '#f0fdf4' : e.pfResult === 'fail' ? '#fef2f2' : '#f8fafc', border: '1.5px solid #e2e8f0', color: e.pfResult === 'pass' ? '#15803d' : e.pfResult === 'fail' ? '#dc2626' : '#94a3b8' }}>
-                        <option value="">— 선택</option>
-                        <option value="pass">✅ PASS</option>
-                        <option value="fail">❌ FAIL</option>
-                      </select>
-                    ) : (
-                      <>
-                        <input type="number" value={e.score} onChange={ev => upd(stu.student_name, { score: ev.target.value, resultCode: '' })}
-                          placeholder="0" className="w-20 h-9 rounded-xl text-[14px] font-black outline-none text-center"
-                          style={{ background: e.score ? '#eef2ff' : '#f8fafc', border: '1.5px solid ' + (e.score ? '#a5b4fc' : '#e2e8f0'), color: '#4f46e5' }} />
-                        {cfg?.maxScore && <span className="text-[11px]" style={{ color: '#94a3b8' }}>/{cfg.maxScore}</span>}
-                      </>
-                    )
+                    <>
+                      <input type="number" value={e.score}
+                        onChange={ev => upd(stu.student_name, { score: ev.target.value, resultCode: '' })}
+                        placeholder="0"
+                        className="w-20 h-9 rounded-xl text-[14px] font-black outline-none text-center"
+                        style={{
+                          background: e.score ? (autoIsPass || nonPfIsPass ? '#f0fdf4' : autoIsFail || nonPfIsFail ? '#fef2f2' : '#eef2ff') : '#f8fafc',
+                          border: '1.5px solid ' + (e.score ? (autoIsPass || nonPfIsPass ? '#86efac' : autoIsFail || nonPfIsFail ? '#fca5a5' : '#a5b4fc') : '#e2e8f0'),
+                          color: autoIsPass || nonPfIsPass ? '#15803d' : autoIsFail || nonPfIsFail ? '#dc2626' : '#4f46e5',
+                        }} />
+                      {cfg?.maxScore && <span className="text-[11px]" style={{ color: '#94a3b8' }}>/{cfg.maxScore}</span>}
+                    </>
                   )}
                 </div>
+
+                {/* 상태 컬럼 */}
                 <div className="flex justify-center">
                   {e.included && (
-                    !e.score && !isAbsent && !isFail && !cfg?.isPF ? (
-                      <select value={e.resultCode} onChange={ev => upd(stu.student_name, { resultCode: ev.target.value, score: '' })}
+                    // ── 결석/지각/미응시 처리 중 취소 버튼 ──────────────────
+                    isAbsent ? (
+                      <button onClick={() => upd(stu.student_name, { resultCode: '', score: '' })}
+                        className="text-[11px] font-black px-3 py-1.5 rounded-xl"
+                        style={{ background: '#fffbeb', color: '#92400e', border: '1.5px solid #fde68a' }}>✕ 취소</button>
+
+                    // ── FAIL (P/F 모드) → 구두재시/추후재응시/미응시 선택 ──
+                    ) : autoIsFail ? (
+                      <select value={e.resultCode}
+                        onChange={ev => upd(stu.student_name, { resultCode: ev.target.value })}
+                        className="w-full h-9 px-2 rounded-xl text-[11px] font-bold outline-none cursor-pointer"
+                        style={{ background: '#fef2f2', border: '1.5px solid #fecaca', color: '#dc2626' }}>
+                        <option value="">❌ FAIL</option>
+                        <option value="verbal_retest">🗣 구두재시 후 귀가</option>
+                        <option value="fail_retry">🔁 추후재응시</option>
+                        <option value="unattempted">⚠️ 지각/결석 미응시</option>
+                      </select>
+
+                    // ── FAIL (non-PF 점수 방식) → 구두재시/추후재응시 ───────
+                    ) : nonPfIsFail ? (
+                      <select value={['fail'].includes(e.resultCode) ? '' : e.resultCode}
+                        onChange={ev => upd(stu.student_name, { resultCode: ev.target.value || 'fail' })}
+                        className="w-full h-9 px-2 rounded-xl text-[11px] font-bold outline-none cursor-pointer"
+                        style={{ background: '#fef2f2', border: '1.5px solid #fecaca', color: '#dc2626' }}>
+                        <option value="">❌ FAIL</option>
+                        <option value="verbal_retest">🗣 구두재시</option>
+                        <option value="fail_retry">🔁 추후재응시</option>
+                      </select>
+
+                    // ── 점수 없을 때: 결석/지각/미응시 선택 ─────────────────
+                    ) : !e.score && !isAbsent ? (
+                      <select value={e.resultCode}
+                        onChange={ev => upd(stu.student_name, { resultCode: ev.target.value, score: '' })}
                         className="w-full h-9 px-2 rounded-xl text-[11px] font-bold outline-none cursor-pointer"
                         style={{ background: '#fffbeb', border: '1.5px solid #fde68a', color: '#92400e' }}>
                         <option value="">— 정상응시</option>
@@ -1151,23 +1215,13 @@ function TestSessionModal({ session, students, existingSlots, existingChecks, on
                         <option value="late">지각 (추후재응시)</option>
                         <option value="unattempted">미비 (추후재응시)</option>
                       </select>
-                    ) : isFail && !cfg?.isPF ? (
-                      <select value={['fail'].includes(e.resultCode) ? '' : e.resultCode} onChange={ev => upd(stu.student_name, { resultCode: ev.target.value || 'fail' })}
-                        className="w-full h-9 px-2 rounded-xl text-[11px] font-bold outline-none cursor-pointer"
-                        style={{ background: '#fef2f2', border: '1.5px solid #fecaca', color: '#dc2626' }}>
-                        <option value="">❌ FAIL</option>
-                        <option value="verbal_retest">🗣 구두재시</option>
-                        <option value="fail_retry">🔁 추후재응시</option>
-                      </select>
-                    ) : isAbsent ? (
-                      <button onClick={() => upd(stu.student_name, { resultCode: '', score: '' })}
-                        className="text-[11px] font-black px-3 py-1.5 rounded-xl"
-                        style={{ background: '#fffbeb', color: '#92400e', border: '1.5px solid #fde68a' }}>✕ 취소</button>
                     ) : null
                   )}
                 </div>
+
+                {/* 재응시일 */}
                 <div className="flex justify-center">
-                  {e.included && (e.resultCode === 'fail_retry' || e.resultCode === 'unmemorized_retry') && (
+                  {e.included && (e.resultCode === 'fail_retry' || e.resultCode === 'unmemorized_retry' || e.resultCode === 'absent' || e.resultCode === 'late' || e.resultCode === 'unattempted') && (
                     <input type="date" value={e.retryDate} onChange={ev => upd(stu.student_name, { retryDate: ev.target.value })}
                       className="w-full h-9 px-2 rounded-xl text-[11px] outline-none"
                       style={{ background: '#eef2ff', border: '1.5px solid #c7d2fe', color: '#4f46e5' }} />
