@@ -125,13 +125,13 @@ export default function ClinicPage() {
           </div>
           {/* 이름 + 설명 */}
           <div className="flex-1 min-w-0">
-            <p className="text-[16px] font-black text-white leading-tight">{studentName}</p>
-            <p className="text-[12px] font-medium mt-0.5" style={{ color: 'rgba(180,160,255,0.7)' }}>
+            <p className="text-[16px] font-black leading-tight" style={{ color: '#ffffff' }}>{studentName}</p>
+            <p className="text-[12px] font-bold mt-0.5" style={{ color: 'rgba(200,185,255,0.95)' }}>
               클리닉 대기 접수
             </p>
             <div className="flex items-center gap-1.5 mt-1">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#22c55e' }} />
-              <span className="text-[10px] font-bold" style={{ color: 'rgba(100,255,150,0.8)' }}>선생님 온라인</span>
+              <span className="text-[10px] font-bold" style={{ color: 'rgba(100,255,150,0.95)' }}>선생님 온라인</span>
             </div>
           </div>
           {/* 대기 뱃지 */}
@@ -220,11 +220,10 @@ export default function ClinicPage() {
             </div>
           </form>
         ) : (
-          /* 접수 완료 카드 — IG 포스팅 완료 느낌 */
           <div className="rounded-[1.6rem] overflow-hidden animate-in zoom-in duration-500"
             style={{
-              background: 'linear-gradient(135deg,rgba(34,197,94,0.15),rgba(16,185,129,0.10))',
-              border: '1px solid rgba(34,197,94,0.25)',
+              background: 'linear-gradient(135deg,rgba(34,197,94,0.20),rgba(16,185,129,0.14))',
+              border: '1px solid rgba(34,197,94,0.35)',
             }}>
             <div className="px-5 py-5 flex items-center gap-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
@@ -232,8 +231,8 @@ export default function ClinicPage() {
                 <CheckCircle2 size={22} className="text-white" />
               </div>
               <div>
-                <p className="text-[15px] font-black text-white">접수 완료! 🎉</p>
-                <p className="text-[12px] mt-0.5" style={{ color: 'rgba(160,255,180,0.7)' }}>
+                <p className="text-[15px] font-black" style={{ color: '#ffffff' }}>접수 완료! 🎉</p>
+                <p className="text-[12px] font-bold mt-0.5" style={{ color: 'rgba(160,255,180,0.95)' }}>
                   선생님이 부를 때까지 잠깐만 기다려줘
                 </p>
               </div>
@@ -315,7 +314,7 @@ export default function ClinicPage() {
                         </span>
                       </div>
                       {stu.question && stu.question !== "질문 없음" && (
-                        <p className="text-[11px] mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.40)' }}>
+                        <p className="text-[11px] mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.65)' }}>
                           {stu.question}
                         </p>
                       )}
@@ -324,8 +323,8 @@ export default function ClinicPage() {
                     {/* 상태 뱃지 */}
                     <div className="px-2.5 py-1 rounded-full text-[9px] font-black tracking-widest uppercase shrink-0"
                       style={stu.status === 'in-progress'
-                        ? { background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)' }
-                        : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.30)' }}>
+                        ? { background: 'rgba(34,197,94,0.20)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.4)' }
+                        : { background: 'rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.75)', border: '1px solid rgba(255,255,255,0.15)' }}>
                       {stu.status === 'in-progress' ? '상담 중' : '대기'}
                     </div>
                   </div>

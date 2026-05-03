@@ -81,6 +81,17 @@ export default function AITeacherPage() {
     const name = getName();
     setStudentName(name);
 
+    // 최근 경로 복원
+    try {
+      const savedPath = localStorage.getItem('ai_tutor_last_path');
+      if (savedPath) {
+        const p = JSON.parse(savedPath);
+        if (p.workbook) setFilterWorkbook(p.workbook);
+        if (p.mid) setFilterMid(p.mid);
+        if (p.sub) setFilterSub(p.sub);
+      }
+    } catch { /* noop */ }
+
     // 전체 지문 로드 (배당 여부 무관)
     setPassagesLoading(true);
     getAllPassagesForTutor()
@@ -144,21 +155,21 @@ export default function AITeacherPage() {
     return base;
   }, [passages, filterWorkbook, filterMid, filterSub]);
 
-  // 상위 필터 변경 시 하위 필터 초기화
+  // 필터 변경 + 최근 경로 저장
+  const savePath = (wb: string, mid: string, sub: string) => {
+    try { localStorage.setItem('ai_tutor_last_path', JSON.stringify({ workbook: wb, mid, sub })); } catch { /* noop */ }
+  };
   const changeWorkbook = (val: string) => {
-    setFilterWorkbook(val);
-    setFilterMid("전체");
-    setFilterSub("전체");
-    setSelectedSetId("none");
+    setFilterWorkbook(val); setFilterMid("전체"); setFilterSub("전체"); setSelectedSetId("none");
+    savePath(val, "전체", "전체");
   };
   const changeMid = (val: string) => {
-    setFilterMid(val);
-    setFilterSub("전체");
-    setSelectedSetId("none");
+    setFilterMid(val); setFilterSub("전체"); setSelectedSetId("none");
+    savePath(filterWorkbook, val, "전체");
   };
   const changeSub = (val: string) => {
-    setFilterSub(val);
-    setSelectedSetId("none");
+    setFilterSub(val); setSelectedSetId("none");
+    savePath(filterWorkbook, filterMid, val);
   };
 
   const sendMessage = async (text: string) => {
@@ -367,8 +378,8 @@ export default function AITeacherPage() {
                   {msg.options.map((opt, optIdx) => (
                     <button key={optIdx} onClick={() => handleOptionClick(opt.text)}
                       disabled={isLoading}
-                      className="text-left text-[12px] font-bold px-4 py-2.5 rounded-2xl transition-all active:scale-[0.98] disabled:opacity-50"
-                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.75)' }}>
+                      className="text-left text-[12px] font-bold px-4 py-2.5 rounded-2xl transition-all active:scale-[0.98] disabled:opacity-50 hover:scale-[1.01]"
+                      style={{ background: 'rgba(64,93,230,0.18)', border: '1.5px solid rgba(100,120,255,0.40)', color: 'rgba(220,210,255,0.95)' }}>
                       {opt.text}
                     </button>
                   ))}

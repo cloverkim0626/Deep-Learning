@@ -592,20 +592,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
             {/* IG 프로필 헤더 */}
             <div className="px-5 pt-4 pb-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              {/* 상단 액션 버튼들 */}
-              <div className="flex items-center justify-between mb-5">
-                <button
-                  onClick={async () => {
-                    setShowLeaderboard(true); setLbLoading(true);
-                    try { const res = await fetch(`/api/leaderboard?period=${lbPeriod}`); setLeaderboard((await res.json()).ranking || []); } catch { setLeaderboard([]); }
-                    setLbLoading(false); setHofLoading(true);
-                    try { const r = await fetch(`/api/leaderboard/mvp?year=${hofYear}&month=${hofMonth}`); setHofEntries((await r.json()).entries || []); } catch { setHofEntries([]); }
-                    setHofLoading(false);
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-black transition-all"
-                  style={{ background: 'rgba(255,200,0,0.12)', border: '1px solid rgba(255,200,0,0.25)', color: '#fbbf24' }}>
-                  <Trophy size={13} strokeWidth={2} /> 리더보드
-                </button>
+              {/* 상단 — 설정 버튼만 */}
+              <div className="flex items-center justify-end mb-4">
                 {profile.class !== 'GUEST' && (
                   <button onClick={() => { setShowSettings(true); setPwError(''); setCurrentPw(''); setNewPw(''); }}
                     className="p-2 rounded-full transition-all" style={{ color: 'rgba(255,255,255,0.4)' }}>
@@ -615,7 +603,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               </div>
 
               {/* 아바타 + 스탯 행 */}
-              <div className="flex items-center gap-5 mb-4">
+              <div className="flex items-center gap-5 mb-3">
                 {/* IG 스토리 링 아바타 */}
                 <div className="p-[3px] rounded-full shrink-0" style={{ background: 'linear-gradient(135deg,#405DE6,#833AB4,#E1306C,#F77737)' }}>
                   <div className="w-20 h-20 rounded-full flex items-center justify-center text-[26px] font-black" style={{ background: '#09090f', color: '#fff' }}>
@@ -633,8 +621,24 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 </div>
               </div>
 
+              {/* 트로피 버튼 — 남은시험 스탯 아래 */}
+              <div className="flex justify-end mb-3">
+                <button
+                  onClick={async () => {
+                    setShowLeaderboard(true); setLbLoading(true);
+                    try { const res = await fetch(`/api/leaderboard?period=${lbPeriod}`); setLeaderboard((await res.json()).ranking || []); } catch { setLeaderboard([]); }
+                    setLbLoading(false); setHofLoading(true);
+                    try { const r = await fetch(`/api/leaderboard/mvp?year=${hofYear}&month=${hofMonth}`); setHofEntries((await r.json()).entries || []); } catch { setHofEntries([]); }
+                    setHofLoading(false);
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black transition-all hover:scale-105"
+                  style={{ background: 'rgba(255,200,0,0.10)', border: '1px solid rgba(255,200,0,0.20)', color: '#fbbf24' }}>
+                  <Trophy size={11} strokeWidth={2} /> 리더보드
+                </button>
+              </div>
+
               {/* 이름 + 반 */}
-              <div className="mb-4">
+              <div className="mb-2">
                 <p className="text-[16px] font-black text-white leading-tight">{profile.name}</p>
                 <p className="text-[12px] font-bold mt-0.5" style={{ color: 'rgba(160,130,255,0.7)' }}>{profile.class}</p>
                 {streak > 0 && (
@@ -1062,7 +1066,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto w-full pb-[100px] bg-background">
+      <main className="flex-1 overflow-y-auto w-full pb-[100px]">
         {children}
       </main>
 
