@@ -129,11 +129,9 @@ function LoginForm() {
     <div className="w-full max-w-sm mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000
       rounded-3xl px-7 py-8"
       style={{
-        background:'rgba(5,18,32,0.62)',
+        background:'rgba(5,18,32,0.58)',
         backdropFilter:'blur(24px)',
         WebkitBackdropFilter:'blur(24px)',
-        border:'1px solid rgba(40,180,220,0.2)',
-        boxShadow:'0 8px 48px rgba(0,60,120,0.35), inset 0 1px 0 rgba(100,220,255,0.12)',
       }}>
 
       <Link href="/" className="mb-12 flex items-center gap-2 text-[12px] font-black tracking-[0.2em] transition-all uppercase"
@@ -239,92 +237,39 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="flex justify-center items-center min-h-screen p-6 relative overflow-hidden">
-      {/* Shape of Water 배경 */}
-      <style>{`
-        @keyframes sotWaterRay2 {
-          0%,100%{opacity:0.08;transform:rotate(var(--ra)) scaleX(1)}
-          40%{opacity:0.18;transform:rotate(calc(var(--ra)+1deg)) scaleX(1.05)}
-          70%{opacity:0.1;transform:rotate(calc(var(--ra)-0.6deg)) scaleX(0.97)}
-        }
-        @keyframes sotGlow2 { 0%,100%{opacity:0.5;transform:scale(1)} 50%{opacity:0.85;transform:scale(1.07)} }
-        @keyframes sotBio2 {
-          0%,100%{opacity:0.12;transform:translate(0,0) scale(1)}
-          50%{opacity:0.3;transform:translate(3px,5px) scale(1.08)}
-        }
-        @keyframes sotCaustic2 { 0%,100%{opacity:0.06} 50%{opacity:0.15} }
-        @keyframes sotRipple2 {
-          0%,100%{transform:scaleX(1) scaleY(1);opacity:0.05}
-          50%{transform:scaleX(1.04) scaleY(0.97) translateX(5px);opacity:0.1}
-        }
-        .sot-ray2 { position:absolute;top:-5%;left:50%;transform-origin:top center;
-          animation:sotWaterRay2 var(--pd) ease-in-out infinite; }
-      `}</style>
-      <div className="absolute inset-0 pointer-events-none overflow-hidden"
-        style={{background:'linear-gradient(180deg,#040e18 0%,#071828 18%,#0a2438 45%,#0c3050 70%,#061420 100%)'}}>
-        {/* 수면 황금빛 */}
+    <main className="flex justify-center items-center min-h-screen p-6 relative overflow-hidden"
+      style={{
+        backgroundImage: "url('/sotw-poster.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        backgroundRepeat: 'no-repeat',
+      }}>
+
+      {/* 오버레이 — 포스터 위 가독성 확보 + 분위기 보정 */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
+        {/* 딥 다크 오버레이 (너무 이미지가 강하지 않게) */}
+        <div style={{ position:'absolute', inset:0, background:'rgba(3,12,25,0.52)' }}/>
+        {/* 중앙 청록 발광 — 포스터의 수중 빛 강조 */}
         <div style={{
-          position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',
-          width:'300px',height:'140px',
-          background:'radial-gradient(ellipse at 50% 0%,rgba(255,215,100,0.16) 0%,rgba(80,210,240,0.08) 48%,transparent 72%)',
-          filter:'blur(18px)',animation:'sotCaustic2 5s ease-in-out infinite',
+          position:'absolute', inset:0,
+          background:'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(10,130,175,0.22) 0%, transparent 70%)',
         }}/>
-        {/* 중심 청록 발광 기둥 */}
+        {/* 하단 깊이감 */}
         <div style={{
-          position:'absolute',bottom:0,left:'50%',transform:'translateX(-50%)',
-          width:'360px',height:'80%',
-          background:'linear-gradient(0deg,rgba(15,160,200,0.2) 0%,rgba(10,140,180,0.1) 38%,transparent 100%)',
-          filter:'blur(30px)',animation:'sotGlow2 10s ease-in-out infinite',
+          position:'absolute', bottom:0, left:0, right:0, height:'35%',
+          background:'linear-gradient(0deg, rgba(2,8,18,0.6) 0%, transparent 100%)',
         }}/>
-        <div className="sot-ray2" style={{
-          width:'80px',height:'78%',marginLeft:'-40px',
-          background:'linear-gradient(180deg,rgba(150,235,255,0.22) 0%,rgba(50,205,240,0.12) 32%,transparent 100%)',
-          filter:'blur(6px)','--ra':'0deg','--pd':'7s',
-        } as React.CSSProperties}/>
-        <div className="sot-ray2" style={{
-          width:'300px',height:'90%',marginLeft:'-150px',
-          background:'linear-gradient(180deg,rgba(20,175,210,0.09) 0%,rgba(10,145,190,0.05) 42%,transparent 100%)',
-          filter:'blur(24px)','--ra':'-0.8deg','--pd':'9s',
-        } as React.CSSProperties}/>
-        {/* 보조 광선 */}
-        {[{l:'18%',r:'-3deg',d:'6.2s'},{l:'35%',r:'-1deg',d:'4.8s'},{l:'65%',r:'1.5deg',d:'5.6s'},{l:'82%',r:'4deg',d:'7.2s'}].map((t,i)=>(
-          <div key={i} style={{
-            position:'absolute',top:0,left:t.l,width:'28px',height:'68%',
-            background:'linear-gradient(180deg,rgba(40,200,232,0.16) 0%,transparent 100%)',
-            filter:'blur(8px)',transformOrigin:'top center',transform:`rotate(${t.r})`,
-            animation:`sotCaustic2 ${t.d} ease-in-out infinite`,animationDelay:`${i*0.7}s`,
-          }}/>
-        ))}
-        {/* 생물발광 */}
-        {[
-          {x:'10%',y:'30%',s:90,d:'5.5s',c:'rgba(20,200,240,0.18)'},
-          {x:'80%',y:'22%',s:65,d:'7s',c:'rgba(30,210,230,0.15)'},
-          {x:'72%',y:'60%',s:55,d:'6.2s',c:'rgba(10,180,220,0.17)'},
-          {x:'22%',y:'66%',s:78,d:'4.9s',c:'rgba(40,220,250,0.14)'},
-          {x:'88%',y:'45%',s:50,d:'5.8s',c:'rgba(50,215,240,0.13)'},
-        ].map((b,i)=>(
-          <div key={i} style={{
-            position:'absolute',left:b.x,top:b.y,width:b.s+'px',height:b.s+'px',
-            background:`radial-gradient(ellipse,${b.c} 0%,transparent 70%)`,
-            borderRadius:'50%',filter:'blur(10px)',
-            animation:`sotBio2 ${b.d} ease-in-out infinite`,animationDelay:`${i*0.9}s`,
-          }}/>
-        ))}
-        {/* 수류 */}
+        {/* 상단 미세 어둠 */}
         <div style={{
-          position:'absolute',inset:0,
-          background:'radial-gradient(ellipse 120% 45% at 38% 58%,rgba(10,140,180,0.09) 0%,transparent 55%)',
-          animation:'sotRipple2 16s ease-in-out infinite',
+          position:'absolute', top:0, left:0, right:0, height:'20%',
+          background:'linear-gradient(180deg, rgba(2,8,18,0.4) 0%, transparent 100%)',
         }}/>
-        {/* 하단 깊이 */}
-        <div className="absolute bottom-0 left-0 right-0 h-[40%]" style={{background:'linear-gradient(0deg,rgba(3,8,14,0.8) 0%,transparent 100%)'}}/>
-        {/* 전체 청록 틴트 */}
-        <div className="absolute inset-0" style={{background:'radial-gradient(ellipse 85% 65% at 50% 55%,rgba(10,130,175,0.15) 0%,rgba(5,80,130,0.06) 55%,transparent 80%)'}}/>
       </div>
 
-      <Suspense fallback={<div className="serif font-bold animate-pulse" style={{color:'rgba(100,210,240,0.8)'}}>Deep Learning...</div>}>
+      <Suspense fallback={<div className="serif font-bold animate-pulse z-10 relative" style={{color:'rgba(100,210,240,0.8)'}}>Deep Learning...</div>}>
         <LoginForm />
       </Suspense>
     </main>
   );
 }
+
