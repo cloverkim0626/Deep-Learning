@@ -126,7 +126,17 @@ function LoginForm() {
   const isSyncedClass = syncedClasses.some(cls => cls.name === selectedClass);
 
   return (
-    <div className="w-full max-w-sm mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 px-7 py-8">
+    <div className="w-full max-w-sm mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 px-7 py-8 relative z-10">
+
+      {/* 학생 전용 — 포스터 blur 오버레이 (인물 가리기) */}
+      {role === 'student' && (
+        <div aria-hidden className="fixed inset-0 -z-10 pointer-events-none"
+          style={{
+            backdropFilter:'blur(38px)',
+            WebkitBackdropFilter:'blur(38px)',
+            background:'rgba(8,22,40,0.55)',
+          }}/>
+      )}
 
       <Link href="/" className="mb-12 flex items-center gap-2 text-[12px] font-black tracking-[0.2em] transition-all uppercase"
         style={{color:'rgba(100,210,240,0.7)'}}>
@@ -161,53 +171,53 @@ function LoginForm() {
           <div className="space-y-5">
             {/* 1. 반 선택 */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-black pl-4 uppercase tracking-widest block" style={{color:'rgba(80,200,235,0.6)'}}>1. 소속 반</label>
+              <label className="text-[11px] font-black pl-1 uppercase tracking-widest block" style={{color:'rgba(180,230,255,0.8)'}}>1. 소속 반</label>
               <div className="relative">
                 <select value={selectedClass} onChange={e => { setSelectedClass(e.target.value); setSelectedStudent(""); }}
                   className="w-full h-16 px-6 rounded-3xl appearance-none font-bold text-[15px] outline-none transition-all cursor-pointer"
-                  style={{background:'rgba(10,30,55,0.6)',border:'1px solid rgba(40,180,220,0.22)',color:'rgba(220,245,255,0.92)'}}>
-                  <option value="" disabled style={{background:'#0a1e36'}}>반을 선택해 주세요</option>
-                  {CLASS_DATA.map(c => <option key={c.name} value={c.name} style={{background:'#0a1e36'}}>{c.name}</option>)}
+                  style={{background:'rgba(255,255,255,0.96)',border:'1.5px solid rgba(200,230,255,0.4)',color:'#0f2035'}}>
+                  <option value="" disabled style={{background:'#fff'}}>반을 선택해 주세요</option>
+                  {CLASS_DATA.map(c => <option key={c.name} value={c.name} style={{background:'#fff'}}>{c.name}</option>)}
                 </select>
-                <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none" size={18} style={{color:'rgba(80,200,235,0.55)'}} />
+                <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none" size={18} style={{color:'rgba(10,80,140,0.5)'}} />
               </div>
             </div>
 
             {/* 2. 이름 선택 */}
             <div className={`space-y-1.5 transition-all duration-500 ${selectedClass ? "opacity-100" : "opacity-35 pointer-events-none"}`}>
-              <label className="text-[11px] font-black pl-4 uppercase tracking-widest block" style={{color:'rgba(80,200,235,0.6)'}}>2. 본인 이름</label>
+              <label className="text-[11px] font-black pl-1 uppercase tracking-widest block" style={{color:'rgba(180,230,255,0.8)'}}>2. 본인 이름</label>
               <div className="relative">
                 <select value={selectedStudent} onChange={e => setSelectedStudent(e.target.value)}
                   className="w-full h-16 px-6 rounded-3xl appearance-none font-bold text-[15px] outline-none transition-all cursor-pointer"
-                  style={{background:'rgba(10,30,55,0.6)',border:'1px solid rgba(40,180,220,0.22)',color:'rgba(220,245,255,0.92)'}}>
-                  <option value="" disabled style={{background:'#0a1e36'}}>
+                  style={{background:'rgba(255,255,255,0.96)',border:'1.5px solid rgba(200,230,255,0.4)',color:'#0f2035'}}>
+                  <option value="" disabled style={{background:'#fff'}}>
                     {loadingDb && (isGuestClass || isSyncedClass) ? "불러오는 중..." : "이름을 선택해 주세요"}
                   </option>
-                  {studentsInClass.map(s => <option key={s} value={s} style={{background:'#0a1e36'}}>{s}</option>)}
+                  {studentsInClass.map(s => <option key={s} value={s} style={{background:'#fff'}}>{s}</option>)}
                 </select>
-                <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none" size={18} style={{color:'rgba(80,200,235,0.55)'}} />
+                <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none" size={18} style={{color:'rgba(10,80,140,0.5)'}} />
               </div>
               {isGuestClass && !loadingDb && studentsInClass.length === 0 && (
-                <p className="text-[11px] font-bold pl-4" style={{color:'rgba(255,180,80,0.9)'}}>등록된 체험 학생이 없습니다. 선생님께 문의하세요.</p>
+                <p className="text-[11px] font-bold pl-1" style={{color:'rgba(255,180,80,0.9)'}}>등록된 체험 학생이 없습니다. 선생님께 문의하세요.</p>
               )}
               {isSyncedClass && !loadingDb && studentsInClass.length === 0 && (
-                <p className="text-[11px] font-bold pl-4" style={{color:'rgba(255,180,80,0.9)'}}>등록된 학생이 없습니다. 수업관리에서 학생을 등록해 주세요.</p>
+                <p className="text-[11px] font-bold pl-1" style={{color:'rgba(255,180,80,0.9)'}}>등록된 학생이 없습니다. 수업관리에서 학생을 등록해 주세요.</p>
               )}
             </div>
 
             {/* 3. 비밀번호 */}
             {!isGuestClass && (
               <div className={`space-y-1.5 transition-all duration-500 pt-2 ${selectedStudent ? "opacity-100" : "opacity-35 pointer-events-none"}`}>
-                <label className="text-[11px] font-black pl-4 uppercase tracking-widest block" style={{color:'rgba(80,200,235,0.6)'}}>3. 비밀번호</label>
+                <label className="text-[11px] font-black pl-1 uppercase tracking-widest block" style={{color:'rgba(180,230,255,0.8)'}}>3. 비밀번호</label>
                 <input type="password" placeholder="비밀번호" value={password} onChange={e => setPassword(e.target.value)}
                   className="w-full h-16 px-6 rounded-3xl font-black text-[18px] text-center outline-none transition-all"
-                  style={{background:'rgba(10,30,55,0.6)',border:'1px solid rgba(40,180,220,0.22)',color:'rgba(220,245,255,0.95)',caretColor:'rgba(80,210,240,0.9)'}} />
+                  style={{background:'rgba(255,255,255,0.96)',border:'1.5px solid rgba(200,230,255,0.4)',color:'#0f2035',caretColor:'#0a5080'}} />
               </div>
             )}
 
             {isGuestClass && selectedStudent && (
-              <div className="px-4 py-3 rounded-2xl" style={{background:'rgba(10,100,160,0.25)',border:'1px solid rgba(40,180,220,0.25)'}}>
-                <p className="text-[12px] font-bold text-center" style={{color:'rgba(140,230,255,0.9)'}}>🎉 체험 계정 — 비밀번호 없이 바로 입장!</p>
+              <div className="px-4 py-3 rounded-2xl" style={{background:'rgba(255,255,255,0.15)',backdropFilter:'blur(8px)',border:'1px solid rgba(40,180,220,0.3)'}}>
+                <p className="text-[12px] font-bold text-center" style={{color:'rgba(200,245,255,0.95)'}}>🎉 체험 계정 — 비밀번호 없이 바로 입장!</p>
               </div>
             )}
 
