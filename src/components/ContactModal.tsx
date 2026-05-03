@@ -74,14 +74,14 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
               </div>
               {/* 선생님 사진 - 헤더 오른쪽, 아래로 body까지 겹침 */}
               <img src="/teacher-nobg.png" alt="김효진T"
-                style={{position:"absolute", right:8, bottom:-90, height:285, width:"auto", objectFit:"contain", objectPosition:"bottom", filter:"drop-shadow(-4px 0 12px rgba(0,0,0,0.18))", zIndex:10}}
+                style={{position:"absolute", right:8, bottom:-72, height:228, width:"auto", objectFit:"contain", objectPosition:"bottom", filter:"drop-shadow(-4px 0 12px rgba(0,0,0,0.18))", zIndex:10}}
               />
               <div style={{height:16,background:"#fff",borderRadius:"50% 50% 0 0 / 100% 100% 0 0",marginTop:"-1px", position:"relative", zIndex:0}}/>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 pt-2 pb-2 space-y-2" style={{position:"relative", zIndex:0}}>
               {/* SNS 로고 - 왼쪽 */}
-              <div className="flex items-center gap-5 px-1 pb-1 pt-14">
+              <div className="flex items-center gap-5 px-1 pb-1 pt-11">
                 {[
                   { label:"Instagram", color:"#E1306C", svg:<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> },
                   { label:"KakaoTalk", color:"#3A1D1D", svg:
