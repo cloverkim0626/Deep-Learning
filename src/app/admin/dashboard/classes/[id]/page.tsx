@@ -1329,6 +1329,8 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   const [attBoardModal, setAttBoardModal] = useState<WeekColumn | null>(null);
   const [deleteSessionConfirm, setDeleteSessionConfirm] = useState<WeekColumn | null>(null);
   const [attDetailModal, setAttDetailModal] = useState<{ status: AttendanceStatus; lateTime?: string; reason?: string; makeupType?: string; makeupDate?: string } | null>(null);
+  // 과제 완료 모달: 등원 후 완료 / 완료 후 등원
+  const [hwCompleteModal, setHwCompleteModal] = useState<{ slotId: string; studentName: string; slotTitle: string; existingCheck: HomeworkCheck | null } | null>(null);
 
   // ── 초기 로드 ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1624,34 +1626,32 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                           </div>
                           {/* 세션 액션 버튼들 */}
                           {hasSes ? (
-                            <div className="flex gap-1 flex-wrap">
+                            <div className="flex gap-1 flex-wrap justify-center">
                               <button onClick={() => setAttBoardModal(col)}
-                                className="flex items-center gap-1 h-5 px-1.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-md text-[9px] font-bold hover:bg-slate-200 transition-all">
-                                📋 출석부
+                                className="flex items-center gap-1 h-6 px-2 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-[10px] font-semibold hover:bg-slate-200 transition-all">
+                                📋 출석
                               </button>
                               <button onClick={() => setAddHwModal(col)}
-                                className="flex items-center gap-1 h-5 px-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-md text-[9px] font-black hover:bg-blue-100 transition-all">
-                                <Plus size={8} /> 과제
+                                className="flex items-center gap-1 h-6 px-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg text-[10px] font-semibold hover:bg-blue-100 transition-all">
+                                <Plus size={9} /> 과제
                               </button>
                               <button onClick={() => setAddTestModal(col)}
-                                className="flex items-center gap-1 h-5 px-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-md text-[9px] font-black hover:bg-amber-100 transition-all">
+                                className="flex items-center gap-1 h-6 px-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-[10px] font-semibold hover:bg-amber-100 transition-all">
                                 🎯 테스트
                               </button>
-                              <button onClick={async () => {
-                                setDeleteSessionConfirm(col);
-                              }} className="h-5 px-1 text-rose-300 hover:text-rose-500 hover:bg-rose-50 rounded-md transition-all">
-                                <Trash2 size={8} />
+                              <button onClick={() => setDeleteSessionConfirm(col)}
+                                className="h-6 px-1.5 text-rose-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all">
+                                <Trash2 size={10} />
                               </button>
                             </div>
                           ) : (
-                            <div className="flex gap-1 flex-wrap">
+                            <div className="flex gap-2 justify-center">
                               <button onClick={() => handleCreateSession(col)}
-                                className="h-5 px-1.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-md text-[9px] font-black hover:bg-indigo-100 transition-all">
+                                className="h-7 px-3 bg-indigo-500 text-white rounded-lg text-[11px] font-semibold hover:bg-indigo-600 transition-all shadow-sm">
                                 수업 시작
                               </button>
-                              <button onClick={async () => {
-                                await handleCreateSession(col, true);
-                              }} className="h-5 px-1.5 bg-rose-50 text-rose-500 border border-rose-200 rounded-md text-[9px] font-black hover:bg-rose-100 transition-all">
+                              <button onClick={() => handleCreateSession(col, true)}
+                                className="h-7 px-3 bg-rose-100 text-rose-500 border border-rose-200 rounded-lg text-[11px] font-semibold hover:bg-rose-200 transition-all">
                                 휴강
                               </button>
                             </div>
@@ -1723,11 +1723,9 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         });
                         const myGeneral = mySlots.filter(s => s.hw_type !== 'vocab_test' && s.hw_type !== 'test_prep');
                         const myTests   = mySlots.filter(s => s.hw_type === 'vocab_test');
-                        // 버그수정: due_date 기준으로 분리
-                        // checkSlots  = 오늘이 검사일 → 클릭으로 완료처리
-                        // assignedSlots = 배당만 됨 (검사일이 다른 날) → 📌 태그만 표시
-                        const checkSlots    = myGeneral.filter(s => s.due_date === col.date);
-                        const assignedSlots = myGeneral.filter(s => s.due_date !== col.date);
+                        // due_date가 이 컬럼 날짜인 것만 학생셀에 표시 (검사일 기준)
+                        // 배당만 된 것(due_date != col.date)은 학생 셀에 아예 표시 안 함
+                        const checkSlots = myGeneral.filter(s => s.due_date === col.date);
 
                         return (
                         <td key={col.date}
@@ -1772,67 +1770,62 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                               {/* 오른쪽: 과제 + 테스트 */}
                               <div className="flex-1 min-w-0 py-1 px-1 space-y-0.5">
 
-                                {/* 📌 배당만 된 과제: 검사일이 다른 날 → 회색 태그 */}
-                                {assignedSlots.map(slot => (
-                                  <div key={slot.id} className="flex items-center gap-0.5">
-                                    <div className="flex-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-400 truncate">
-                                      📌 {slot.title}
-                                      {slot.due_date && <span className="ml-1 text-[10px] text-slate-300">~{slot.due_date.slice(5).replace('-','/')}</span>}
-                                    </div>
-                                    <button onClick={async () => {
-                                      if (!confirm(`"${slot.title}" 삭제?`)) return;
-                                      await deleteHomeworkSlot(slot.id);
-                                      setWeekData(prev => prev && col.session ? { ...prev, slots: { ...prev.slots, [col.session!.id]: (prev.slots[col.session!.id]||[]).filter(s=>s.id!==slot.id) } } : prev);
-                                    }} className="shrink-0 w-4 h-4 flex items-center justify-center rounded text-slate-300 hover:text-rose-400"><X size={9}/></button>
-                                  </div>
-                                ))}
-
-                                {/* ✅ 오늘이 due_date인 과제: 검사 항목 */}
+                                {/* 검사일이 오늘인 과제만 표시 (배당일만인 과제는 숨김) */}
                                 {checkSlots.map(slot => {
                                   const chk = weekData.checks[slot.id]?.[stu.student_name];
-                                  const status = chk?.status || 'pending';
-                                  const isDone = status === 'done';
-                                  const isDonePartial = status === 'done_partial';
-                                  const isDelayed = status === 'delayed';
+                                  const isDone = chk?.status === 'done' || chk?.status === 'done_partial';
+                                  const isDelayed = chk?.status === 'delayed';
                                   return (
                                     <div key={slot.id} className="flex items-center gap-0.5">
                                       <button
-                                        onClick={async () => {
-                                          const next: HwStatus = status === 'pending' ? 'done' : status === 'done' ? 'done_partial' : 'pending';
-                                          await upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: next });
-                                          setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id]||{}), [stu.student_name]: { ...(chk||{}), slot_id: slot.id, student_name: stu.student_name, status: next } as HomeworkCheck } } } : prev);
+                                        onClick={() => {
+                                          if (isDone) {
+                                            // 완료 → 복구
+                                            upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: 'pending' });
+                                            setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id]||{}), [stu.student_name]: { ...(chk||{}), slot_id: slot.id, student_name: stu.student_name, status: 'pending' } as HomeworkCheck } } } : prev);
+                                          } else {
+                                            // 미완료 → 완료 모달
+                                            setHwCompleteModal({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk||null });
+                                          }
                                         }}
-                                        className={`flex-1 text-left px-1.5 py-0.5 rounded text-[12px] font-bold transition-all truncate ${
-                                          isDone        ? 'bg-emerald-50 text-emerald-700 line-through' :
-                                          isDonePartial ? 'bg-sky-50 text-sky-700' :
-                                          isDelayed     ? 'bg-amber-50 text-amber-700' :
-                                          'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                                        className={`flex-1 text-left px-1.5 py-1 rounded-lg text-[12px] font-semibold transition-all truncate border ${
+                                          isDone        ? 'bg-emerald-50 text-emerald-600 line-through border-emerald-200' :
+                                          isDelayed     ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                          'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'
                                         }`}>
-                                        {isDone ? '✓' : isDonePartial ? '↩' : isDelayed ? '⏩' : '○'} {slot.title}
+                                        {isDone ? '✓ ' : isDelayed ? '⏩ ' : ''}{slot.title}
                                       </button>
-                                      {!isDone && !isDonePartial && (
+                                      {!isDone && (
                                         <button onClick={() => setRolloverPopup({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk||null })}
-                                          className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-[10px] text-orange-400 hover:bg-orange-50">⏩</button>
+                                          className="shrink-0 w-5 h-5 flex items-center justify-center rounded-md text-[10px] text-slate-300 hover:text-orange-500 hover:bg-orange-50 transition-all">→</button>
                                       )}
                                     </div>
                                   );
                                 })}
 
-                                {/* 이월과제 */}
-                                {(weekData.rolloverChecks[col.date]||[]).filter(rc=>rc.student_name===stu.student_name).map(rc=>(
-                                  <div key={rc.id||rc.slot_id+rc.student_name} className="flex items-center gap-0.5">
-                                    <div className="flex-1 px-1.5 py-0.5 rounded text-[12px] font-bold bg-orange-50 text-orange-600 truncate">⏩이월</div>
-                                    <button onClick={async()=>{
-                                      await upsertHomeworkCheck({slot_id:rc.slot_id,student_name:stu.student_name,status:'done',rollover_date:null});
-                                      setWeekData(prev=>{
-                                        if(!prev)return prev;
-                                        const nr={...prev.rolloverChecks};
-                                        nr[col.date]=(nr[col.date]||[]).filter(r=>!(r.slot_id===rc.slot_id&&r.student_name===stu.student_name));
-                                        return{...prev,rolloverChecks:nr,checks:{...prev.checks,[rc.slot_id]:{...(prev.checks[rc.slot_id]||{}),[stu.student_name]:{...(rc as HomeworkCheck),status:'done',rollover_date:null}}}};
-                                      });
-                                    }} className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-[10px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100">✓</button>
-                                  </div>
-                                ))}
+                                {/* 이월과제: 완료해도 줄긋기로 유지 */}
+                                {(weekData.rolloverChecks[col.date]||[]).filter(rc=>rc.student_name===stu.student_name).map(rc=>{
+                                  const rcDone = weekData.checks[rc.slot_id]?.[stu.student_name]?.status === 'done';
+                                  return (
+                                    <div key={rc.id||rc.slot_id+rc.student_name} className="flex items-center gap-0.5">
+                                      <button
+                                        onClick={async()=>{
+                                          if (rcDone) {
+                                            await upsertHomeworkCheck({slot_id:rc.slot_id,student_name:stu.student_name,status:'delayed',rollover_date:col.date});
+                                            setWeekData(prev=>prev?{...prev,checks:{...prev.checks,[rc.slot_id]:{...(prev.checks[rc.slot_id]||{}),[stu.student_name]:{...(rc as HomeworkCheck),status:'delayed',rollover_date:col.date}}}}:prev);
+                                          } else {
+                                            await upsertHomeworkCheck({slot_id:rc.slot_id,student_name:stu.student_name,status:'done',rollover_date:col.date});
+                                            setWeekData(prev=>prev?{...prev,checks:{...prev.checks,[rc.slot_id]:{...(prev.checks[rc.slot_id]||{}),[stu.student_name]:{...(rc as HomeworkCheck),status:'done',rollover_date:col.date}}}}:prev);
+                                          }
+                                        }}
+                                        className={`flex-1 text-left px-1.5 py-1 rounded-lg text-[12px] font-semibold transition-all truncate border ${
+                                          rcDone ? 'bg-emerald-50 text-emerald-600 line-through border-emerald-200' : 'bg-orange-50 text-orange-600 border-orange-200'
+                                        }`}>
+                                        {rcDone ? '✓ ' : '⏩ '}이월
+                                      </button>
+                                    </div>
+                                  );
+                                })}
 
                                 {/* 테스트 */}
                                 {myTests.map(slot=>{
@@ -2156,6 +2149,39 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
           />
         );
       })()}
+
+      {/* ── 과제 완료 모달 ────────────────────────────────────────── */}
+      {hwCompleteModal && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center" style={{background:'rgba(0,0,0,0.45)'}}
+          onClick={() => setHwCompleteModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-72 overflow-hidden" onClick={e=>e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-slate-100">
+              <p className="text-[14px] font-bold text-slate-800">{hwCompleteModal.slotTitle}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">{hwCompleteModal.studentName} · 완료 방식 선택</p>
+            </div>
+            <div className="p-4 space-y-2">
+              <button onClick={async()=>{
+                await upsertHomeworkCheck({slot_id:hwCompleteModal.slotId,student_name:hwCompleteModal.studentName,status:'done'});
+                setWeekData(prev=>prev?{...prev,checks:{...prev.checks,[hwCompleteModal.slotId]:{...(prev.checks[hwCompleteModal.slotId]||{}),[hwCompleteModal.studentName]:{...(hwCompleteModal.existingCheck||{}),slot_id:hwCompleteModal.slotId,student_name:hwCompleteModal.studentName,status:'done'} as HomeworkCheck}}}:prev);
+                setHwCompleteModal(null);
+              }} className="w-full py-3 rounded-xl bg-emerald-500 text-white text-[13px] font-bold hover:bg-emerald-600 transition-all">
+                ✅ 등원 후 완료
+              </button>
+              <button onClick={async()=>{
+                await upsertHomeworkCheck({slot_id:hwCompleteModal.slotId,student_name:hwCompleteModal.studentName,status:'done_partial'});
+                setWeekData(prev=>prev?{...prev,checks:{...prev.checks,[hwCompleteModal.slotId]:{...(prev.checks[hwCompleteModal.slotId]||{}),[hwCompleteModal.studentName]:{...(hwCompleteModal.existingCheck||{}),slot_id:hwCompleteModal.slotId,student_name:hwCompleteModal.studentName,status:'done_partial'} as HomeworkCheck}}}:prev);
+                setHwCompleteModal(null);
+              }} className="w-full py-3 rounded-xl bg-sky-500 text-white text-[13px] font-bold hover:bg-sky-600 transition-all">
+                📋 완료 후 등원
+              </button>
+            </div>
+            <div className="px-4 pb-4">
+              <button onClick={()=>setHwCompleteModal(null)}
+                className="w-full py-2 rounded-xl border border-slate-200 text-[12px] text-slate-400 hover:bg-slate-50">취소</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
