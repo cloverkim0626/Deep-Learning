@@ -78,18 +78,24 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
               {/* 김효진T SNS */}
               <div>
-                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 px-1">김효진T SNS</p>
-                <div className="flex gap-5 px-2 pb-1">
-                  {[
-                    { label:"Instagram", color:"#E1306C", svg:<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> },
-                    { label:"KakaoTalk", color:"#3A1D1D", svg:<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.48 3 2 6.58 2 11c0 2.76 1.56 5.2 3.96 6.72L5 21l3.8-2.05A11 11 0 0 0 12 19c5.52 0 10-3.58 10-8s-4.48-8-10-8z"/></svg> },
-                    { label:"Blog", color:"#03c75a", svg:<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2H3V5zm0 6h12v2H3v-2zm0 6h18v2H3v-2z"/></svg> },
-                  ].map(s => (
-                    <button key={s.label} className="flex flex-col items-center gap-1 hover:scale-110 transition-transform" style={{color:s.color}}>
-                      {s.svg}
-                      <span className="text-[8px] font-black text-slate-400">{s.label}</span>
-                    </button>
-                  ))}
+                <div className="flex items-end gap-3 mb-2">
+                  {/* 선생님 사진 */}
+                  <img src="/teacher-photo.png" alt="김효진T" className="w-16 h-20 object-contain object-bottom flex-shrink-0" style={{filter:"drop-shadow(0 2px 8px rgba(0,0,0,0.10))"}}/>
+                  <div className="flex-1 pb-1">
+                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2">김효진T SNS</p>
+                    <div className="flex gap-5">
+                      {[
+                        { label:"Instagram", color:"#E1306C", svg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> },
+                        { label:"KakaoTalk", color:"#3A1D1D", svg:<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.48 3 2 6.58 2 11c0 2.76 1.56 5.2 3.96 6.72L5 21l3.8-2.05A11 11 0 0 0 12 19c5.52 0 10-3.58 10-8s-4.48-8-10-8z"/></svg> },
+                        { label:"Blog", color:"#03c75a", svg:<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2H3V5zm0 6h12v2H3v-2zm0 6h18v2H3v-2z"/></svg> },
+                      ].map(s => (
+                        <button key={s.label} className="flex flex-col items-center gap-1 hover:scale-110 transition-transform" style={{color:s.color}}>
+                          {s.svg}
+                          <span className="text-[8px] font-black text-slate-400">{s.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
