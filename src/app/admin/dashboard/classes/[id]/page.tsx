@@ -1261,36 +1261,51 @@ function TestResultPopup({ slot, studentName, existingCheck, onClose, onSaved }:
   onClose: () => void; onSaved: (check: HomeworkCheck) => void;
 }) {
   const [score, setScore] = useState(existingCheck?.score?.toString() || '');
-  const [absent, setAbsent] = useState(existingCheck?.status === 'skipped');
-  const [absentReason, setAbsentReason] = useState(existingCheck?.delay_reason || '');
-  const [rolloverDate, setRolloverDate] = useState(existingCheck?.rollover_date || '');
-  const [saving, setSaving] = useState(false);
-  // Fail 처리방식: 'oral' = 구두재시완료, 'retake' = 추후재응시, 'absent' = 당일결석/지각-추후재응시
-  const [failMode, setFailMode] = useState<'oral'|'retake'|null>(existingCheck?.delay_reason as any || null);
+  // failMode: null=미선택, 'oral'=구두재시귀가, 'retake'=추후재응시, 'absent'=지각결석미응시
+  const [failMode, setFailMode] = useState<'oral'|'retake'|'absent'|null>(null);
   const [retakeDate, setRetakeDate] = useState(existingCheck?.rollover_date || '');
+  const [saving, setSaving] = useState(false);
 
-  const numScore = score ? Number(score) : null;
-  const isAutoPass = slot.is_pf && slot.pass_score && numScore != null ? numScore >= slot.pass_score : null;
+  const numScore = score !== '' ? Number(score) : null;
   const pct = numScore != null && slot.max_score ? Math.round(numScore / slot.max_score * 100) : null;
+  // P/F 자동 판정: is_pf=true이고 pass_score가 있을 때만
+  const isAutoPass = (slot.is_pf && slot.pass_score != null && numScore != null)
+    ? numScore >= slot.pass_score : null;
+
+  // failMode는 FAIL 판정시에만 유효
+  const showFailOptions = slot.is_pf && isAutoPass === false;
+
+  const canSave = (() => {
+    if (saving) return false;
+    if (numScore === null) return false;
+    if (showFailOptions && !failMode) return false; // FAIL인데 처리방식 미선택
+    if (failMode === 'retake' && !retakeDate) return false;
+    if (failMode === 'absent' && !retakeDate) return false;
+    return true;
+  })();
 
   const handleSave = async () => {
+    if (!canSave) return;
     setSaving(true);
     try {
       let payload: Parameters<typeof upsertHomeworkCheck>[0];
-      if (absent) {
-        payload = { slot_id: slot.id, student_name: studentName, status: 'skipped', delay_reason: absentReason || '미응시', rollover_date: rolloverDate || null };
-      } else if (slot.is_pf && isAutoPass === false && failMode) {
-        // Fail 케이스
-        payload = {
-          slot_id: slot.id, student_name: studentName,
-          status: failMode === 'oral' ? 'done' : 'delayed',
-          score: numScore, is_pass: false,
-          delay_reason: failMode === 'oral' ? '구두재시완료' : '추후재응시',
-          rollover_date: failMode === 'retake' ? retakeDate || null : null,
-        };
+
+      if (showFailOptions && failMode === 'oral') {
+        // FAIL - 구두재시 후 귀가
+        payload = { slot_id: slot.id, student_name: studentName, status: 'done',
+          score: numScore, is_pass: false, delay_reason: '구두재시귀가', rollover_date: null };
+      } else if (showFailOptions && failMode === 'retake') {
+        // FAIL - 추후 재응시
+        payload = { slot_id: slot.id, student_name: studentName, status: 'delayed',
+          score: numScore, is_pass: false, delay_reason: '추후재응시', rollover_date: retakeDate || null };
+      } else if (showFailOptions && failMode === 'absent') {
+        // FAIL - 지각/결석 미응시
+        payload = { slot_id: slot.id, student_name: studentName, status: 'skipped',
+          score: numScore, is_pass: false, delay_reason: '지각결석미응시', rollover_date: retakeDate || null };
       } else {
-        const autoPass = slot.is_pf && slot.pass_score && numScore != null ? numScore >= slot.pass_score : null;
-        payload = { slot_id: slot.id, student_name: studentName, status: 'done', score: numScore, is_pass: autoPass };
+        // PASS 또는 일반 점수 저장
+        payload = { slot_id: slot.id, student_name: studentName, status: 'done',
+          score: numScore, is_pass: isAutoPass };
       }
       await upsertHomeworkCheck(payload);
       onSaved({ ...(existingCheck || {} as HomeworkCheck), ...payload });
@@ -1298,121 +1313,123 @@ function TestResultPopup({ slot, studentName, existingCheck, onClose, onSaved }:
     finally { setSaving(false); }
   };
 
+  const BTN = (mode: typeof failMode, label: string, sub?: string) => (
+    <button onClick={() => setFailMode(failMode === mode ? null : mode)}
+      style={{
+        flex:1, padding:'10px 6px', borderRadius:'10px', fontSize:'12px', fontWeight:500,
+        textAlign:'center', lineHeight:1.4,
+        border: failMode===mode ? '2px solid #dc2626' : '1.5px solid #fca5a5',
+        background: failMode===mode ? '#fee2e2' : '#fff',
+        color: failMode===mode ? '#b91c1c' : '#f87171',
+        fontFamily:'inherit',
+      }}>
+      {label}{sub && <><br/><span style={{fontSize:'10px',opacity:0.75}}>{sub}</span></>}
+    </button>
+  );
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[400] flex items-center justify-center p-4"
       style={{fontFamily:'var(--font-jakarta),-apple-system,sans-serif'}}>
       <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
+
         {/* 헤더 */}
-        <div style={{background:'#1e1b4b',padding:'16px 20px'}}>
+        <div style={{background:'#1e1b4b', padding:'16px 20px'}}>
           <div className="flex items-center justify-between">
             <div>
-              <p style={{fontSize:'12px',color:'#a5b4fc',fontWeight:500,marginBottom:'2px'}}>테스트 결과 기록</p>
+              <p style={{fontSize:'11px',color:'#a5b4fc',fontWeight:500,marginBottom:'2px'}}>테스트 결과 기록</p>
               <p style={{fontSize:'15px',color:'#fff',fontWeight:500,letterSpacing:'-0.02em'}}>{studentName}</p>
-              <p style={{fontSize:'12px',color:'#818cf8',marginTop:'2px'}}>{slot.title}{slot.test_range ? ` · ${slot.test_range}` : ''}</p>
+              <p style={{fontSize:'12px',color:'#818cf8',marginTop:'1px'}}>{slot.title}{slot.test_range ? ` · ${slot.test_range}` : ''}</p>
             </div>
-            <button onClick={onClose} style={{color:'#6366f1',background:'rgba(99,102,241,0.15)',borderRadius:'8px',padding:'6px'}}><X size={14}/></button>
+            <button onClick={onClose} style={{color:'#6366f1',background:'rgba(99,102,241,0.2)',borderRadius:'8px',padding:'7px'}}><X size={14}/></button>
           </div>
-          {slot.is_pf && slot.pass_score && (
-            <div style={{marginTop:'8px',padding:'6px 10px',borderRadius:'8px',background:'rgba(99,102,241,0.2)'}}>
-              <p style={{fontSize:'11px',color:'#c7d2fe'}}>합격기준 <span style={{fontSize:'14px',fontWeight:500,color:'#fff'}}>{slot.pass_score}점</span> {slot.max_score ? `/ 만점 ${slot.max_score}점` : ''}</p>
+          {slot.is_pf && slot.pass_score != null && (
+            <div style={{marginTop:'10px',padding:'7px 10px',borderRadius:'8px',background:'rgba(99,102,241,0.25)',display:'flex',alignItems:'baseline',gap:'6px'}}>
+              <span style={{fontSize:'10px',color:'#c7d2fe'}}>합격기준</span>
+              <span style={{fontSize:'16px',fontWeight:500,color:'#fff'}}>{slot.pass_score}점</span>
+              {slot.max_score && <span style={{fontSize:'11px',color:'#818cf8'}}>/ 만점 {slot.max_score}점</span>}
             </div>
           )}
         </div>
 
-        <div style={{padding:'16px 20px'}} className="space-y-3">
-          {/* 미응시 */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={absent} onChange={e => setAbsent(e.target.checked)} className="w-4 h-4 rounded" />
-            <span style={{fontSize:'13px',fontWeight:500,color:'#dc2626'}}>미응시 (결석/지각)</span>
-          </label>
+        <div style={{padding:'18px 20px'}} className="space-y-4">
 
-          {absent ? (
-            <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                {['결석','지각'].map(r => (
-                  <button key={r} onClick={() => setAbsentReason(r)}
-                    style={{padding:'8px',borderRadius:'10px',fontSize:'12px',fontWeight:500,
-                      border: absentReason===r ? '2px solid #dc2626' : '1.5px solid #fca5a5',
-                      background: absentReason===r ? '#fee2e2' : '#fff',
-                      color: absentReason===r ? '#dc2626' : '#f87171'}}>{r}</button>
-                ))}
-              </div>
-              <div>
-                <p style={{fontSize:'11px',color:'#94a3b8',marginBottom:'4px'}}>재응시 예정일</p>
-                <input type="date" value={rolloverDate} onChange={e => setRolloverDate(e.target.value)}
-                  style={{width:'100%',height:'38px',padding:'0 12px',borderRadius:'10px',border:'1.5px solid #e2e8f0',fontSize:'13px',outline:'none',fontFamily:'inherit'}} />
-              </div>
+          {/* 점수 입력 */}
+          <div>
+            <p style={{fontSize:'11px',color:'#94a3b8',marginBottom:'6px',fontWeight:500}}>득점 입력</p>
+            <div className="flex items-center gap-3">
+              <input type="number" value={score} onChange={e => { setScore(e.target.value); setFailMode(null); }}
+                placeholder="0" max={slot.max_score || undefined} autoFocus
+                style={{flex:1, height:'52px', padding:'0 16px', borderRadius:'12px',
+                  border: numScore===null ? '1.5px solid #c7d2fe' : isAutoPass===true ? '2px solid #86efac' : isAutoPass===false ? '2px solid #fca5a5' : '1.5px solid #c7d2fe',
+                  fontSize:'24px', fontWeight:300, outline:'none', textAlign:'center',
+                  letterSpacing:'-0.03em', fontFamily:'inherit',
+                  color: isAutoPass===true ? '#166534' : isAutoPass===false ? '#dc2626' : '#1e1b4b',
+                }} />
+              {slot.max_score && <span style={{fontSize:'14px',color:'#94a3b8',flexShrink:0}}>/ {slot.max_score}</span>}
+              {pct != null && (
+                <span style={{fontSize:'13px',color:'#6366f1',flexShrink:0,minWidth:'42px',textAlign:'right'}}>
+                  {pct}%
+                </span>
+              )}
             </div>
-          ) : (
-            <div className="space-y-3">
-              {/* 점수 입력 */}
-              <div>
-                <p style={{fontSize:'11px',color:'#94a3b8',marginBottom:'4px'}}>득점</p>
-                <div className="flex items-center gap-2">
-                  <input type="number" value={score} onChange={e => setScore(e.target.value)}
-                    placeholder="0" max={slot.max_score || undefined}
-                    style={{flex:1,height:'44px',padding:'0 12px',borderRadius:'10px',border:'1.5px solid #c7d2fe',fontSize:'18px',fontWeight:300,outline:'none',textAlign:'center',letterSpacing:'-0.02em',fontFamily:'inherit'}} />
-                  {slot.max_score && <span style={{fontSize:'14px',color:'#94a3b8'}}>/ {slot.max_score}</span>}
-                  {pct != null && <span style={{fontSize:'12px',color:'#6366f1',minWidth:'36px',textAlign:'right'}}>({pct}%)</span>}
-                </div>
-              </div>
+          </div>
 
-              {/* 자동 P/F 판정 */}
-              {slot.is_pf && numScore != null && (
-                <div style={{padding:'10px 12px',borderRadius:'10px',
-                  background: isAutoPass ? '#f0fdf4' : '#fef2f2',
-                  border: `1.5px solid ${isAutoPass ? '#86efac' : '#fca5a5'}`
-                }}>
-                  <p style={{fontSize:'13px',fontWeight:600,
-                    color: isAutoPass ? '#166534' : '#dc2626'}}>
-                    {isAutoPass ? '✅ PASS' : `❌ FAIL (기준 ${slot.pass_score}점)`}
+          {/* PASS 판정 */}
+          {slot.is_pf && isAutoPass === true && (
+            <div style={{padding:'12px 16px',borderRadius:'12px',background:'#f0fdf4',border:'1.5px solid #86efac',textAlign:'center'}}>
+              <p style={{fontSize:'16px',fontWeight:600,color:'#166534'}}>✅ PASS</p>
+            </div>
+          )}
+
+          {/* FAIL 판정 + 처리방식 */}
+          {showFailOptions && (
+            <div style={{padding:'12px',borderRadius:'12px',background:'#fef2f2',border:'1.5px solid #fca5a5'}}>
+              <p style={{fontSize:'13px',fontWeight:600,color:'#dc2626',marginBottom:'10px'}}>
+                ❌ FAIL — 처리 방식을 선택하세요
+              </p>
+              <div style={{display:'flex',gap:'6px'}}>
+                {BTN('oral', '구두재시', '당일 귀가')}
+                {BTN('retake', '추후 재응시', '날짜 선택')}
+                {BTN('absent', '지각·결석', '미응시')}
+              </div>
+              {(failMode === 'retake' || failMode === 'absent') && (
+                <div style={{marginTop:'10px'}}>
+                  <p style={{fontSize:'10px',color:'#94a3b8',marginBottom:'4px'}}>
+                    {failMode === 'retake' ? '재응시 예정일' : '재응시 예정일 (선택)'}
                   </p>
-                  {/* Fail일 때 처리방식 선택 */}
-                  {!isAutoPass && (
-                    <div className="mt-2 space-y-1.5">
-                      <p style={{fontSize:'10px',color:'#f87171',fontWeight:500}}>처리 방식 선택</p>
-                      <div className="flex gap-2">
-                        {[{k:'oral',l:'구두재시 완료'},{k:'retake',l:'추후 재응시'}].map(({k,l}) => (
-                          <button key={k} onClick={() => setFailMode(k as any)}
-                            style={{flex:1,padding:'6px 4px',borderRadius:'8px',fontSize:'11px',fontWeight:500,
-                              border: failMode===k ? '2px solid #dc2626' : '1.5px solid #fca5a5',
-                              background: failMode===k ? '#fee2e2' : '#fff',
-                              color: failMode===k ? '#dc2626' : '#f87171'}}>{l}</button>
-                        ))}
-                      </div>
-                      {failMode === 'retake' && (
-                        <div>
-                          <p style={{fontSize:'10px',color:'#94a3b8',marginBottom:'3px'}}>재응시 예정일</p>
-                          <input type="date" value={retakeDate} onChange={e => setRetakeDate(e.target.value)}
-                            style={{width:'100%',height:'36px',padding:'0 10px',borderRadius:'8px',border:'1.5px solid #e2e8f0',fontSize:'12px',outline:'none',fontFamily:'inherit'}} />
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <input type="date" value={retakeDate} onChange={e => setRetakeDate(e.target.value)}
+                    style={{width:'100%',height:'38px',padding:'0 12px',borderRadius:'8px',
+                      border:'1.5px solid #e2e8f0',fontSize:'13px',outline:'none',fontFamily:'inherit'}} />
                 </div>
               )}
+            </div>
+          )}
 
-              {/* 일반 통과 기준 (is_pf 아닐 때) */}
-              {!slot.is_pf && slot.pass_score && score && (
-                <p style={{fontSize:'12px',fontWeight:500,textAlign:'center',
-                  color: Number(score)>=slot.pass_score ? '#166534' : '#dc2626'}}>
-                  {Number(score)>=slot.pass_score ? '✅ 통과' : `❌ 미통과 (기준: ${slot.pass_score}점)`}
-                </p>
-              )}
+          {/* 일반 점수만 (is_pf 아닐 때) */}
+          {!slot.is_pf && slot.pass_score != null && numScore != null && (
+            <div style={{padding:'10px',borderRadius:'10px',textAlign:'center',
+              background: numScore>=slot.pass_score ? '#f0fdf4':'#fef2f2',
+              border: `1.5px solid ${numScore>=slot.pass_score ? '#86efac':'#fca5a5'}`}}>
+              <p style={{fontSize:'13px',fontWeight:600,color:numScore>=slot.pass_score?'#166534':'#dc2626'}}>
+                {numScore>=slot.pass_score ? '✅ 통과' : `❌ 미통과 (기준 ${slot.pass_score}점)`}
+              </p>
             </div>
           )}
         </div>
 
-        <div style={{padding:'0 20px 16px 20px',display:'flex',gap:'8px'}}>
+        {/* 저장 버튼 */}
+        <div style={{padding:'0 20px 20px',display:'flex',gap:'8px'}}>
           <button onClick={onClose}
-            style={{flex:1,height:'42px',borderRadius:'10px',border:'1.5px solid #e2e8f0',fontSize:'13px',color:'#94a3b8',fontFamily:'inherit'}}>
+            style={{flex:1,height:'44px',borderRadius:'10px',border:'1.5px solid #e2e8f0',
+              fontSize:'13px',color:'#94a3b8',fontFamily:'inherit'}}>
             취소
           </button>
-          <button onClick={handleSave} disabled={saving ||
-            (!absent && !score) ||
-            (slot.is_pf && !absent && numScore != null && isAutoPass === false && !failMode)}
-            style={{flex:2,height:'42px',borderRadius:'10px',background:'#1e1b4b',color:'#fff',fontSize:'13px',fontWeight:500,fontFamily:'inherit',
-              opacity: (saving || (!absent && !score) || (slot.is_pf && !absent && numScore!=null && isAutoPass===false && !failMode)) ? 0.35 : 1}}>
+          <button onClick={handleSave} disabled={!canSave}
+            style={{flex:2,height:'44px',borderRadius:'10px',
+              background: canSave ? '#1e1b4b' : '#e2e8f0',
+              color: canSave ? '#fff' : '#94a3b8',
+              fontSize:'13px',fontWeight:500,fontFamily:'inherit',
+              transition:'all 0.15s'}}>
             {saving ? '저장 중...' : '기록 완료'}
           </button>
         </div>
