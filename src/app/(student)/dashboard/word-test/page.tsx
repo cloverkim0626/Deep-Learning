@@ -767,7 +767,7 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
 
   useEffect(() => {
     if (gamePhase !== 'playing') return;
-    const total = Math.max(pairs * 4, 8);
+    const total = Math.max(pairs * 4, 8) + 5;
     setPlayTimer(total);
     timerRef.current = setInterval(() => {
       setPlayTimer(t => { if (t <= 1) { clearInterval(timerRef.current!); endRound(false); return 0; } return t - 1; });
@@ -794,7 +794,7 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
     }
   };
 
-  const timerPct = pairs > 0 ? (playTimer / Math.max(pairs * 4, 8)) * 100 : 100;
+  const timerPct = pairs > 0 ? (playTimer / (Math.max(pairs * 4, 8) + 5)) * 100 : 100;
   const roundLabel = currentRound === 'synonym' ? '유의어' : '반의어';
   const roundBg = currentRound === 'synonym' ? 'from-blue-600 to-indigo-700' : 'from-rose-600 to-pink-700';
 

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { ArrowRight, BookOpen, Briefcase, Zap, Brain, Sparkles, X, Layers, Flame, BarChart2, HelpCircle, Search } from "lucide-react";
@@ -148,31 +148,42 @@ export default function Home() {
         {/* D-DAY Badge */}
         {dday !== null && (
           <div className="flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-semibold tracking-wider animate-in zoom-in duration-700 delay-300"
-            style={{background:'rgba(0,100,200,0.25)',border:'1px solid rgba(100,180,255,0.3)',color:'rgba(150,210,255,0.9)'}}>
-            <Zap size={10} strokeWidth={2.5} />
-            수능까지 D-{dday}
+            style={{
+              background:'rgba(255,255,255,0.07)',
+              border:'1px solid transparent',
+              backgroundClip:'padding-box',
+              boxShadow:'0 0 0 1px rgba(80,200,240,0.35), 0 0 12px rgba(80,200,240,0.15)',
+              color:'rgba(160,230,255,0.9)',
+            }}>
+            <span style={{background:'linear-gradient(90deg,#50c8eb,#b87fff)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',fontWeight:800}}>D-{dday}</span>
+            <span style={{color:'rgba(160,210,255,0.7)'}}>·&nbsp;수능까지</span>
           </div>
         )}
 
         {/* Hero */}
         <div className="text-center space-y-5">
           {/* 돋보기 로고 — 깊이 있는 학습의 상징 */}
-          <div className="w-14 h-14 rounded-[1.4rem] flex items-center justify-center mx-auto hover:rotate-12 transition-transform duration-500 cursor-default"
+          <div className="w-14 h-14 rounded-[1.4rem] flex items-center justify-center mx-auto hover:rotate-12 transition-transform duration-500 cursor-default relative"
             style={{
-              background:'rgba(255,255,255,0.12)',
-              border:'1.5px solid rgba(200,235,255,0.6)',
+              background:'rgba(255,255,255,0.10)',
               backdropFilter:'blur(12px)',
-              boxShadow:'0 0 20px rgba(120,200,255,0.35), 0 0 40px rgba(80,160,255,0.15), inset 0 1px 1px rgba(255,255,255,0.5)',
               color:'rgba(220,240,255,0.95)',
             }}>
+            {/* IG 스타일 ring */}
+            <div style={{
+              position:'absolute', inset:'-3px',
+              borderRadius:'calc(1.4rem + 3px)',
+              background:'linear-gradient(135deg,#405DE6,#833AB4,#E1306C,#F77737)',
+              zIndex:-1, padding:'2px',
+            }}>
+              <div style={{
+                background:'#050d1a', borderRadius:'calc(1.4rem + 1px)', width:'100%', height:'100%',
+              }}/>
+            </div>
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* 렌즈 외각 */}
               <circle cx="11.5" cy="11.5" r="8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              {/* 렌즈 내부 - 깊이감 */}
               <circle cx="11.5" cy="11.5" r="4.5" stroke="currentColor" strokeWidth="1" strokeOpacity="0.4" strokeLinecap="round" />
-              {/* 손잡이 */}
               <line x1="17.5" y1="17.5" x2="24" y2="24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              {/* 렌즈 위 하이라이트 */}
               <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" fillOpacity="0.25" />
             </svg>
           </div>
@@ -202,9 +213,18 @@ export default function Home() {
             { icon: <Brain size={14} />, label: "AI 선생님", value: "친절한" },
             { icon: <Zap size={14} />, label: "수능·내신", value: "완전 대비" },
           ].map((s, i) => (
-            <div key={i} className="rounded-2xl p-3 text-center transition-colors"
-              style={{background:'rgba(0,60,120,0.25)',border:'1px solid rgba(80,160,255,0.15)'}}>
-              <div className="flex items-center justify-center mb-1" style={{color:'rgba(100,180,255,0.6)'}}>{s.icon}</div>
+            <div key={i} className="rounded-2xl p-3 text-center transition-all hover:scale-105 duration-300 relative overflow-hidden"
+              style={{
+                background:'rgba(255,255,255,0.05)',
+                border:'1px solid rgba(255,255,255,0.08)',
+                backdropFilter:'blur(10px)',
+              }}>
+              {/* IG 그라디언트 상단 라인 */}
+              <div style={{
+                position:'absolute', top:0, left:'15%', right:'15%', height:'1.5px',
+                background:'linear-gradient(90deg,transparent,rgba(80,200,240,0.6),rgba(184,127,255,0.6),transparent)',
+              }}/>
+              <div className="flex items-center justify-center mb-1" style={{color:'rgba(100,200,255,0.7)'}}>{s.icon}</div>
               <p className="text-[14px] font-semibold text-white leading-tight">{s.value}</p>
               <p className="text-[9px] font-medium uppercase tracking-wider mt-0.5" style={{color:'rgba(100,180,255,0.4)'}}>{s.label}</p>
             </div>
@@ -213,51 +233,55 @@ export default function Home() {
 
         {/* CTA Buttons */}
         <div className="flex flex-col w-full gap-3">
-          {/* 학습 입장 — SotW 청록 Ocean */}
           <style>{`
-            @keyframes oceanShimmer {
-              0%,100%{opacity:0.6;transform:translateX(0) scale(1)}
-              50%{opacity:1;transform:translateX(3px) scale(1.05)}
+            @keyframes igGlow {
+              0%,100%{opacity:0.7;transform:translateX(0)}
+              50%{opacity:1;transform:translateX(4px)}
             }
-            @keyframes oceanRay {
-              0%,100%{opacity:0.4;transform:scaleY(1)}
-              50%{opacity:0.75;transform:scaleY(1.08)}
+            @keyframes igPulseRing {
+              0%{box-shadow:0 0 0 0 rgba(225,48,108,0.4)}
+              70%{box-shadow:0 0 0 8px rgba(225,48,108,0)}
+              100%{box-shadow:0 0 0 0 rgba(225,48,108,0)}
             }
           `}</style>
           <Link
             href="/login?role=student"
             className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-1 transition-all duration-500"
             style={{
-              background:'linear-gradient(145deg,#082840 0%,#0d3d5c 40%,#0f4a6e 75%,#0a3050 100%)',
-              boxShadow:'0 6px 32px rgba(10,140,190,0.35), 0 2px 8px rgba(5,80,140,0.4), inset 0 1px 0 rgba(120,220,255,0.15)',
-              border:'1px solid rgba(40,180,220,0.25)',
+              background:'linear-gradient(145deg,#071e38 0%,#0a2d50 45%,#082440 100%)',
+              boxShadow:'0 8px 32px rgba(64,93,230,0.30), 0 2px 8px rgba(0,0,0,0.5)',
+              border:'1.5px solid transparent',
+              backgroundClip:'padding-box',
+              outline:'1.5px solid transparent',
+              position:'relative',
             }}
           >
-            {/* 수중 발광 — 아래에서 올라오는 청록 빛 */}
-            <div className="absolute inset-0 pointer-events-none" style={{
-              background:'linear-gradient(0deg,rgba(15,160,210,0.28) 0%,rgba(10,130,180,0.12) 45%,transparent 80%)',
+            {/* IG 그라디언트 보더 */}
+            <div style={{
+              position:'absolute', inset:0, borderRadius:'2rem', padding:'1.5px', zIndex:0,
+              background:'linear-gradient(135deg,#405DE6,#833AB4,#E1306C,#F77737)',
+              WebkitMask:'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              WebkitMaskComposite:'xor',
+              maskComposite:'exclude',
             }}/>
-            {/* 상단 수면 하이라이트 */}
+            {/* 수중 발광 */}
+            <div className="absolute inset-0 pointer-events-none" style={{
+              background:'linear-gradient(135deg,rgba(64,93,230,0.20) 0%,rgba(131,58,180,0.12) 50%,rgba(10,130,180,0.15) 100%)',
+            }}/>
             <div className="absolute pointer-events-none" style={{
               top:'-20%', left:'20%', width:'200px', height:'100px',
-              background:'radial-gradient(ellipse,rgba(140,230,255,0.18) 0%,transparent 65%)',
+              background:'radial-gradient(ellipse,rgba(80,200,240,0.18) 0%,transparent 65%)',
               borderRadius:'50%', filter:'blur(18px)',
-              animation:'oceanRay 7s ease-in-out infinite',
-            }}/>
-            {/* 생물발광 우측 */}
-            <div className="absolute pointer-events-none" style={{
-              top:'10%', right:'-5%', width:'120px', height:'120px',
-              background:'radial-gradient(ellipse,rgba(30,200,240,0.2) 0%,transparent 65%)',
-              borderRadius:'50%', filter:'blur(16px)',
-              animation:'oceanShimmer 5s ease-in-out infinite',
             }}/>
             <div className="flex items-center gap-2 font-semibold text-[15px] mb-1 relative z-10">
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest" style={{background:'rgba(30,200,240,0.18)',color:'rgba(160,240,255,0.95)',border:'1px solid rgba(40,200,240,0.3)'}}>STUDENT</span>
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest text-white"
+                style={{background:'linear-gradient(90deg,#405DE6,#E1306C)', boxShadow:'0 2px 8px rgba(225,48,108,0.35)'}}>STUDENT</span>
               <span className="text-[13px] font-black" style={{color:'rgba(210,245,255,0.97)'}}>학습 공간 입장</span>
             </div>
-            <p className="text-[11px] font-semibold relative z-10 leading-relaxed" style={{color:'rgba(100,210,240,0.65)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
-            <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(20,180,220,0.15)',border:'1px solid rgba(40,200,240,0.3)'}}>
-              <ArrowRight strokeWidth={2.5} size={14} className="group-hover:translate-x-0.5 transition-all" style={{color:'rgba(140,230,255,0.9)'}} />
+            <p className="text-[11px] font-semibold relative z-10 leading-relaxed" style={{color:'rgba(160,210,255,0.65)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
+            <div className="absolute bottom-4 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center"
+              style={{background:'linear-gradient(135deg,#405DE6,#E1306C)', boxShadow:'0 0 12px rgba(225,48,108,0.5)', animation:'igPulseRing 2s ease-in-out infinite'}}>
+              <ArrowRight strokeWidth={2.5} size={14} className="group-hover:translate-x-0.5 transition-all text-white" />
             </div>
           </Link>
 
@@ -310,54 +334,60 @@ export default function Home() {
           </Link>
 
 
-          {/* 사용법 보기 버튼 — eye-catching */}
           <button
             onClick={() => setShowGuide(true)}
-            className="group relative flex items-center justify-between w-full h-[64px] px-5 rounded-[1.8rem] overflow-hidden border border-foreground/10 hover:-translate-y-0.5 transition-all duration-300"
-            style={{ background: 'linear-gradient(135deg, #f8f8f8 0%, #efefef 100%)' }}
+            className="group relative flex items-center justify-between w-full h-[64px] px-5 rounded-[2rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
+            style={{
+              background:'linear-gradient(135deg,rgba(64,93,230,0.15) 0%,rgba(131,58,180,0.12) 50%,rgba(225,48,108,0.10) 100%)',
+              border:'1px solid transparent',
+              boxShadow:'0 0 0 1px rgba(131,58,180,0.30), 0 4px 20px rgba(64,93,230,0.20)',
+            }}
           >
-            {/* 배경 glow */}
-            <div className="absolute inset-0 bg-gradient-to-r from-foreground/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="flex items-center gap-3 relative z-10">
-              {/* 아이콘 + 펄스 */}
               <div className="relative">
-                <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
-                  <Sparkles size={16} className="text-background" strokeWidth={2.5} />
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300"
+                  style={{background:'linear-gradient(135deg,#405DE6,#833AB4,#E1306C)'}}>
+                  <Sparkles size={16} className="text-white" strokeWidth={2.5} />
                 </div>
-                {/* 빨간 알림 도트 */}
-                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 border-background flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 flex items-center justify-center" style={{borderColor:'#050d1a'}}>
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                 </span>
               </div>
               <div className="text-left">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] font-black text-foreground leading-tight">기능 안내 &amp; 체험 계정</span>
-                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-foreground text-background tracking-wider">CHECK</span>
+                  <span className="text-[13px] font-black text-white leading-tight">기능 안내 &amp; 체험 계정</span>
+                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md tracking-wider text-white"
+                    style={{background:'linear-gradient(90deg,#405DE6,#E1306C)'}}>CHECK</span>
                 </div>
-                <span className="text-[10px] font-bold text-accent/60">사용법 · 장학 혜택 · 홈화면 설치</span>
+                <span className="text-[10px] font-bold" style={{color:'rgba(160,180,255,0.55)'}}>사용법 · 장학 혜택 · 홈화면 설치</span>
               </div>
             </div>
-            <div className="w-8 h-8 rounded-full bg-foreground/8 flex items-center justify-center group-hover:bg-foreground group-hover:text-background transition-all duration-300 relative z-10">
-              <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+            <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 relative z-10"
+              style={{background:'rgba(255,255,255,0.08)'}}>
+              <ArrowRight size={14} className="text-white/50 group-hover:text-white/90 group-hover:translate-x-0.5 transition-all" />
             </div>
           </button>
 
-          {/* 선생님 페이지 */}
           <Link
             href="/login?role=admin"
-            className="group flex items-center justify-between w-full h-[64px] px-6 rounded-[1.8rem] text-white border hover:opacity-80 hover:-translate-y-0.5 transition-all duration-400"
-            style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(8px)'}}
+            className="group flex items-center justify-between w-full h-[64px] px-6 rounded-[2rem] hover:-translate-y-0.5 transition-all duration-400"
+            style={{
+              background:'rgba(255,255,255,0.04)',
+              border:'1px solid rgba(255,255,255,0.10)',
+              backdropFilter:'blur(12px)',
+            }}
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-400" style={{background:'rgba(255,255,255,0.1)'}}>
-                <Briefcase strokeWidth={1.5} size={16} className="text-white/70" />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-400"
+                style={{background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.12)'}}>
+                <Briefcase strokeWidth={1.5} size={16} className="text-white/60" />
               </div>
               <div>
-                <span className="text-[13px] font-medium block leading-tight text-white">선생님 페이지</span>
-                <span className="text-[10px] font-normal uppercase tracking-wider" style={{color:'rgba(150,200,255,0.5)'}}>Teacher Dashboard</span>
+                <span className="text-[13px] font-medium block leading-tight text-white/80">선생님 페이지</span>
+                <span className="text-[10px] font-normal uppercase tracking-wider" style={{color:'rgba(120,160,255,0.4)'}}>Teacher Dashboard</span>
               </div>
             </div>
-            <ArrowRight strokeWidth={1.5} size={16} className="text-white/30 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all" />
+            <ArrowRight strokeWidth={1.5} size={16} className="text-white/20 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all" />
           </Link>
         </div>
 
