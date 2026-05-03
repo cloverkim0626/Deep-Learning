@@ -69,26 +69,43 @@ export default function ParentLoginPage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
-      style={{ background: "#f0f4ed" }}>
+      style={{ background: "#f2ede4" }}>
 
-      {/* 숲 배경 */}
+      {/* 봄 창문 너머 녹음 — 노스텔지아 배경 */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <style>{`
-          @keyframes lfMist { 0%,100%{opacity:0.35;transform:translateX(0)} 50%{opacity:0.55;transform:translateX(2%)} }
-          @keyframes lfFloat { 0%,100%{opacity:0.3;transform:translate(0,0)} 50%{opacity:0.5;transform:translate(2%,4%)} }
-          @keyframes lfBreeze { 0%,100%{opacity:0.2;transform:translate(0,0)} 50%{opacity:0.4;transform:translate(-2%,3%)} }
+          @keyframes sHaze { 0%,100%{opacity:0.45;transform:translate(0,0) scale(1)} 40%{opacity:0.62;transform:translate(1%,2%) scale(1.02)} 70%{opacity:0.5;transform:translate(-0.5%,1%) scale(0.99)} }
+          @keyframes sLight { 0%,100%{opacity:0.32;transform:translateX(0)} 50%{opacity:0.5;transform:translateX(1.5%)} }
+          @keyframes sDrift { 0%,100%{opacity:0.18;transform:translate(0,0)} 50%{opacity:0.35;transform:translate(-1.5%,3%)} }
         `}</style>
-        <div style={{ position:'absolute', top:'-10%', left:'-15%', width:'70vw', height:'70vw',
-          background:'radial-gradient(ellipse, rgba(140,200,100,0.2) 0%, rgba(90,160,60,0.08) 35%, transparent 65%)',
-          borderRadius:'50%', filter:'blur(50px)', animation:'lfMist 14s ease-in-out infinite' }}/>
-        <div style={{ position:'absolute', top:'20%', right:'-20%', width:'60vw', height:'60vw',
-          background:'radial-gradient(ellipse, rgba(100,170,70,0.13) 0%, rgba(60,130,50,0.05) 45%, transparent 70%)',
-          borderRadius:'50%', filter:'blur(60px)', animation:'lfFloat 18s ease-in-out infinite' }}/>
-        <div style={{ position:'absolute', bottom:'-10%', left:'5%', width:'75vw', height:'40vw',
-          background:'radial-gradient(ellipse, rgba(50,90,40,0.1) 0%, transparent 65%)',
-          borderRadius:'50%', filter:'blur(40px)', animation:'lfBreeze 22s ease-in-out infinite' }}/>
+
+        {/* 봄 햇살 — 따뜻한 크림-그린 상단 */}
+        <div style={{ position:'absolute', top:'-20%', left:'-20%', width:'80vw', height:'80vw',
+          background:'radial-gradient(ellipse, rgba(205,225,175,0.32) 0%, rgba(185,210,155,0.16) 28%, rgba(210,220,185,0.07) 52%, transparent 70%)',
+          borderRadius:'50%', filter:'blur(55px)', animation:'sLight 14s ease-in-out infinite' }}/>
+
+        {/* 녹음 보케 — 창문 밖 나뭇잎 */}
+        <div style={{ position:'absolute', top:'-5%', right:'-25%', width:'70vw', height:'70vw',
+          background:'radial-gradient(ellipse, rgba(175,210,148,0.24) 0%, rgba(158,195,132,0.1) 38%, transparent 65%)',
+          borderRadius:'50%', filter:'blur(65px)', animation:'sHaze 18s ease-in-out infinite' }}/>
+
+        {/* 오후 따뜻한 안개 — 중앙 */}
+        <div style={{ position:'absolute', top:'28%', left:'-5%', width:'60vw', height:'55vw',
+          background:'radial-gradient(ellipse, rgba(222,218,188,0.2) 0%, rgba(210,215,178,0.08) 45%, transparent 68%)',
+          borderRadius:'50%', filter:'blur(52px)', animation:'sDrift 22s ease-in-out infinite' }}/>
+
+        {/* 하단 깊은 녹음 그늘 */}
+        <div style={{ position:'absolute', bottom:'-10%', right:'-10%', width:'65vw', height:'50vw',
+          background:'radial-gradient(ellipse, rgba(148,185,128,0.17) 0%, rgba(128,168,108,0.06) 48%, transparent 70%)',
+          borderRadius:'50%', filter:'blur(45px)', animation:'sHaze 26s ease-in-out infinite 4s' }}/>
+
+        {/* 필름 그레인 — 전체 따뜻한 베이스 */}
         <div style={{ position:'absolute', inset:0,
-          background:'linear-gradient(160deg, rgba(200,230,170,0.14) 0%, transparent 55%, rgba(130,190,100,0.07) 100%)' }}/>
+          background:'linear-gradient(168deg, rgba(218,228,198,0.13) 0%, rgba(242,238,224,0.09) 40%, transparent 62%, rgba(178,208,158,0.08) 100%)' }}/>
+
+        {/* 비네팅 — 노스텔지아 가장자리 */}
+        <div style={{ position:'absolute', inset:0,
+          background:'radial-gradient(ellipse 88% 88% at 50% 50%, transparent 42%, rgba(198,188,168,0.13) 78%, rgba(182,172,150,0.2) 100%)' }}/>
       </div>
 
       <div className="w-full max-w-sm relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">

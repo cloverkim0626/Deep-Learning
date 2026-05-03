@@ -230,91 +230,88 @@ export default function Home() {
 
         {/* CTA Buttons */}
         <div className="flex flex-col w-full gap-3">
-          {/* 학습 입장 - 숲/휴식 컨셉 */}
+          {/* 학습 입장 - 파스텔 녹음 콘셉 */}
           <style>{`
-            @keyframes forestLeaf {
-              0%,100%{opacity:0.5;transform:translate(0,0) scale(1)}
-              33%{opacity:0.8;transform:translate(2%,3%) scale(1.04)}
-              66%{opacity:0.6;transform:translate(-1%,2%) scale(0.97)}
+            @keyframes springLeaf {
+              0%,100%{opacity:0.4;transform:translate(0,0) scale(1)}
+              40%{opacity:0.6;transform:translate(1.5%,2%) scale(1.03)}
+              70%{opacity:0.45;transform:translate(-0.5%,1%) scale(0.98)}
             }
-            @keyframes forestMist {
-              0%,100%{opacity:0.3;transform:translateX(0)}
-              50%{opacity:0.55;transform:translateX(3%)}
+            @keyframes springGlow {
+              0%,100%{opacity:0.35;transform:translateX(0)}
+              50%{opacity:0.52;transform:translateX(1.5%)}
             }
           `}</style>
           <Link
             href="/login?role=student"
             className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-500"
             style={{
-              background:'linear-gradient(135deg, #2d4a35 0%, #1e3328 50%, #162b20 100%)',
-              boxShadow:'0 4px 32px rgba(30,60,35,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
+              background:'linear-gradient(145deg, #e8efe0 0%, #dce8d2 45%, #d4e2ca 100%)',
+              boxShadow:'0 4px 28px rgba(100,140,80,0.15), inset 0 1px 0 rgba(255,255,255,0.75)',
+              border:'1px solid rgba(160,195,140,0.28)',
             }}
           >
-            {/* 숲 빛 - 상단 왼쪽 햇살 */}
+            {/* 봄 햇살 - 상단 좌측 */}
             <div className="absolute pointer-events-none" style={{
-              top:'-20%', left:'-10%', width:'160px', height:'160px',
-              background:'radial-gradient(ellipse, rgba(140,200,100,0.22) 0%, rgba(80,150,60,0.1) 40%, transparent 70%)',
-              borderRadius:'50%', filter:'blur(24px)',
-              animation:'forestMist 8s ease-in-out infinite',
+              top:'-25%', left:'-12%', width:'170px', height:'170px',
+              background:'radial-gradient(ellipse, rgba(200,225,165,0.38) 0%, rgba(175,210,145,0.18) 38%, transparent 68%)',
+              borderRadius:'50%', filter:'blur(26px)',
+              animation:'springGlow 10s ease-in-out infinite',
             }}/>
-            {/* 숲 잎 - 오른쪽 보케 */}
+            {/* 녹음 보케 - 오른쪽 */}
             <div className="absolute pointer-events-none" style={{
-              top:'10%', right:'-5%', width:'130px', height:'130px',
-              background:'radial-gradient(ellipse, rgba(100,170,80,0.18) 0%, rgba(60,120,50,0.08) 50%, transparent 75%)',
-              borderRadius:'50%', filter:'blur(20px)',
-              animation:'forestLeaf 12s ease-in-out infinite',
+              top:'5%', right:'-8%', width:'145px', height:'145px',
+              background:'radial-gradient(ellipse, rgba(172,205,148,0.28) 0%, rgba(152,190,128,0.12) 45%, transparent 72%)',
+              borderRadius:'50%', filter:'blur(22px)',
+              animation:'springLeaf 13s ease-in-out infinite',
             }}/>
-            {/* 하단 어두운 숲 그라디언트 */}
+            {/* 따뜻한 비네팅 */}
             <div className="absolute inset-0 pointer-events-none" style={{
-              background:'linear-gradient(180deg, transparent 40%, rgba(10,20,12,0.5) 100%)',
-            }}/>
-            {/* 은은한 텍스처 오버레이 */}
-            <div className="absolute inset-0 pointer-events-none" style={{
-              background:'radial-gradient(ellipse 80% 60% at 80% 40%, rgba(120,180,90,0.07) 0%, transparent 60%)',
+              background:'radial-gradient(ellipse 85% 70% at 50% 50%, transparent 45%, rgba(195,215,175,0.12) 80%, rgba(180,200,155,0.2) 100%)',
             }}/>
             <div className="flex items-center gap-2 font-semibold text-[15px] mb-1 relative z-10">
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest" style={{background:'rgba(120,200,100,0.12)', color:'rgba(160,220,130,0.8)', border:'1px solid rgba(120,200,100,0.2)'}}>STUDENT</span>
-              <span className="text-[13px]" style={{color:'rgba(210,235,200,0.95)'}}>학습 공간 입장</span>
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest" style={{background:'rgba(130,175,105,0.14)', color:'rgba(70,105,55,0.8)', border:'1px solid rgba(130,175,105,0.25)'}}>STUDENT</span>
+              <span className="text-[13px]" style={{color:'#3a4e30'}}>학습 공간 입장</span>
             </div>
-            <p className="text-[11px] font-normal relative z-10 leading-relaxed" style={{color:'rgba(140,190,120,0.55)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
-            <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(120,200,100,0.08)', border:'1px solid rgba(120,200,100,0.18)'}}>
-              <ArrowRight strokeWidth={2} size={14} className="group-hover:translate-x-0.5 transition-all" style={{color:'rgba(160,220,130,0.5)'}} />
+            <p className="text-[11px] font-normal relative z-10 leading-relaxed" style={{color:'rgba(75,105,55,0.52)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
+            <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(140,185,115,0.1)', border:'1px solid rgba(140,185,115,0.25)'}}>
+              <ArrowRight strokeWidth={2} size={14} className="group-hover:translate-x-0.5 transition-all" style={{color:'rgba(90,130,70,0.55)'}} />
             </div>
           </Link>
 
-          {/* 리포트 열람 - 숲 새벽 컨셉 */}
+          {/* 리포트 열람 - 파스텔 노스텔지아 */}
           <Link
             href="/login/parent"
             className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-500"
             style={{
-              background:'linear-gradient(135deg, #f0f4ed 0%, #e4ede0 50%, #dde8d8 100%)',
-              boxShadow:'0 4px 24px rgba(60,100,60,0.14), inset 0 1px 0 rgba(255,255,255,0.7)',
-              border:'1px solid rgba(120,170,100,0.2)',
+              background:'linear-gradient(145deg, #f4efe5 0%, #eae8dc 45%, #e2e6d8 100%)',
+              boxShadow:'0 4px 22px rgba(130,145,105,0.13), inset 0 1px 0 rgba(255,255,255,0.8)',
+              border:'1px solid rgba(175,185,155,0.28)',
             }}
           >
-            {/* 새벽 숲 빛 - 상단 */}
+            {/* 봄 햇살 코어 - 상단 우측 */}
             <div className="absolute pointer-events-none" style={{
-              top:'-30%', right:'-10%', width:'140px', height:'140px',
-              background:'radial-gradient(ellipse, rgba(100,160,80,0.18) 0%, rgba(60,120,50,0.06) 50%, transparent 75%)',
-              borderRadius:'50%', filter:'blur(28px)',
-              animation:'forestMist 10s ease-in-out infinite 2s',
+              top:'-30%', right:'-12%', width:'150px', height:'150px',
+              background:'radial-gradient(ellipse, rgba(195,218,168,0.3) 0%, rgba(172,200,148,0.12) 45%, transparent 72%)',
+              borderRadius:'50%', filter:'blur(30px)',
+              animation:'springGlow 12s ease-in-out infinite 2s',
             }}/>
-            {/* 안개 레이어 */}
+            {/* 아이보리 크림 보케 */}
             <div className="absolute inset-0 pointer-events-none" style={{
-              background:'radial-gradient(ellipse 100% 60% at 90% 80%, rgba(180,210,160,0.18) 0%, transparent 60%)',
+              background:'radial-gradient(ellipse 100% 65% at 88% 78%, rgba(218,220,188,0.22) 0%, rgba(230,225,200,0.08) 45%, transparent 65%)',
             }}/>
             {/* 콘텐츠 */}
             <div className="relative z-10 flex items-center gap-2 font-semibold text-[15px] mb-1">
               <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest"
-                style={{background:'rgba(80,130,70,0.1)', color:'rgba(60,100,50,0.75)', border:'1px solid rgba(80,130,70,0.18)'}}>
+                style={{background:'rgba(140,155,115,0.12)', color:'rgba(80,95,58,0.75)', border:'1px solid rgba(150,165,125,0.22)'}}>
                 REPORT
               </span>
-              <span className="text-[13px] font-black" style={{color:'#2d4a35'}}>리포트 열람하기</span>
+              <span className="text-[13px] font-black" style={{color:'#3a4530'}}>리포트 열람하기</span>
             </div>
-            <p className="relative z-10 text-[11px] font-normal leading-relaxed" style={{color:'rgba(60,90,50,0.55)'}}>일간·월간 리포트 · 학습 현황 · 질의응답</p>
+            <p className="relative z-10 text-[11px] font-normal leading-relaxed" style={{color:'rgba(70,85,50,0.5)'}}>일간·월간 리포트 · 학습 현황 · 질의응답</p>
             <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all group-hover:scale-110"
-              style={{background:'rgba(80,130,70,0.08)', border:'1px solid rgba(80,130,70,0.18)'}}>
-              <ArrowRight strokeWidth={2} size={14} style={{color:'rgba(80,130,70,0.6)'}}
+              style={{background:'rgba(148,162,125,0.1)', border:'1px solid rgba(155,170,130,0.25)'}}>
+              <ArrowRight strokeWidth={2} size={14} style={{color:'rgba(90,108,68,0.6)'}}
                 className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </Link>

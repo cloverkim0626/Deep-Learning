@@ -33,13 +33,13 @@ function useParentSession() {
 }
 
 const AURORA = {
-  primary: "rgba(74,112,85,0.95)",
-  accent: "#3d6b4a",
-  light: "rgba(100,160,80,0.08)",
-  border: "rgba(100,150,80,0.18)",
-  bg: "#f0f4ed",
-  header: "rgba(240,244,237,0.92)",
-  navBg: "rgba(245,248,242,0.97)",
+  primary: "rgba(90,125,85,0.9)",
+  accent: "#5a7d5a",
+  light: "rgba(155,185,140,0.1)",
+  border: "rgba(155,180,140,0.22)",
+  bg: "#f2ede4",
+  header: "rgba(245,241,234,0.93)",
+  navBg: "rgba(248,244,238,0.97)",
 };
 
 export default function ParentLayout({ children }: { children: React.ReactNode }) {
@@ -113,45 +113,55 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-hidden" style={{ background: AURORA.bg }}>
-      {/* 숲 배경 레이어 */}
+      {/* 봄 숲 노스텔지아 배경 */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <style>{`
-          @keyframes forestFloat {
-            0%,100%{opacity:0.4;transform:translate(0,0) scale(1)}
-            40%{opacity:0.65;transform:translate(2%,3%) scale(1.04)}
-            70%{opacity:0.5;transform:translate(-1%,1.5%) scale(0.98)}
+          @keyframes springHaze {
+            0%,100%{opacity:0.45;transform:translate(0,0) scale(1)}
+            40%{opacity:0.65;transform:translate(1.5%,2%) scale(1.03)}
+            70%{opacity:0.5;transform:translate(-0.5%,1%) scale(0.98)}
           }
-          @keyframes forestMistBg {
-            0%,100%{opacity:0.35;transform:translateX(0)}
-            50%{opacity:0.55;transform:translateX(2%)}
+          @keyframes springLight {
+            0%,100%{opacity:0.3;transform:translateX(0) scaleX(1)}
+            50%{opacity:0.5;transform:translateX(1.5%) scaleX(1.02)}
           }
-          @keyframes forestBreeze {
-            0%,100%{opacity:0.25;transform:translate(0,0)}
-            50%{opacity:0.45;transform:translate(-2%,4%)}
+          @keyframes springDrift {
+            0%,100%{opacity:0.2;transform:translate(0,0)}
+            50%{opacity:0.38;transform:translate(-1.5%,3%)}
           }
         `}</style>
 
-        {/* 상단 좌측 - 햇살이 들어오는 나무 */}
-        <div style={{ position:'absolute', top:'-10%', left:'-15%', width:'65vw', height:'65vw',
-          background:'radial-gradient(ellipse, rgba(140,200,100,0.18) 0%, rgba(90,160,60,0.08) 35%, transparent 65%)',
+        {/* 따뜻한 봄 햇살 - 상단 좌측 */}
+        <div style={{ position:'absolute', top:'-15%', left:'-20%', width:'75vw', height:'75vw',
+          background:'radial-gradient(ellipse, rgba(195,220,165,0.28) 0%, rgba(170,200,140,0.14) 30%, rgba(200,215,175,0.06) 55%, transparent 70%)',
+          borderRadius:'50%', filter:'blur(55px)',
+          animation:'springLight 14s ease-in-out infinite' }}/>
+
+        {/* 녹음 보케 - 우측 중앙 */}
+        <div style={{ position:'absolute', top:'5%', right:'-25%', width:'65vw', height:'65vw',
+          background:'radial-gradient(ellipse, rgba(175,205,150,0.22) 0%, rgba(155,190,130,0.1) 40%, transparent 68%)',
+          borderRadius:'50%', filter:'blur(65px)',
+          animation:'springHaze 18s ease-in-out infinite' }}/>
+
+        {/* 따뜻한 크림빛 오버레이 - 중앙 */}
+        <div style={{ position:'absolute', top:'30%', left:'5%', width:'55vw', height:'55vw',
+          background:'radial-gradient(ellipse, rgba(220,215,185,0.18) 0%, transparent 65%)',
           borderRadius:'50%', filter:'blur(50px)',
-          animation:'forestMistBg 12s ease-in-out infinite' }}/>
+          animation:'springDrift 22s ease-in-out infinite' }}/>
 
-        {/* 중앙 우측 - 숲 안개 */}
-        <div style={{ position:'absolute', top:'20%', right:'-20%', width:'55vw', height:'55vw',
-          background:'radial-gradient(ellipse, rgba(100,170,70,0.12) 0%, rgba(60,130,50,0.05) 45%, transparent 70%)',
-          borderRadius:'50%', filter:'blur(60px)',
-          animation:'forestFloat 16s ease-in-out infinite' }}/>
+        {/* 하단 깊은 녹음 */}
+        <div style={{ position:'absolute', bottom:'-15%', right:'-5%', width:'60vw', height:'50vw',
+          background:'radial-gradient(ellipse, rgba(145,180,125,0.15) 0%, rgba(125,165,105,0.06) 50%, transparent 70%)',
+          borderRadius:'50%', filter:'blur(45px)',
+          animation:'springHaze 25s ease-in-out infinite 3s' }}/>
 
-        {/* 하단 - 깊은 숲 그늘 */}
-        <div style={{ position:'absolute', bottom:'-10%', left:'10%', width:'70vw', height:'40vw',
-          background:'radial-gradient(ellipse, rgba(50,90,40,0.12) 0%, transparent 65%)',
-          borderRadius:'50%', filter:'blur(40px)',
-          animation:'forestBreeze 20s ease-in-out infinite' }}/>
-
-        {/* 전체 베이스 그라디언트 */}
+        {/* 필름 느낌 그레인 오버레이 */}
         <div style={{ position:'absolute', inset:0,
-          background:'linear-gradient(160deg, rgba(200,225,180,0.15) 0%, transparent 50%, rgba(140,200,120,0.08) 100%)' }}/>
+          background:'linear-gradient(165deg, rgba(215,225,195,0.12) 0%, rgba(240,235,218,0.08) 35%, transparent 60%, rgba(175,205,155,0.07) 100%)' }}/>
+
+        {/* 따뜻한 비네팅 */}
+        <div style={{ position:'absolute', inset:0,
+          background:'radial-gradient(ellipse 90% 90% at 50% 50%, transparent 40%, rgba(195,185,165,0.12) 80%, rgba(180,170,148,0.18) 100%)' }}/>
       </div>
 
       {/* ?? ?ㅻ뜑 ?? */}
