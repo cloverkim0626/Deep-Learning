@@ -232,9 +232,38 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <main className="flex justify-center items-center min-h-screen p-6 bg-background relative overflow-hidden">
-      {/* Aesthetic Background Shapes */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-foreground/[0.02] rounded-full blur-[100px] pointer-events-none" />
-      
+      {/* Instagram 감성 배경 glow */}
+      <style>{`
+        @keyframes igBgPulse {
+          0%,100%{opacity:0.55;transform:scale(1)} 50%{opacity:0.85;transform:scale(1.08)}
+        }
+        @keyframes igBgDrift {
+          0%,100%{transform:translate(0,0)} 50%{transform:translate(-15px,10px)}
+        }
+      `}</style>
+      {/* 좌상단 오렌지-핑크 blob */}
+      <div className="absolute pointer-events-none" style={{
+        top:'-10%', left:'-15%', width:'55vw', height:'55vw',
+        background:'radial-gradient(ellipse, rgba(240,148,51,0.12) 0%, rgba(220,39,67,0.06) 40%, transparent 70%)',
+        borderRadius:'50%', filter:'blur(50px)',
+        animation:'igBgPulse 8s ease-in-out infinite',
+      }}/>
+      {/* 우하단 보라 blob */}
+      <div className="absolute pointer-events-none" style={{
+        bottom:'-10%', right:'-15%', width:'60vw', height:'60vw',
+        background:'radial-gradient(ellipse, rgba(188,24,136,0.1) 0%, rgba(204,35,102,0.05) 40%, transparent 70%)',
+        borderRadius:'50%', filter:'blur(60px)',
+        animation:'igBgPulse 11s ease-in-out infinite 2s',
+      }}/>
+      {/* 중앙 미세 glow */}
+      <div className="absolute pointer-events-none" style={{
+        top:'35%', left:'50%', transform:'translateX(-50%)',
+        width:'40vw', height:'40vw',
+        background:'radial-gradient(ellipse, rgba(230,104,60,0.06) 0%, transparent 65%)',
+        borderRadius:'50%', filter:'blur(40px)',
+        animation:'igBgDrift 15s ease-in-out infinite',
+      }}/>
+
       <Suspense fallback={<div className="text-foreground serif font-bold animate-pulse">Deep Learning...</div>}>
         <LoginForm />
       </Suspense>

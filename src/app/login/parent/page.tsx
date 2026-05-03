@@ -68,22 +68,22 @@ export default function ParentLoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
+      style={{
+        backgroundImage: "url('/forest-window.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+        backgroundRepeat: 'no-repeat',
+      }}>
 
-      {/* 숲 창문 배경 이미지 */}
+      {/* 오버레이 레이어들 */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-        <img
-          src="/forest-window.jpg"
-          alt=""
-          className="w-full h-full object-cover"
-          style={{ filter: 'brightness(0.92) saturate(0.88)' }}
-        />
-        {/* 따뜻한 오버레이 — 이미지 위 부드러운 크림 레이어 */}
+        {/* 따뜻한 크림 틴트 */}
         <div style={{ position:'absolute', inset:0,
-          background:'linear-gradient(175deg, rgba(240,235,220,0.18) 0%, rgba(220,228,200,0.08) 40%, rgba(200,218,185,0.12) 100%)' }}/>
-        {/* 하단 그라디언트 — 카드 가독성 확보 */}
+          background:'linear-gradient(175deg, rgba(240,235,220,0.22) 0%, rgba(220,228,200,0.1) 40%, rgba(200,218,185,0.15) 100%)' }}/>
+        {/* 하단 부드러운 페이드 */}
         <div style={{ position:'absolute', inset:0,
-          background:'linear-gradient(to bottom, transparent 30%, rgba(220,215,200,0.25) 100%)' }}/>
+          background:'linear-gradient(to bottom, transparent 25%, rgba(215,210,195,0.3) 100%)' }}/>
       </div>
 
       {/* Frosted Glass 카드 */}

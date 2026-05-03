@@ -36,128 +36,122 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 relative overflow-hidden">
 
-      {/* Deep Sea Animated Background */}
+      {/* Shape of Water — 길예르모 델 토로 수중 감성 배경 */}
       <style>{`
-        /* ── 메인 심해 빛줄기 (god-ray) ── */
-        @keyframes godRayPulse {
-          0%,100% { opacity:0.07; transform:rotate(var(--ra)) scaleX(1);   }
-          30%     { opacity:0.13; transform:rotate(calc(var(--ra)+1.2deg)) scaleX(1.06); }
-          60%     { opacity:0.09; transform:rotate(calc(var(--ra)-0.8deg)) scaleX(0.97); }
+        @keyframes sotWaterRay {
+          0%,100%{opacity:0.08;transform:rotate(var(--ra)) scaleX(1)}
+          40%{opacity:0.16;transform:rotate(calc(var(--ra)+1deg)) scaleX(1.05)}
+          70%{opacity:0.1;transform:rotate(calc(var(--ra)-0.6deg)) scaleX(0.97)}
         }
-        @keyframes causticsShimmer {
-          0%,100% { opacity:0.04; }
-          50%     { opacity:0.09; }
+        @keyframes sotGlow {
+          0%,100%{opacity:0.5;transform:scale(1)}
+          50%{opacity:0.8;transform:scale(1.06)}
         }
-        .god-ray {
-          position:absolute; top:-5%; left:50%;
-          transform-origin: top center;
-          animation: godRayPulse var(--pd) ease-in-out infinite;
+        @keyframes sotBio {
+          0%,100%{opacity:0.15;transform:translate(0,0) scale(1)}
+          40%{opacity:0.35;transform:translate(2px,4px) scale(1.1)}
+          70%{opacity:0.2;transform:translate(-3px,2px) scale(0.95)}
         }
-        @keyframes thinRay {
-          0%,100% { opacity:0.03; }
-          50%     { opacity:0.07; }
+        @keyframes sotCaustic {
+          0%,100%{opacity:0.06} 50%{opacity:0.14}
         }
-        .thin-ray {
-          position:absolute; top:0;
-          width:40px; height:75%;
-          background:linear-gradient(180deg, rgba(140,210,255,0.2) 0%, transparent 100%);
+        @keyframes sotRipple {
+          0%,100%{transform:scaleX(1) scaleY(1);opacity:0.04}
+          33%{transform:scaleX(1.03) scaleY(0.97) translateX(6px);opacity:0.08}
+          66%{transform:scaleX(0.97) scaleY(1.02) translateX(-4px);opacity:0.05}
+        }
+        .sot-ray {
+          position:absolute;top:-5%;left:50%;
           transform-origin:top center;
-          animation: thinRay var(--td) ease-in-out infinite alternate;
-          filter: blur(6px);
-        }
-        @keyframes waterSwell1 {
-          0%,100% { transform:scaleX(1)   scaleY(1)   translateX(0);    opacity:0.06; }
-          33%     { transform:scaleX(1.04) scaleY(0.97) translateX(8px);  opacity:0.10; }
-          66%     { transform:scaleX(0.97) scaleY(1.03) translateX(-5px); opacity:0.07; }
-        }
-        @keyframes waterSwell2 {
-          0%,100% { transform:scaleX(1)   scaleY(1)   translateX(0);    opacity:0.04; }
-          40%     { transform:scaleX(0.96) scaleY(1.04) translateX(-10px);opacity:0.08; }
-          70%     { transform:scaleX(1.03) scaleY(0.98) translateX(6px);  opacity:0.05; }
-        }
-        /* 에메랄드 버튼 물결 */
-        @keyframes waveShift {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        @keyframes foamFade {
-          0%,100% { opacity:0.18; transform:scaleX(1); }
-          50%     { opacity:0.30; transform:scaleX(1.03); }
-        }
-        .wave-layer {
-          position:absolute; bottom:0; left:0;
-          width:200%; height:100%;
-          background-repeat: repeat-x;
-          background-size: 50% 100%;
-          animation: waveShift var(--ws) linear infinite;
+          animation:sotWaterRay var(--pd) ease-in-out infinite;
         }
       `}</style>
-
       <div className="absolute inset-0 pointer-events-none overflow-hidden"
-        style={{background:'linear-gradient(180deg,#020d1a 0%,#041325 25%,#031020 60%,#050e18 100%)'}}>
+        style={{background:'linear-gradient(180deg,#081820 0%,#0a2030 20%,#0c2840 50%,#091c2c 80%,#060e18 100%)'}}>
 
-        {/* ══ 메인 GOD-RAY: 수면에서 내려오는 한 줄기 빛 ══ */}
-        <div className="god-ray" style={{
-          width:'340px', height:'100%', marginLeft:'-170px',
-          background:'linear-gradient(180deg, rgba(100,200,255,0.18) 0%, rgba(60,160,240,0.06) 35%, rgba(20,80,160,0.02) 65%, transparent 100%)',
-          filter:'blur(18px)',
-          '--ra':'-1deg','--pd':'7s',
-        } as React.CSSProperties} />
-        {/* 중심 밝은 코어 */}
-        <div className="god-ray" style={{
-          width:'80px', height:'78%', marginLeft:'-40px',
-          background:'linear-gradient(180deg, rgba(200,235,255,0.22) 0%, rgba(120,200,255,0.08) 40%, transparent 100%)',
-          filter:'blur(5px)',
-          '--ra':'0.5deg','--pd':'5.5s',
-        } as React.CSSProperties} />
-        {/* 수면 입수 지점 광원 */}
+        {/* 수면 입수 — 따뜻한 호박빛 (Shape of Water 특유의 황금빛) */}
         <div style={{
-          position:'absolute', top:0, left:'50%', transform:'translateX(-50%)',
-          width:'180px', height:'60px',
-          background:'radial-gradient(ellipse at 50% 0%, rgba(160,220,255,0.25) 0%, transparent 100%)',
-          filter:'blur(8px)',
-          animation:'causticsShimmer 3.8s ease-in-out infinite',
-        }} />
-        {/* 코스틱 패턴 */}
-        {[{x:'46%',w:'12px',h:'55%',d:'4.1s'},{x:'52%',w:'8px',h:'48%',d:'3.3s'},{x:'49%',w:'5px',h:'40%',d:'5.2s'}].map((c,i)=>(
+          position:'absolute', top:0, left:'48%', transform:'translateX(-50%)',
+          width:'260px', height:'120px',
+          background:'radial-gradient(ellipse at 50% 0%, rgba(255,200,80,0.14) 0%, rgba(180,220,255,0.08) 40%, transparent 70%)',
+          filter:'blur(12px)', animation:'sotCaustic 4.5s ease-in-out infinite',
+        }}/>
+
+        {/* 메인 수중 빛줄기 — 청록색 */}
+        <div className="sot-ray" style={{
+          width:'300px', height:'90%', marginLeft:'-150px',
+          background:'linear-gradient(180deg,rgba(0,200,180,0.13) 0%,rgba(0,160,200,0.07) 35%,rgba(0,100,160,0.03) 65%,transparent 100%)',
+          filter:'blur(20px)', '--ra':'-0.5deg','--pd':'8s',
+        } as React.CSSProperties}/>
+        {/* 코어 밝은 줄기 */}
+        <div className="sot-ray" style={{
+          width:'70px', height:'75%', marginLeft:'-35px',
+          background:'linear-gradient(180deg,rgba(180,240,230,0.2) 0%,rgba(100,220,200,0.09) 40%,transparent 100%)',
+          filter:'blur(5px)', '--ra':'0.3deg','--pd':'6s',
+        } as React.CSSProperties}/>
+
+        {/* 보조 광선 */}
+        {[{l:'20%',r:'-2deg',d:'6.5s'},{l:'38%',r:'-0.5deg',d:'5s'},{l:'62%',r:'1.5deg',d:'5.8s'},{l:'80%',r:'3deg',d:'7.5s'}].map((t,i)=>(
           <div key={i} style={{
-            position:'absolute', top:0, left:c.x, width:c.w, height:c.h,
-            background:'linear-gradient(180deg,rgba(180,230,255,0.28) 0%,transparent 100%)',
-            filter:'blur(2px)', transformOrigin:'top center',
-            animation:`causticsShimmer ${c.d} ease-in-out infinite`,
-            animationDelay:`${i*0.7}s`,
-          }} />
+            position:'absolute', top:0, left:t.l, width:'35px', height:'65%',
+            background:'linear-gradient(180deg,rgba(0,200,180,0.16) 0%,transparent 100%)',
+            filter:'blur(7px)', transformOrigin:'top center',
+            transform:`rotate(${t.r})`,
+            animation:`sotCaustic ${t.d} ease-in-out infinite`,
+            animationDelay:`${i*0.6}s`,
+          }}/>
         ))}
 
-        {/* ══ 보조 가느다란 광선들 ══ */}
-        {[{l:'22%',r:'-3deg',td:'6.1s'},{l:'35%',r:'-1deg',td:'4.8s'},{l:'65%',r:'2deg',td:'5.5s'},{l:'78%',r:'4deg',td:'7.2s'}].map((t,i)=>(
-          <div key={i} className="thin-ray" style={{left:t.l,transform:`rotate(${t.r})`,'--td':t.td} as React.CSSProperties} />
+        {/* 생물발광 포인트들 (Shape of Water의 파란 반짝임) */}
+        {[
+          {x:'15%',y:'35%',s:80,d:'5.2s'},{x:'82%',y:'28%',s:60,d:'7s'},
+          {x:'70%',y:'62%',s:50,d:'6.1s'},{x:'28%',y:'70%',s:70,d:'4.8s'},
+          {x:'50%',y:'45%',s:90,d:'8s'},{x:'90%',y:'50%',s:45,d:'5.5s'},
+        ].map((b,i)=>(
+          <div key={i} style={{
+            position:'absolute', left:b.x, top:b.y,
+            width:b.s+'px', height:b.s+'px',
+            background:'radial-gradient(ellipse,rgba(0,220,200,0.18) 0%,rgba(0,180,220,0.06) 50%,transparent 75%)',
+            borderRadius:'50%', filter:'blur(8px)',
+            animation:`sotBio ${b.d} ease-in-out infinite`,
+            animationDelay:`${i*0.8}s`,
+          }}/>
         ))}
 
-        {/* ══ 물결 요동: 심해 수류 흐름 ══ */}
+        {/* 따뜻한 호박 발광 — 델 토로 특유의 감성 */}
         <div style={{
-          position:'absolute', inset:0,
-          background:'radial-gradient(ellipse 120% 40% at 30% 55%, rgba(0,100,200,0.07) 0%, transparent 60%)',
-          animation:'waterSwell1 12s ease-in-out infinite',
-        }} />
+          position:'absolute', bottom:'15%', left:'25%',
+          width:'180px', height:'180px',
+          background:'radial-gradient(ellipse,rgba(255,160,40,0.08) 0%,rgba(220,120,20,0.03) 50%,transparent 70%)',
+          borderRadius:'50%', filter:'blur(20px)',
+          animation:'sotGlow 9s ease-in-out infinite 2s',
+        }}/>
         <div style={{
-          position:'absolute', inset:0,
-          background:'radial-gradient(ellipse 100% 35% at 70% 40%, rgba(0,80,180,0.06) 0%, transparent 55%)',
-          animation:'waterSwell2 17s ease-in-out infinite',
-          animationDelay:'3s',
-        }} />
-        <div style={{
-          position:'absolute', inset:0,
-          background:'radial-gradient(ellipse 80% 30% at 50% 70%, rgba(0,60,140,0.05) 0%, transparent 50%)',
-          animation:'waterSwell1 22s ease-in-out infinite reverse',
-          animationDelay:'7s',
-        }} />
+          position:'absolute', bottom:'25%', right:'20%',
+          width:'120px', height:'120px',
+          background:'radial-gradient(ellipse,rgba(255,180,60,0.07) 0%,transparent 65%)',
+          borderRadius:'50%', filter:'blur(16px)',
+          animation:'sotGlow 12s ease-in-out infinite',
+        }}/>
 
-        {/* 심해 배경 glow 유지 */}
-        <div className="absolute inset-0" style={{background:'radial-gradient(ellipse 80% 50% at 50% 60%, rgba(0,80,160,0.18) 0%, transparent 70%)'}} />
-        <div className="absolute bottom-0 left-0 right-0 h-[30%]" style={{background:'linear-gradient(0deg, rgba(0,20,40,0.7) 0%, transparent 100%)'}} />
+        {/* 수류 물결 — 깊고 느린 흐름 */}
+        <div style={{
+          position:'absolute', inset:0,
+          background:'radial-gradient(ellipse 110% 40% at 35% 55%,rgba(0,150,180,0.07) 0%,transparent 55%)',
+          animation:'sotRipple 14s ease-in-out infinite',
+        }}/>
+        <div style={{
+          position:'absolute', inset:0,
+          background:'radial-gradient(ellipse 90% 35% at 65% 42%,rgba(0,180,160,0.05) 0%,transparent 50%)',
+          animation:'sotRipple 20s ease-in-out infinite reverse',
+          animationDelay:'4s',
+        }}/>
+
+        {/* 깊이감 하단 그라데이션 */}
+        <div className="absolute bottom-0 left-0 right-0 h-[35%]" style={{background:'linear-gradient(0deg,rgba(4,10,18,0.75) 0%,transparent 100%)'}}/>
+        {/* 전체 청록 틴트 */}
+        <div className="absolute inset-0" style={{background:'radial-gradient(ellipse 70% 55% at 50% 50%,rgba(0,100,140,0.12) 0%,transparent 70%)'}}/>
       </div>
-
 
 
       <div className="z-10 w-full max-w-sm mx-auto flex flex-col items-center gap-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
@@ -230,52 +224,47 @@ export default function Home() {
 
         {/* CTA Buttons */}
         <div className="flex flex-col w-full gap-3">
-          {/* 학습 입장 - 파스텔 녹음 콘셉 */}
+          {/* 학습 입장 — Instagram 컨셉 */}
           <style>{`
-            @keyframes springLeaf {
-              0%,100%{opacity:0.4;transform:translate(0,0) scale(1)}
-              40%{opacity:0.6;transform:translate(1.5%,2%) scale(1.03)}
-              70%{opacity:0.45;transform:translate(-0.5%,1%) scale(0.98)}
+            @keyframes igShimmer {
+              0%{background-position:0% 50%}
+              50%{background-position:100% 50%}
+              100%{background-position:0% 50%}
             }
-            @keyframes springGlow {
-              0%,100%{opacity:0.35;transform:translateX(0)}
-              50%{opacity:0.52;transform:translateX(1.5%)}
+            @keyframes igPulse {
+              0%,100%{opacity:0.5;transform:scale(1)}
+              50%{opacity:0.85;transform:scale(1.08)}
             }
           `}</style>
           <Link
             href="/login?role=student"
-            className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-500"
+            className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-1 hover:shadow-2xl transition-all duration-500"
             style={{
-              background:'linear-gradient(145deg, #e8efe0 0%, #dce8d2 45%, #d4e2ca 100%)',
-              boxShadow:'0 4px 28px rgba(100,140,80,0.15), inset 0 1px 0 rgba(255,255,255,0.75)',
-              border:'1px solid rgba(160,195,140,0.28)',
+              background:'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+              backgroundSize:'200% 200%',
+              animation:'igShimmer 6s ease infinite',
+              boxShadow:'0 6px 35px rgba(220,39,67,0.4), 0 2px 8px rgba(240,148,51,0.3)',
+              border:'1px solid rgba(255,255,255,0.2)',
             }}
           >
-            {/* 봄 햇살 - 상단 좌측 */}
-            <div className="absolute pointer-events-none" style={{
-              top:'-25%', left:'-12%', width:'170px', height:'170px',
-              background:'radial-gradient(ellipse, rgba(200,225,165,0.38) 0%, rgba(175,210,145,0.18) 38%, transparent 68%)',
-              borderRadius:'50%', filter:'blur(26px)',
-              animation:'springGlow 10s ease-in-out infinite',
-            }}/>
-            {/* 녹음 보케 - 오른쪽 */}
-            <div className="absolute pointer-events-none" style={{
-              top:'5%', right:'-8%', width:'145px', height:'145px',
-              background:'radial-gradient(ellipse, rgba(172,205,148,0.28) 0%, rgba(152,190,128,0.12) 45%, transparent 72%)',
-              borderRadius:'50%', filter:'blur(22px)',
-              animation:'springLeaf 13s ease-in-out infinite',
-            }}/>
-            {/* 따뜻한 비네팅 */}
+            {/* 상단 하이라이트 광택 */}
             <div className="absolute inset-0 pointer-events-none" style={{
-              background:'radial-gradient(ellipse 85% 70% at 50% 50%, transparent 45%, rgba(195,215,175,0.12) 80%, rgba(180,200,155,0.2) 100%)',
+              background:'linear-gradient(180deg,rgba(255,255,255,0.18) 0%,transparent 50%)',
+            }}/>
+            {/* 우측 빛 보케 */}
+            <div className="absolute pointer-events-none" style={{
+              top:'-30%', right:'-10%', width:'160px', height:'160px',
+              background:'radial-gradient(ellipse,rgba(255,255,255,0.2) 0%,transparent 65%)',
+              borderRadius:'50%', filter:'blur(20px)',
+              animation:'igPulse 5s ease-in-out infinite',
             }}/>
             <div className="flex items-center gap-2 font-semibold text-[15px] mb-1 relative z-10">
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest" style={{background:'rgba(130,175,105,0.14)', color:'rgba(70,105,55,0.8)', border:'1px solid rgba(130,175,105,0.25)'}}>STUDENT</span>
-              <span className="text-[13px]" style={{color:'#3a4e30'}}>학습 공간 입장</span>
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest" style={{background:'rgba(255,255,255,0.22)',color:'rgba(255,255,255,0.95)',border:'1px solid rgba(255,255,255,0.3)'}}>STUDENT</span>
+              <span className="text-[13px] font-black" style={{color:'rgba(255,255,255,0.97)'}}>학습 공간 입장</span>
             </div>
-            <p className="text-[11px] font-normal relative z-10 leading-relaxed" style={{color:'rgba(75,105,55,0.52)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
-            <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(140,185,115,0.1)', border:'1px solid rgba(140,185,115,0.25)'}}>
-              <ArrowRight strokeWidth={2} size={14} className="group-hover:translate-x-0.5 transition-all" style={{color:'rgba(90,130,70,0.55)'}} />
+            <p className="text-[11px] font-semibold relative z-10 leading-relaxed" style={{color:'rgba(255,255,255,0.7)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
+            <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(255,255,255,0.2)',border:'1px solid rgba(255,255,255,0.35)'}}>
+              <ArrowRight strokeWidth={2.5} size={14} className="group-hover:translate-x-0.5 transition-all" style={{color:'rgba(255,255,255,0.95)'}} />
             </div>
           </Link>
 
