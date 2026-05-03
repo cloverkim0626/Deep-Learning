@@ -239,41 +239,63 @@ function LoginForm() {
   );
 }
 
-export default function LoginPage() {
+function LoginBg({ isStudent }: { isStudent: boolean }) {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
+      {isStudent ? (
+        <>
+          <div style={{ position:'absolute', inset:0, background:'rgba(5,15,30,0.22)' }}/>
+          <div style={{
+            position:'absolute', bottom:0, left:0, right:0, height:'60%',
+            background:'linear-gradient(0deg, rgba(3,10,22,0.72) 0%, transparent 100%)',
+          }}/>
+        </>
+      ) : (
+        <>
+          <div style={{ position:'absolute', inset:0, background:'rgba(3,12,25,0.52)' }}/>
+          <div style={{
+            position:'absolute', inset:0,
+            background:'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(10,130,175,0.22) 0%, transparent 70%)',
+          }}/>
+          <div style={{
+            position:'absolute', bottom:0, left:0, right:0, height:'35%',
+            background:'linear-gradient(0deg, rgba(2,8,18,0.6) 0%, transparent 100%)',
+          }}/>
+          <div style={{
+            position:'absolute', top:0, left:0, right:0, height:'20%',
+            background:'linear-gradient(180deg, rgba(2,8,18,0.4) 0%, transparent 100%)',
+          }}/>
+        </>
+      )}
+    </div>
+  );
+}
+
+function LoginPageInner() {
+  const searchParams = useSearchParams();
+  const isStudent = (searchParams.get("role") ?? "student") === "student";
   return (
     <main className="flex justify-center items-center min-h-screen p-6 relative overflow-hidden"
       style={{
-        backgroundImage: "url('/sotw-poster.jpg')",
+        backgroundImage: isStudent ? "url('/student-login-bg.jpg')" : "url('/sotw-poster.jpg')",
         backgroundSize: 'cover',
-        backgroundPosition: 'center center',
+        backgroundPosition: isStudent ? 'center top' : 'center center',
         backgroundRepeat: 'no-repeat',
       }}>
-
-      {/* 오버레이 — 포스터 위 가독성 확보 + 분위기 보정 */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-        {/* 딥 다크 오버레이 (너무 이미지가 강하지 않게) */}
-        <div style={{ position:'absolute', inset:0, background:'rgba(3,12,25,0.52)' }}/>
-        {/* 중앙 청록 발광 — 포스터의 수중 빛 강조 */}
-        <div style={{
-          position:'absolute', inset:0,
-          background:'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(10,130,175,0.22) 0%, transparent 70%)',
-        }}/>
-        {/* 하단 깊이감 */}
-        <div style={{
-          position:'absolute', bottom:0, left:0, right:0, height:'35%',
-          background:'linear-gradient(0deg, rgba(2,8,18,0.6) 0%, transparent 100%)',
-        }}/>
-        {/* 상단 미세 어둠 */}
-        <div style={{
-          position:'absolute', top:0, left:0, right:0, height:'20%',
-          background:'linear-gradient(180deg, rgba(2,8,18,0.4) 0%, transparent 100%)',
-        }}/>
-      </div>
-
-      <Suspense fallback={<div className="serif font-bold animate-pulse z-10 relative" style={{color:'rgba(100,210,240,0.8)'}}>Deep Learning...</div>}>
+      <LoginBg isStudent={isStudent} />
+      <Suspense fallback={<div className="serif font-bold animate-pulse z-10 relative" style={{color:'rgba(255,255,255,0.7)'}}>Loading...</div>}>
         <LoginForm />
       </Suspense>
     </main>
   );
 }
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
 
