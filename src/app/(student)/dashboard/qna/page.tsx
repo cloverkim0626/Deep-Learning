@@ -222,30 +222,30 @@ export default function QnAPage() {
 
           return (
             <div key={post.id} className="rounded-[1.4rem] overflow-hidden"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", backdropFilter: "blur(12px)" }}>
+              style={{ background: "rgba(25,20,45,0.88)", border: "1px solid rgba(255,255,255,0.13)", backdropFilter: "blur(12px)" }}>
 
-              {/* 포스트 헤더 — 아바타 + 이름 + 지문 */}
+              {/* 포스트 헤더 */}
               <div className="flex items-center gap-3 px-4 py-3"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
                 <div className="p-[2px] rounded-full shrink-0"
-                  style={{ background: isMine ? "linear-gradient(135deg,#405DE6,#E1306C)" : "rgba(255,255,255,0.15)" }}>
+                  style={{ background: isMine ? "linear-gradient(135deg,#405DE6,#E1306C)" : "rgba(255,255,255,0.20)" }}>
                   <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-black"
-                    style={{ background: "#09090f", color: isMine ? "#c8b4ff" : "rgba(255,255,255,0.6)" }}>
+                    style={{ background: "#16122a", color: isMine ? "#c8b4ff" : "rgba(255,255,255,0.85)" }}>
                     {initial}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-black leading-none" style={{ color: "rgba(255,255,255,0.9)" }}>
+                  <p className="text-[13px] font-black leading-none" style={{ color: "#ffffff" }}>
                     {isMine ? `${post.author} (나)` : post.author}
                   </p>
-                  <p className="text-[10px] mt-0.5 truncate" style={{ color: "rgba(160,130,255,0.6)" }}>
+                  <p className="text-[10px] mt-0.5 truncate" style={{ color: "rgba(180,155,255,0.85)" }}>
                     📚 {post.passage}
                   </p>
                 </div>
                 <span className="text-[9px] font-black px-2 py-1 rounded-full shrink-0"
                   style={post.status === "answered"
-                    ? { background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.25)" }
-                    : { background: "rgba(255,200,0,0.12)", color: "#fbbf24", border: "1px solid rgba(255,200,0,0.2)" }}>
+                    ? { background: "rgba(34,197,94,0.20)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.35)" }
+                    : { background: "rgba(255,200,0,0.18)", color: "#fbbf24", border: "1px solid rgba(255,200,0,0.30)" }}>
                   {post.status === "answered" ? "답변완료" : "대기중"}
                 </span>
               </div>
@@ -256,20 +256,20 @@ export default function QnAPage() {
                   <textarea value={editingPostText} onChange={e => setEditingPostText(e.target.value)}
                     autoFocus rows={3}
                     className="w-full rounded-xl text-[14px] font-medium resize-none outline-none"
-                    style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.88)", padding: "10px 12px" }}
+                    style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "#ffffff", padding: "10px 12px" }}
                     onKeyDown={e => { if (e.key === "Escape") handleCancelEditPost(); }} />
                 ) : (
-                  <p style={{ fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.82)", whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
+                  <p style={{ fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.92)", whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
                     {post.question}
                   </p>
                 )}
-                <p className="text-[10px] mt-2" style={{ color: "rgba(255,255,255,0.25)" }}>
+                <p className="text-[10px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
                   {new Date(post.createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </p>
               </div>
 
               {/* IG 액션 바 */}
-              <div className="flex items-center gap-3 px-4 pb-3 pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="flex items-center gap-3 px-4 pb-3 pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.10)" }}>
                 <button onClick={e => { e.stopPropagation(); handleHeart(post.id, "post"); }}
                   className="flex items-center gap-1 transition-all hover:scale-110 active:scale-95">
                   <span style={{ fontSize: 16 }}>{liked ? "❤️" : "🤍"}</span>

@@ -511,15 +511,15 @@ export default function EssayPage() {
       <div className="px-5 pt-6 pb-3 shrink-0 border-b border-foreground/5">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles size={14} className="text-indigo-400" />
-          <h1 className="text-[16px] font-black text-foreground">서술형 연습</h1>
+          <h1 className="text-[16px] font-black" style={{ color: '#ffffff' }}>서술형 연습</h1>
         </div>
         <div className="flex items-center gap-1">
           {steps.map((s, i) => (
             <div key={s} className="flex items-center gap-1">
               <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full transition-all ${
                 i === stepNow ? "bg-indigo-500 text-white" :
-                i <  stepNow ? "bg-indigo-100 text-indigo-500" :
-                               "bg-foreground/5 text-accent/30"
+                i <  stepNow ? "bg-indigo-100 text-indigo-600" :
+                               "bg-white/10 text-white/40"
               }`}>{s}</span>
               {i < steps.length - 1 && <ChevronRight size={8} className="text-accent/20" />}
             </div>

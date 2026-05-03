@@ -575,14 +575,18 @@ export default function VocabDashboard() {
                   {/* FRONT */}
                   <div
                     onClick={() => setIsFlipped(true)}
-                    className="absolute inset-0 glass rounded-[2.5rem] border border-foreground/5 shadow-xl cursor-pointer select-none overflow-hidden"
-                    style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' } as React.CSSProperties}
+                    className="absolute inset-0 rounded-[2.5rem] cursor-pointer select-none overflow-hidden"
+                    style={{
+                      backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
+                      background: '#ffffff',
+                      boxShadow: '0 8px 40px rgba(0,0,0,0.28), 0 2px 8px rgba(64,93,230,0.12)',
+                    } as React.CSSProperties}
                   >
                     {/* 진행상황 — 좌상단 */}
                     <div className="absolute top-4 left-5 flex items-center gap-1.5">
-                      <span className="text-[10px] font-black text-accent/50">{wordIdx + 1}</span>
-                      <span className="text-[8px] text-accent/30 font-bold">/</span>
-                      <span className="text-[10px] font-bold text-accent/30">{currentSet.words.length}</span>
+                      <span className="text-[10px] font-black" style={{ color: 'rgba(0,0,0,0.35)' }}>{wordIdx + 1}</span>
+                      <span className="text-[8px] font-bold" style={{ color: 'rgba(0,0,0,0.20)' }}>/</span>
+                      <span className="text-[10px] font-bold" style={{ color: 'rgba(0,0,0,0.20)' }}>{currentSet.words.length}</span>
                     </div>
                     {/* 별표 우상단 */}
                     <button
@@ -600,7 +604,7 @@ export default function VocabDashboard() {
                     {/* ── 스피커 버튼 — 독립 고정 (상단) ── */}
                     <div className="absolute inset-x-0 flex justify-center" style={{ top: '13%' }}>
                       <button
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isSpeaking ? 'bg-foreground text-background scale-110' : 'bg-accent-light/60 text-accent hover:bg-foreground/10'}`}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isSpeaking ? 'bg-indigo-600 text-white scale-110' : 'bg-indigo-50 text-indigo-400 hover:bg-indigo-100'}`}
                         title="발음 듣기"
                         onClick={(e) => { e.stopPropagation(); handleSpeak(e); }}
                       >
@@ -610,10 +614,11 @@ export default function VocabDashboard() {
 
                     {/* ── 영단어 + 품사 — POS 위, 단어 아래 ── */}
                     <div className="absolute inset-x-0 flex flex-col items-center" style={{ top: '35%' }}>
-                      <p className="text-[13px] text-accent/70 font-semibold tracking-[0.22em] flex items-center gap-1.5 mb-3">
-                        <Sparkles size={11} className="opacity-35" /> {expandPOS(currentWord.posAbbr)}
+                      <p className="text-[13px] font-semibold tracking-[0.22em] flex items-center gap-1.5 mb-3" style={{ color: '#6366f1' }}>
+                        <Sparkles size={11} style={{ opacity: 0.45 }} /> {expandPOS(currentWord.posAbbr)}
                       </p>
-                      <h2 className={`serif font-bold text-foreground leading-none text-center px-4 ${currentWord.word.length >= 14 ? 'text-[34px]' : 'text-[42px]'}`}>
+                      <h2 className={`serif font-bold leading-none text-center px-4 ${currentWord.word.length >= 14 ? 'text-[34px]' : 'text-[42px]'}`}
+                        style={{ color: '#0f0f1a' }}>
                         {currentWord.word}
                       </h2>
                     </div>
@@ -662,17 +667,18 @@ export default function VocabDashboard() {
                     </div>
 
                     {/* 하단 힌트 */}
-                    <p className="absolute bottom-4 inset-x-0 text-center text-[10px] text-accent/30 font-bold">탭하면 뒤집기</p>
+                    <p className="absolute bottom-4 inset-x-0 text-center text-[10px] font-bold" style={{ color: 'rgba(0,0,0,0.22)' }}>탭하면 뒤집기</p>
                   </div>
 
                   {/* BACK */}
                   <div
                     onClick={() => setIsFlipped(false)}
-                    className="absolute inset-0 glass rounded-[2.5rem] border border-foreground/5 shadow-xl cursor-pointer select-none overflow-hidden"
+                    className="absolute inset-0 rounded-[2.5rem] cursor-pointer select-none overflow-hidden"
                     style={{
-                      backfaceVisibility: 'hidden',
-                      WebkitBackfaceVisibility: 'hidden',
+                      backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
                       transform: 'rotateY(180deg)',
+                      background: '#ffffff',
+                      boxShadow: '0 8px 40px rgba(0,0,0,0.28), 0 2px 8px rgba(64,93,230,0.12)',
                     } as React.CSSProperties}
                   >
                     <div className="h-full overflow-y-auto custom-scrollbar p-7">
@@ -682,20 +688,20 @@ export default function VocabDashboard() {
                         if (m) {
                           return (
                             <div className="flex items-start gap-2 mb-1">
-                              <p className="text-[20px] font-bold text-foreground shrink-0">{m[1].trim()}</p>
-                              <p className="text-[12px] text-accent/70 font-medium leading-snug mt-1.5">{m[2].trim()}</p>
+                              <p className="text-[20px] font-bold shrink-0" style={{ color: '#0f0f1a' }}>{m[1].trim()}</p>
+                              <p className="text-[12px] font-medium leading-snug mt-1.5" style={{ color: 'rgba(0,0,0,0.48)' }}>{m[2].trim()}</p>
                             </div>
                           );
                         }
-                        return <p className="text-[20px] font-bold text-foreground mb-1">{currentWord.korean}</p>;
+                        return <p className="text-[20px] font-bold mb-1" style={{ color: '#0f0f1a' }}>{currentWord.korean}</p>;
                       })()}
                       {currentWord.context && (
-                        <div className="mb-4 border-l-2 border-foreground/10 pl-4">
-                          <p className="text-[12px] leading-relaxed text-foreground/70 serif italic">
+                        <div className="mb-4 border-l-2 pl-4" style={{ borderColor: 'rgba(0,0,0,0.10)' }}>
+                          <p className="text-[12px] leading-relaxed serif italic" style={{ color: 'rgba(0,0,0,0.65)' }}>
                             <BoldWord text={currentWord.context} word={currentWord.word} />
                           </p>
                           {currentWord.contextKorean && (
-                            <p className="text-[11px] text-accent mt-1">
+                            <p className="text-[11px] mt-1" style={{ color: 'rgba(0,0,0,0.45)' }}>
                               {currentWord.contextKorean}
                             </p>
                           )}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, PenTool, Bot, MessageCircle, CalendarPlus, Bell, LogOut, Volume2, Quote, Settings, Lock, Eye, EyeOff, Calendar, Trophy, X, Layers, Flame, BarChart2, HelpCircle, Brain, Check, Crown, ChevronLeft, ChevronRight } from "lucide-react";
+import { BookOpen, PenTool, Bot, MessageCircle, CalendarPlus, Bell, LogOut, Volume2, Quote, Settings, Lock, Eye, EyeOff, Calendar, Trophy, X, Layers, Flame, BarChart2, HelpCircle, Brain, Check, Crown, ChevronLeft, ChevronRight, Send } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { getClinicQueue, getTestSessionsByStudent, getQnaPosts, changeStudentPassword, updateStudentNickname, getStudentNickname } from "@/lib/database-service";
 import { getAssignmentsByStudent } from "@/lib/assignment-service";
@@ -141,6 +141,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pwChanging, setPwChanging] = useState(false);
   const [pwError, setPwError] = useState('');
+  const [showDmModal, setShowDmModal] = useState(false);
   const [notifs, setNotifs] = useState<{ id: string; text: string; sub: string; unread: boolean; link: string }[]>([]);
   // 닉네임
   const [nickname, setNickname] = useState('');
@@ -592,11 +593,32 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
             {/* IG 프로필 헤더 */}
             <div className="px-5 pt-4 pb-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              {/* 상단 — 설정 버튼만 */}
-              <div className="flex items-center justify-end mb-4">
+              {/* 상단 — DM + 트로피 + 설정 */}
+              <div className="flex items-center justify-end gap-1.5 mb-4">
+                {/* DM 버튼 */}
+                <button onClick={() => setShowDmModal(true)}
+                  className="w-9 h-9 flex items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95"
+                  style={{ color: 'rgba(255,255,255,0.55)', background: 'rgba(255,255,255,0.06)' }}>
+                  <Send size={16} strokeWidth={2} />
+                </button>
+                {/* 트로피 (리더보드) */}
+                <button
+                  onClick={async () => {
+                    setShowLeaderboard(true); setLbLoading(true);
+                    try { const res = await fetch(`/api/leaderboard?period=${lbPeriod}`); setLeaderboard((await res.json()).ranking || []); } catch { setLeaderboard([]); }
+                    setLbLoading(false); setHofLoading(true);
+                    try { const r = await fetch(`/api/leaderboard/mvp?year=${hofYear}&month=${hofMonth}`); setHofEntries((await r.json()).entries || []); } catch { setHofEntries([]); }
+                    setHofLoading(false);
+                  }}
+                  className="w-9 h-9 flex items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95"
+                  style={{ color: '#fbbf24', background: 'rgba(255,200,0,0.10)' }}>
+                  <Trophy size={16} strokeWidth={2} />
+                </button>
+                {/* 설정 */}
                 {profile.class !== 'GUEST' && (
                   <button onClick={() => { setShowSettings(true); setPwError(''); setCurrentPw(''); setNewPw(''); }}
-                    className="p-2 rounded-full transition-all" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    className="w-9 h-9 flex items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95"
+                    style={{ color: 'rgba(255,255,255,0.55)', background: 'rgba(255,255,255,0.06)' }}>
                     <Settings size={17} strokeWidth={2} />
                   </button>
                 )}
@@ -621,21 +643,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 </div>
               </div>
 
-              {/* 트로피 버튼 — 남은시험 스탯 아래 */}
-              <div className="flex justify-end mb-3">
-                <button
-                  onClick={async () => {
-                    setShowLeaderboard(true); setLbLoading(true);
-                    try { const res = await fetch(`/api/leaderboard?period=${lbPeriod}`); setLeaderboard((await res.json()).ranking || []); } catch { setLeaderboard([]); }
-                    setLbLoading(false); setHofLoading(true);
-                    try { const r = await fetch(`/api/leaderboard/mvp?year=${hofYear}&month=${hofMonth}`); setHofEntries((await r.json()).entries || []); } catch { setHofEntries([]); }
-                    setHofLoading(false);
-                  }}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black transition-all hover:scale-105"
-                  style={{ background: 'rgba(255,200,0,0.10)', border: '1px solid rgba(255,200,0,0.20)', color: '#fbbf24' }}>
-                  <Trophy size={11} strokeWidth={2} /> 리더보드
-                </button>
-              </div>
 
               {/* 이름 + 반 */}
               <div className="mb-2">
@@ -1060,6 +1067,53 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               >
                 취소
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DM 플랫폼 선택 모달 ── */}
+      {showDmModal && (
+        <div className="absolute inset-0 z-[300] flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowDmModal(false)} />
+          <div className="relative w-full max-w-[280px] rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300"
+            style={{ background: 'linear-gradient(180deg,#1a1a2e 0%,#0d0b1e 100%)', border: '1px solid rgba(255,255,255,0.10)' }}>
+            {/* 헤더 */}
+            <div className="px-6 pt-6 pb-4 text-center" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3"
+                style={{ background: 'linear-gradient(135deg,#405DE6,#E1306C)' }}>
+                <Send size={18} className="text-white" />
+              </div>
+              <h3 className="text-[16px] font-black text-white">메시지 보내기</h3>
+              <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>플랫폼을 선택해주세요</p>
+            </div>
+            {/* 옵션 */}
+            <div className="p-4 flex flex-col gap-2.5">
+              {/* 카카오톡 */}
+              <button
+                onClick={() => { alert('카카오톡 연동은 준비 중이에요!'); setShowDmModal(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all active:scale-[0.98] hover:scale-[1.01]"
+                style={{ background: '#FEE500', color: '#3C1E1E' }}>
+                <span className="text-[22px] leading-none">💬</span>
+                <div className="text-left">
+                  <p className="text-[14px] font-black leading-none">카카오톡</p>
+                  <p className="text-[10px] font-bold opacity-60 mt-0.5">KakaoTalk</p>
+                </div>
+              </button>
+              {/* 인스타그램 */}
+              <button
+                onClick={() => { alert('인스타그램 연동은 준비 중이에요!'); setShowDmModal(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all active:scale-[0.98] hover:scale-[1.01] text-white"
+                style={{ background: 'linear-gradient(135deg,#405DE6,#833AB4,#E1306C)', }}>
+                <span className="text-[22px] leading-none">📸</span>
+                <div className="text-left">
+                  <p className="text-[14px] font-black leading-none">인스타그램</p>
+                  <p className="text-[10px] font-bold opacity-70 mt-0.5">Instagram DM</p>
+                </div>
+              </button>
+              <button onClick={() => setShowDmModal(false)}
+                className="w-full py-2.5 rounded-2xl text-[12px] font-bold transition-all hover:opacity-80"
+                style={{ color: 'rgba(255,255,255,0.35)' }}>취소</button>
             </div>
           </div>
         </div>
