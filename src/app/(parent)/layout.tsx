@@ -33,13 +33,13 @@ function useParentSession() {
 }
 
 const AURORA = {
-  primary: "rgba(160,130,255,0.9)",
-  accent: "#7c3aed",
-  light: "rgba(120,80,255,0.08)",
-  border: "rgba(120,80,255,0.18)",
-  bg: "#000000",
-  header: "rgba(4,2,12,0.92)",
-  navBg: "rgba(2,1,8,0.95)",
+  primary: "rgba(74,112,85,0.95)",
+  accent: "#3d6b4a",
+  light: "rgba(100,160,80,0.08)",
+  border: "rgba(100,150,80,0.18)",
+  bg: "#f0f4ed",
+  header: "rgba(240,244,237,0.92)",
+  navBg: "rgba(245,248,242,0.97)",
 };
 
 export default function ParentLayout({ children }: { children: React.ReactNode }) {
@@ -113,68 +113,53 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-hidden" style={{ background: AURORA.bg }}>
-      {/* 블랙홀 배경 레이어 */}
+      {/* 숲 배경 레이어 */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <style>{`
-          @keyframes bhCorePulse {
-            0%,100%{opacity:0.6;transform:scale(1)}
-            50%{opacity:1;transform:scale(1.08)}
+          @keyframes forestFloat {
+            0%,100%{opacity:0.4;transform:translate(0,0) scale(1)}
+            40%{opacity:0.65;transform:translate(2%,3%) scale(1.04)}
+            70%{opacity:0.5;transform:translate(-1%,1.5%) scale(0.98)}
           }
-          @keyframes bhOrbit1 {
-            0%{transform:rotate(0deg) translateX(0)}
-            100%{transform:rotate(360deg) translateX(0)}
+          @keyframes forestMistBg {
+            0%,100%{opacity:0.35;transform:translateX(0)}
+            50%{opacity:0.55;transform:translateX(2%)}
           }
-          @keyframes bhOrbit2 {
-            0%{transform:rotate(0deg)}
-            100%{transform:rotate(-360deg)}
-          }
-          @keyframes bhDrift {
-            0%,100%{opacity:0.3;transform:translate(0,0) scale(1)}
-            50%{opacity:0.7;transform:translate(3%,5%) scale(1.05)}
+          @keyframes forestBreeze {
+            0%,100%{opacity:0.25;transform:translate(0,0)}
+            50%{opacity:0.45;transform:translate(-2%,4%)}
           }
         `}</style>
 
-        {/* 중심 블랙홀 코어 - 아래 중앙에 배치 */}
-        <div style={{ position:'absolute', bottom:'-15%', right:'-10%', width:'55vw', height:'55vw',
-          background:'radial-gradient(ellipse, rgba(80,50,220,0.45) 0%, rgba(40,20,140,0.25) 25%, rgba(10,5,50,0.1) 50%, transparent 70%)',
-          borderRadius:'50%', filter:'blur(40px)',
-          animation:'bhCorePulse 6s ease-in-out infinite' }}/>
-
-        {/* 강착 원반 - 큰 타원 회전 */}
-        <div style={{ position:'absolute', bottom:'-20%', right:'-15%', width:'65vw', height:'65vw',
-          background:'conic-gradient(from 0deg, transparent 0%, rgba(100,70,255,0.08) 15%, rgba(150,100,255,0.18) 30%, rgba(80,50,200,0.1) 45%, transparent 60%, rgba(60,30,180,0.06) 75%, transparent 90%)',
-          borderRadius:'50%', filter:'blur(12px)',
-          animation:'bhOrbit1 20s linear infinite' }}/>
-
-        {/* 두 번째 강착 원반 - 역방향 */}
-        <div style={{ position:'absolute', bottom:'-25%', right:'-20%', width:'80vw', height:'80vw',
-          background:'conic-gradient(from 180deg, transparent 0%, rgba(60,30,180,0.06) 20%, rgba(100,60,220,0.12) 40%, transparent 55%, rgba(80,40,200,0.08) 70%, transparent 85%)',
-          borderRadius:'50%', filter:'blur(18px)',
-          animation:'bhOrbit2 30s linear infinite' }}/>
-
-        {/* 상단 좌측 희미한 중력 렌즈 */}
-        <div style={{ position:'absolute', top:'-10%', left:'-20%', width:'60vw', height:'60vw',
-          background:'radial-gradient(ellipse, rgba(40,20,120,0.12) 0%, transparent 60%)',
+        {/* 상단 좌측 - 햇살이 들어오는 나무 */}
+        <div style={{ position:'absolute', top:'-10%', left:'-15%', width:'65vw', height:'65vw',
+          background:'radial-gradient(ellipse, rgba(140,200,100,0.18) 0%, rgba(90,160,60,0.08) 35%, transparent 65%)',
           borderRadius:'50%', filter:'blur(50px)',
-          animation:'bhDrift 12s ease-in-out infinite' }}/>
+          animation:'forestMistBg 12s ease-in-out infinite' }}/>
 
-        {/* 중간 보라빛 안개 */}
-        <div style={{ position:'absolute', top:'30%', left:'10%', width:'40vw', height:'40vw',
-          background:'radial-gradient(ellipse, rgba(60,30,180,0.08) 0%, transparent 70%)',
-          borderRadius:'50%', filter:'blur(35px)',
-          animation:'bhDrift 18s ease-in-out infinite reverse' }}/>
+        {/* 중앙 우측 - 숲 안개 */}
+        <div style={{ position:'absolute', top:'20%', right:'-20%', width:'55vw', height:'55vw',
+          background:'radial-gradient(ellipse, rgba(100,170,70,0.12) 0%, rgba(60,130,50,0.05) 45%, transparent 70%)',
+          borderRadius:'50%', filter:'blur(60px)',
+          animation:'forestFloat 16s ease-in-out infinite' }}/>
 
-        {/* 중력 왜곡 오버레이 - 화면 전체에 은은하게 */}
+        {/* 하단 - 깊은 숲 그늘 */}
+        <div style={{ position:'absolute', bottom:'-10%', left:'10%', width:'70vw', height:'40vw',
+          background:'radial-gradient(ellipse, rgba(50,90,40,0.12) 0%, transparent 65%)',
+          borderRadius:'50%', filter:'blur(40px)',
+          animation:'forestBreeze 20s ease-in-out infinite' }}/>
+
+        {/* 전체 베이스 그라디언트 */}
         <div style={{ position:'absolute', inset:0,
-          background:'radial-gradient(ellipse 80% 80% at 85% 85%, rgba(60,20,180,0.15) 0%, transparent 60%)' }}/>
+          background:'linear-gradient(160deg, rgba(200,225,180,0.15) 0%, transparent 50%, rgba(140,200,120,0.08) 100%)' }}/>
       </div>
 
       {/* ?? ?ㅻ뜑 ?? */}
       <header className="sticky top-0 z-30 flex items-center justify-between px-5 py-3.5 border-b"
         style={{ background: AURORA.header, borderColor: AURORA.border, backdropFilter: "blur(16px)" }}>
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'rgba(160,130,255,0.7)' }}>Report Portal</p>
-          <p className="text-[16px] font-black" style={{ color: 'rgba(230,220,255,0.95)' }}>{session.studentName} 학부모님</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'rgba(74,112,85,0.6)' }}>Report Portal</p>
+          <p className="text-[16px] font-black" style={{ color: '#2d3d2d' }}>{session.studentName} 학부모님</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => { setShowTrophy(true); loadLeaderboard(lbPeriod); }}
@@ -190,7 +175,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
           </button>
           <button onClick={() => setShowSettings(true)}
             className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-            style={{ background: "rgba(120,80,255,0.1)", border: "1px solid rgba(120,80,255,0.18)", color: "rgba(160,130,255,0.8)" }}>
+            style={{ background: AURORA.light, border: `1px solid ${AURORA.border}`, color: AURORA.primary }}>
             <Settings size={16} />
           </button>
         </div>
@@ -207,7 +192,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
             return (
               <Link key={item.href} href={item.href}
                 className="flex-1 flex flex-col items-center justify-center gap-0.5 py-3 transition-all relative"
-                style={{ color: active ? AURORA.primary : 'rgba(255,255,255,0.3)' }}>
+                style={{ color: active ? AURORA.primary : 'rgba(74,112,85,0.4)' }}>
                 {item.icon}
                 <span className="text-[9px] font-bold">{item.label}</span>
                 {active && <div className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full" style={{ background: AURORA.primary }} />}

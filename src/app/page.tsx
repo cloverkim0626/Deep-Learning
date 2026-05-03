@@ -230,113 +230,91 @@ export default function Home() {
 
         {/* CTA Buttons */}
         <div className="flex flex-col w-full gap-3">
-          {/* 학습 입장 - 블랙홀 컨셉 */}
+          {/* 학습 입장 - 숲/휴식 컨셉 */}
           <style>{`
-            @keyframes bhPulse {
-              0%,100%{opacity:0.7;transform:scale(1)}
-              50%{opacity:1;transform:scale(1.03)}
+            @keyframes forestLeaf {
+              0%,100%{opacity:0.5;transform:translate(0,0) scale(1)}
+              33%{opacity:0.8;transform:translate(2%,3%) scale(1.04)}
+              66%{opacity:0.6;transform:translate(-1%,2%) scale(0.97)}
             }
-            @keyframes bhSpin {
-              0%{transform:rotate(0deg)}
-              100%{transform:rotate(360deg)}
+            @keyframes forestMist {
+              0%,100%{opacity:0.3;transform:translateX(0)}
+              50%{opacity:0.55;transform:translateX(3%)}
             }
           `}</style>
           <Link
             href="/login?role=student"
             className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-500"
             style={{
-              background:'#000000',
-              boxShadow:'0 4px 40px rgba(0,0,0,0.8), inset 0 0 60px rgba(20,20,60,0.5)',
+              background:'linear-gradient(135deg, #2d4a35 0%, #1e3328 50%, #162b20 100%)',
+              boxShadow:'0 4px 32px rgba(30,60,35,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
             }}
           >
-            {/* 블랙홀 코어 - 중심 빛 */}
+            {/* 숲 빛 - 상단 왼쪽 햇살 */}
             <div className="absolute pointer-events-none" style={{
-              top:'50%', right:'-10%', width:'120px', height:'120px',
-              background:'radial-gradient(ellipse, rgba(60,40,180,0.5) 0%, rgba(20,10,80,0.3) 30%, transparent 70%)',
+              top:'-20%', left:'-10%', width:'160px', height:'160px',
+              background:'radial-gradient(ellipse, rgba(140,200,100,0.22) 0%, rgba(80,150,60,0.1) 40%, transparent 70%)',
+              borderRadius:'50%', filter:'blur(24px)',
+              animation:'forestMist 8s ease-in-out infinite',
+            }}/>
+            {/* 숲 잎 - 오른쪽 보케 */}
+            <div className="absolute pointer-events-none" style={{
+              top:'10%', right:'-5%', width:'130px', height:'130px',
+              background:'radial-gradient(ellipse, rgba(100,170,80,0.18) 0%, rgba(60,120,50,0.08) 50%, transparent 75%)',
               borderRadius:'50%', filter:'blur(20px)',
-              transform:'translateY(-50%)',
-              animation:'bhPulse 4s ease-in-out infinite',
+              animation:'forestLeaf 12s ease-in-out infinite',
             }}/>
-            {/* 강착 원반 - 빛의 테 */}
-            <div className="absolute pointer-events-none" style={{
-              top:'50%', right:'-5%', width:'80px', height:'80px',
-              background:'conic-gradient(from 0deg, transparent 0%, rgba(80,60,255,0.15) 20%, rgba(120,80,255,0.25) 40%, transparent 60%, rgba(60,40,200,0.1) 80%, transparent 100%)',
-              borderRadius:'50%', filter:'blur(8px)',
-              transform:'translateY(-50%)',
-              animation:'bhSpin 8s linear infinite',
-            }}/>
-            {/* 중력 왜곡 - 미묘한 렌즈 */}
+            {/* 하단 어두운 숲 그라디언트 */}
             <div className="absolute inset-0 pointer-events-none" style={{
-              background:'radial-gradient(ellipse 60% 100% at 95% 50%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.8) 100%)',
+              background:'linear-gradient(180deg, transparent 40%, rgba(10,20,12,0.5) 100%)',
+            }}/>
+            {/* 은은한 텍스처 오버레이 */}
+            <div className="absolute inset-0 pointer-events-none" style={{
+              background:'radial-gradient(ellipse 80% 60% at 80% 40%, rgba(120,180,90,0.07) 0%, transparent 60%)',
             }}/>
             <div className="flex items-center gap-2 font-semibold text-[15px] mb-1 relative z-10">
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest" style={{background:'rgba(255,255,255,0.08)', color:'rgba(200,180,255,0.8)', border:'1px solid rgba(255,255,255,0.08)'}}>STUDENT</span>
-              <span className="text-[13px] text-white">학습 공간 입장</span>
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest" style={{background:'rgba(120,200,100,0.12)', color:'rgba(160,220,130,0.8)', border:'1px solid rgba(120,200,100,0.2)'}}>STUDENT</span>
+              <span className="text-[13px]" style={{color:'rgba(210,235,200,0.95)'}}>학습 공간 입장</span>
             </div>
-            <p className="text-[11px] font-normal relative z-10 leading-relaxed" style={{color:'rgba(180,160,255,0.5)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
-            <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)'}}>
-              <ArrowRight strokeWidth={2} size={14} className="text-white/40 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all" />
+            <p className="text-[11px] font-normal relative z-10 leading-relaxed" style={{color:'rgba(140,190,120,0.55)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
+            <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(120,200,100,0.08)', border:'1px solid rgba(120,200,100,0.18)'}}>
+              <ArrowRight strokeWidth={2} size={14} className="group-hover:translate-x-0.5 transition-all" style={{color:'rgba(160,220,130,0.5)'}} />
             </div>
           </Link>
 
-          {/* 리포트 열람 - 블랙홀 컨셉 (듀얼 코어) */}
-          <style>{`
-            @keyframes rbhOrbit1 { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-            @keyframes rbhOrbit2 { 0%{transform:rotate(0deg)} 100%{transform:rotate(-360deg)} }
-            @keyframes rbhPulse  { 0%,100%{opacity:0.5;transform:scale(1)} 50%{opacity:0.9;transform:scale(1.06)} }
-          `}</style>
+          {/* 리포트 열람 - 숲 새벽 컨셉 */}
           <Link
             href="/login/parent"
             className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-500"
             style={{
-              background:'#050008',
-              boxShadow:'0 4px 40px rgba(0,0,0,0.8), inset 0 0 80px rgba(20,0,60,0.6)',
+              background:'linear-gradient(135deg, #f0f4ed 0%, #e4ede0 50%, #dde8d8 100%)',
+              boxShadow:'0 4px 24px rgba(60,100,60,0.14), inset 0 1px 0 rgba(255,255,255,0.7)',
+              border:'1px solid rgba(120,170,100,0.2)',
             }}
           >
-            {/* 시안 코어 - 왼쪽 위 */}
+            {/* 새벽 숲 빛 - 상단 */}
             <div className="absolute pointer-events-none" style={{
-              top:'-30%', left:'-15%', width:'110px', height:'110px',
-              background:'radial-gradient(ellipse, rgba(0,180,255,0.4) 0%, rgba(0,80,200,0.2) 35%, transparent 70%)',
-              borderRadius:'50%', filter:'blur(18px)',
-              animation:'rbhPulse 5s ease-in-out infinite',
+              top:'-30%', right:'-10%', width:'140px', height:'140px',
+              background:'radial-gradient(ellipse, rgba(100,160,80,0.18) 0%, rgba(60,120,50,0.06) 50%, transparent 75%)',
+              borderRadius:'50%', filter:'blur(28px)',
+              animation:'forestMist 10s ease-in-out infinite 2s',
             }}/>
-            {/* 보라 코어 - 오른쪽 아래 */}
-            <div className="absolute pointer-events-none" style={{
-              bottom:'-30%', right:'-10%', width:'100px', height:'100px',
-              background:'radial-gradient(ellipse, rgba(120,60,255,0.45) 0%, rgba(60,20,160,0.2) 35%, transparent 70%)',
-              borderRadius:'50%', filter:'blur(18px)',
-              animation:'rbhPulse 6s ease-in-out infinite 1s',
-            }}/>
-            {/* 큰 원반 - 시계방향 */}
-            <div className="absolute pointer-events-none" style={{
-              top:'-40%', left:'-30%', width:'140px', height:'140px',
-              background:'conic-gradient(from 0deg, transparent 0%, rgba(0,150,255,0.08) 20%, rgba(0,200,255,0.15) 38%, transparent 55%)',
-              borderRadius:'50%', filter:'blur(8px)',
-              animation:'rbhOrbit1 16s linear infinite',
-            }}/>
-            {/* 작은 원반 - 역방향 */}
-            <div className="absolute pointer-events-none" style={{
-              bottom:'-40%', right:'-20%', width:'130px', height:'130px',
-              background:'conic-gradient(from 180deg, transparent 0%, rgba(100,50,255,0.1) 25%, rgba(140,80,255,0.18) 42%, transparent 58%)',
-              borderRadius:'50%', filter:'blur(10px)',
-              animation:'rbhOrbit2 24s linear infinite',
-            }}/>
-            {/* 중력 렌즈 오버레이 */}
+            {/* 안개 레이어 */}
             <div className="absolute inset-0 pointer-events-none" style={{
-              background:'radial-gradient(ellipse 120% 80% at 50% 50%, rgba(0,0,0,0) 0%, rgba(5,0,15,0.5) 70%, rgba(5,0,15,0.85) 100%)',
+              background:'radial-gradient(ellipse 100% 60% at 90% 80%, rgba(180,210,160,0.18) 0%, transparent 60%)',
             }}/>
             {/* 콘텐츠 */}
             <div className="relative z-10 flex items-center gap-2 font-semibold text-[15px] mb-1">
               <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest"
-                style={{background:'rgba(0,160,255,0.1)', color:'rgba(100,200,255,0.7)', border:'1px solid rgba(0,160,255,0.15)'}}>
+                style={{background:'rgba(80,130,70,0.1)', color:'rgba(60,100,50,0.75)', border:'1px solid rgba(80,130,70,0.18)'}}>
                 REPORT
               </span>
-              <span className="text-[13px] font-black" style={{color:'rgba(200,230,255,0.95)'}}>리포트 열람하기</span>
+              <span className="text-[13px] font-black" style={{color:'#2d4a35'}}>리포트 열람하기</span>
             </div>
-            <p className="relative z-10 text-[11px] font-normal leading-relaxed" style={{color:'rgba(130,190,255,0.5)'}}>일간·월간 리포트 · 학습 현황 · 질의응답</p>
+            <p className="relative z-10 text-[11px] font-normal leading-relaxed" style={{color:'rgba(60,90,50,0.55)'}}>일간·월간 리포트 · 학습 현황 · 질의응답</p>
             <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all group-hover:scale-110"
-              style={{background:'rgba(0,160,255,0.07)', border:'1px solid rgba(0,160,255,0.15)'}}>
-              <ArrowRight strokeWidth={2} size={14} style={{color:'rgba(80,180,255,0.6)'}}
+              style={{background:'rgba(80,130,70,0.08)', border:'1px solid rgba(80,130,70,0.18)'}}>
+              <ArrowRight strokeWidth={2} size={14} style={{color:'rgba(80,130,70,0.6)'}}
                 className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </Link>
