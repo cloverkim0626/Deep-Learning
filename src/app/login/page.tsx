@@ -86,16 +86,7 @@ function LoginForm() {
         setError("반과 이름을 모두 선택해 주세요.");
         return;
       }
-      // GUEST 반 — 비밀번호 불필요
-      if (selectedClass === "[WOODOK] GUEST") {
-        localStorage.setItem("stu_session", JSON.stringify({
-          name: selectedStudent.split(" - ")[0],
-          class: selectedClass
-        }));
-        window.location.href = "/dashboard";
-        return;
-      }
-      // 정규 학생 — DB에서 비밀번호 검증
+      // 모든 학생 (GUEST 포함) — DB에서 비밀번호 검증
       const studentName = selectedStudent.split(" - ")[0];
       const { data, error: dbErr } = await supabase
         .from('students')
@@ -196,21 +187,17 @@ function LoginForm() {
               )}
             </div>
 
-            {/* 3. 비밀번호 */}
-            {!isGuestClass && (
-              <div className={`space-y-1.5 transition-all duration-500 pt-2 ${selectedStudent ? "opacity-100" : "opacity-35 pointer-events-none"}`}>
-                <label className="text-[11px] font-black pl-1 uppercase tracking-widest block" style={{color:'rgba(180,230,255,0.8)'}}>3. 비밀번호</label>
-                <input type="password" placeholder="비밀번호" value={password} onChange={e => setPassword(e.target.value)}
-                  className="w-full h-16 px-6 rounded-3xl font-black text-[18px] text-center outline-none transition-all"
-                  style={{background:'rgba(255,255,255,0.96)',border:'1.5px solid rgba(200,230,255,0.4)',color:'#0f2035',caretColor:'#0a5080'}} />
-              </div>
-            )}
-
-            {isGuestClass && selectedStudent && (
-              <div className="px-4 py-3 rounded-2xl" style={{background:'rgba(255,255,255,0.15)',backdropFilter:'blur(8px)',border:'1px solid rgba(40,180,220,0.3)'}}>
-                <p className="text-[12px] font-bold text-center" style={{color:'rgba(200,245,255,0.95)'}}>🎉 체험 계정 — 비밀번호 없이 바로 입장!</p>
-              </div>
-            )}
+            {/* 3. 비밀번호 — GUEST 포함 모든 학생 */}
+            <div className={`space-y-1.5 transition-all duration-500 pt-2 ${selectedStudent ? "opacity-100" : "opacity-35 pointer-events-none"}`}>
+              <label className="text-[11px] font-black pl-1 uppercase tracking-widest block" style={{color:'rgba(180,230,255,0.8)'}}>3. 비밀번호</label>
+              <input type="password" placeholder="비밀번호" value={password} onChange={e => setPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                className="w-full h-16 px-6 rounded-3xl font-black text-[18px] text-center outline-none transition-all"
+                style={{background:'rgba(255,255,255,0.96)',border:'1.5px solid rgba(200,230,255,0.4)',color:'#0f2035',caretColor:'#0a5080'}} />
+              {isGuestClass && selectedStudent && (
+                <p className="text-[11px] font-bold pl-1" style={{color:'rgba(200,245,255,0.7)'}}>체험 계정 비밀번호는 선생님께 문의하세요.</p>
+              )}
+            </div>
 
             {error && <p className="text-[12px] font-black text-center pt-2 animate-in fade-in zoom-in" style={{color:'rgba(255,120,120,0.9)'}}>{error}</p>}
 
