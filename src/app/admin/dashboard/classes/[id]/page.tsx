@@ -109,51 +109,77 @@ function AttendancePopup({ popup, onClose, onSave, onQuickSave }: {
         {/* 3-버튼 */}
         <div className="p-3 grid grid-cols-3 gap-2">
           <button onClick={() => save('present')} disabled={saving}
-            className="py-2.5 rounded-xl text-[11px] font-black bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-500 hover:text-white transition-all">
+            style={{fontFamily:'var(--font-jakarta),-apple-system,sans-serif'}}
+            className="py-2.5 rounded-xl text-[12px] font-medium bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-500 hover:text-white transition-all">
             ✅ 출석
           </button>
-          <button onClick={() => setState(s => ({ ...s, expanded: state.expanded === 'late' ? undefined : 'late' }))}
-            className={`py-2.5 rounded-xl text-[11px] font-black border transition-all ${state.expanded === 'late' ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-500 hover:text-white'}`}>
+          <button onClick={() => setState(s => ({
+              ...s,
+              expanded: s.expanded === 'late' ? undefined : 'late',
+              // 지각 패널 열 때 결석 관련 state 초기화
+              makeupType: s.expanded === 'late' ? s.makeupType : undefined,
+              makeupDate: s.expanded === 'late' ? s.makeupDate : undefined,
+            }))}
+            style={{fontFamily:'var(--font-jakarta),-apple-system,sans-serif'}}
+            className={`py-2.5 rounded-xl text-[12px] font-medium border transition-all ${state.expanded === 'late' ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-500 hover:text-white'}`}>
             ⏰ 지각
           </button>
-          <button onClick={() => setState(s => ({ ...s, expanded: state.expanded === 'absent' ? undefined : 'absent' }))}
-            className={`py-2.5 rounded-xl text-[11px] font-black border transition-all ${state.expanded === 'absent' ? 'bg-rose-500 text-white border-rose-500' : 'bg-rose-100 text-rose-700 border-rose-200 hover:bg-rose-500 hover:text-white'}`}>
+          <button onClick={() => setState(s => ({
+              ...s,
+              expanded: s.expanded === 'absent' ? undefined : 'absent',
+              // 지각 관련 state 초기화
+              lateTime: undefined,
+              lateReason: undefined,
+            }))}
+            style={{fontFamily:'var(--font-jakarta),-apple-system,sans-serif'}}
+            className={`py-2.5 rounded-xl text-[12px] font-medium border transition-all ${state.expanded === 'absent' ? 'bg-rose-500 text-white border-rose-500' : 'bg-rose-100 text-rose-700 border-rose-200 hover:bg-rose-500 hover:text-white'}`}>
             ❌ 결석
           </button>
         </div>
         {/* 지각 상세 */}
         {state.expanded === 'late' && (
-          <div className="px-3 pb-3 space-y-2 border-t border-foreground/5 pt-3">
+          <div className="px-3 pb-3 space-y-2 border-t border-foreground/5 pt-3"
+            style={{fontFamily:'var(--font-jakarta),-apple-system,sans-serif'}}>
             <input placeholder="지각 사유" value={state.lateReason || ''} onChange={e => setState(s => ({ ...s, lateReason: e.target.value }))}
-              className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none focus:border-foreground/30" />
+              className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none focus:border-foreground/30"
+              style={{fontFamily:'inherit'}} />
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-accent font-bold shrink-0">등원시각</label>
+              <label className="text-[11px] text-accent font-medium shrink-0">등원시각</label>
               <input type="time" value={state.lateTime || ''} onChange={e => setState(s => ({ ...s, lateTime: e.target.value }))}
-                className="flex-1 h-9 px-2 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none focus:border-foreground/30" />
+                className="flex-1 h-9 px-2 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none focus:border-foreground/30"
+                style={{fontFamily:'inherit'}} />
             </div>
             <button onClick={() => save('late')} disabled={saving}
-              className="w-full h-9 rounded-xl bg-amber-500 text-white text-[12px] font-black hover:-translate-y-0.5 transition-all">
+              className="w-full h-9 rounded-xl bg-amber-500 text-white text-[12px] font-medium hover:-translate-y-0.5 transition-all"
+              style={{fontFamily:'inherit'}}>
               {saving ? "..." : "지각으로 저장"}
             </button>
           </div>
         )}
         {/* 결석 상세 */}
         {state.expanded === 'absent' && (
-          <div className="px-3 pb-3 space-y-2 border-t border-foreground/5 pt-3">
+          <div className="px-3 pb-3 space-y-2 border-t border-foreground/5 pt-3"
+            style={{fontFamily:'var(--font-jakarta),-apple-system,sans-serif'}}>
             <div className="grid grid-cols-3 gap-1.5">
-              {[['', '미설정'], ['direct', '직접보강'], ['video', '영상보강']].map(([val, label]) => (
+              {[['', '미설정'], ['direct', '대면보강'], ['video', '영상보강']].map(([val, label]) => (
                 <button key={val} type="button" onClick={() => setState(s => ({ ...s, makeupType: val }))}
-                  className={`py-1.5 rounded-lg text-[10px] font-black border transition-all ${state.makeupType === val ? 'bg-foreground text-background border-foreground' : 'border-foreground/10 text-accent'}`}>
+                  className={`py-1.5 rounded-lg text-[11px] font-medium border transition-all ${state.makeupType === val ? 'bg-foreground text-background border-foreground' : 'border-foreground/10 text-accent'}`}
+                  style={{fontFamily:'inherit'}}>
                   {label}
                 </button>
               ))}
             </div>
             {(state.makeupType === 'direct' || state.makeupType === 'video') && (
-              <input type="date" value={state.makeupDate || ''} onChange={e => setState(s => ({ ...s, makeupDate: e.target.value }))}
-                className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none" />
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-accent uppercase">보강일자</label>
+                <input type="date" value={state.makeupDate || ''} onChange={e => setState(s => ({ ...s, makeupDate: e.target.value }))}
+                  className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none"
+                  style={{fontFamily:'inherit'}} />
+              </div>
             )}
             <button onClick={() => save('absent')} disabled={saving}
-              className="w-full h-9 rounded-xl bg-rose-500 text-white text-[12px] font-black hover:-translate-y-0.5 transition-all">
+              className="w-full h-9 rounded-xl bg-rose-500 text-white text-[12px] font-medium hover:-translate-y-0.5 transition-all"
+              style={{fontFamily:'inherit'}}>
               {saving ? "..." : "결석으로 저장"}
             </button>
           </div>
@@ -1744,7 +1770,14 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                               <div className="shrink-0 border-r border-slate-100 flex flex-col items-center justify-start pt-1.5 pb-1 px-1 gap-1"
                                 style={{ width: '20%', minWidth: '36px' }}>
                                 <div
-                                  onClick={() => { if (att) setAttDetailModal({ status: att.status, lateTime: att.late_arrival_time || undefined, reason: (att as any).absence_reason || undefined, makeupType: att.makeup_type || undefined, makeupDate: att.makeup_date || undefined }); }}
+                                  onClick={() => { if (att) setAttDetailModal({
+                                    status: att.status,
+                                    // 결석이면 지각 시간 전달 안 함
+                                    lateTime:   att.status === 'late'   ? (att.late_arrival_time || undefined) : undefined,
+                                    reason:     (att as any).absence_reason || undefined,
+                                    makeupType: att.status === 'absent'  ? (att.makeup_type || undefined) : undefined,
+                                    makeupDate: att.status === 'absent'  ? (att.makeup_date || undefined) : undefined,
+                                  }); }}
                                   className={`att-badge w-full text-center select-none leading-tight ${att ? `${ATT_STYLE[att.status]} cursor-pointer hover:opacity-80 transition-all` : 'text-slate-200'}`}>
                                   {att ? (<>
                                     <span className="block">{ATT_SHORT[att.status]}</span>
@@ -1970,21 +2003,53 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       {/* 출결 상세 확인 모달 (읽기전용) */}
       {attDetailModal && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50" onClick={() => setAttDetailModal(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-72 border border-slate-200" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-[12px] font-black ${ATT_STYLE[attDetailModal.status]}`}>{ATT_LABEL[attDetailModal.status]}</span>
-              </div>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-80 border border-slate-100"
+            style={{fontFamily:'var(--font-jakarta),-apple-system,sans-serif'}}
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <span className={`px-3 py-1.5 rounded-full text-[13px] font-medium ${ATT_STYLE[attDetailModal.status]}`}>
+                {ATT_LABEL[attDetailModal.status]}
+              </span>
               <button onClick={() => setAttDetailModal(null)} className="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-slate-200"><X size={13} /></button>
             </div>
-            {attDetailModal.lateTime && <div className="mb-3"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">도착시간</p><p className="text-[14px] font-bold text-slate-800">{attDetailModal.lateTime}</p></div>}
-            {attDetailModal.makeupType && <div className="mb-3"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">보강방식</p><p className="text-[14px] font-bold text-slate-800">{attDetailModal.makeupType === 'direct' ? '직접 보강' : '영상 보강'}</p></div>}
-            {attDetailModal.makeupDate && <div className="mb-3"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">보강일</p><p className="text-[14px] font-bold text-indigo-700">{attDetailModal.makeupDate.slice(5).replace('-','/')} 보강 예정</p></div>}
-            {attDetailModal.reason && <div className="mb-3"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">사유</p><p className="text-[13px] text-slate-700">{attDetailModal.reason}</p></div>}
-            {!attDetailModal.lateTime && !attDetailModal.makeupType && !attDetailModal.makeupDate && !attDetailModal.reason && (
-              <p className="text-[12px] text-slate-400 text-center py-2">추가 정보 없음</p>
+
+            {/* 지각: 도착 시간 */}
+            {attDetailModal.lateTime && (
+              <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-100">
+                <p style={{fontSize:'10px',fontWeight:500,color:'#92400e',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:'4px'}}>등원 시각</p>
+                <p style={{fontSize:'24px',fontWeight:300,color:'#b45309',letterSpacing:'-0.03em'}}>{attDetailModal.lateTime}</p>
+              </div>
             )}
-            <p className="text-[10px] text-slate-300 text-center mt-3">출석부에서 수정할 수 있습니다</p>
+
+            {/* 결석: 보강 방식 + 날짜 */}
+            {attDetailModal.makeupType && (
+              <div className={`mb-4 p-3 rounded-xl border ${
+                attDetailModal.makeupType === 'direct' ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <p style={{fontSize:'10px',fontWeight:500,color:'#3730a3',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:'4px'}}>
+                  {attDetailModal.makeupType === 'direct' ? '대면 보강' : '영상 보강'}
+                </p>
+                {attDetailModal.makeupDate ? (
+                  <p style={{fontSize:'22px',fontWeight:300,color:'#4338ca',letterSpacing:'-0.03em'}}>
+                    {attDetailModal.makeupDate.slice(5).replace('-','/')} 예정
+                  </p>
+                ) : (
+                  <p style={{fontSize:'13px',color:'#818cf8'}}>날짜 미지정</p>
+                )}
+              </div>
+            )}
+
+            {attDetailModal.reason && (
+              <div className="mb-4">
+                <p style={{fontSize:'10px',fontWeight:500,color:'#94a3b8',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:'4px'}}>사유</p>
+                <p style={{fontSize:'13px',color:'#475569'}}>{attDetailModal.reason}</p>
+              </div>
+            )}
+
+            {!attDetailModal.lateTime && !attDetailModal.makeupType && !attDetailModal.makeupDate && !attDetailModal.reason && (
+              <p style={{fontSize:'13px',color:'#94a3b8',textAlign:'center',padding:'8px 0'}}>추가 정보 없음</p>
+            )}
+            <p style={{fontSize:'11px',color:'#cbd5e1',textAlign:'center',marginTop:'16px'}}>출석부에서 수정할 수 있습니다</p>
           </div>
         </div>
       )}
