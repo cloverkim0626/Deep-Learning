@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, Briefcase, Zap, Brain, Sparkles, X, Layers, Flame, BarChart2, HelpCircle, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import TrialApplicationForm from "@/components/TrialApplicationForm";
 
 function getDday() {
   const today = new Date();
@@ -20,6 +21,7 @@ export default function Home() {
   const [wordIdx, setWordIdx] = useState(0);
   const [passageCount, setPassageCount] = useState<number | null>(null);
   const [showGuide, setShowGuide] = useState(false);
+  const [showTrialForm, setShowTrialForm] = useState(false);
 
   useEffect(() => {
     supabase.from('word_sets').select('id', { count: 'exact', head: true })
@@ -485,37 +487,35 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 체험 계정 — IG 풀 그라디언트 강조 */}
+              {/* 체험 계정 — 신청 CTA */}
               <div className="rounded-[1.3rem] overflow-hidden"
                 style={{background:'linear-gradient(135deg,#405DE6,#833AB4,#E1306C)'}}>
                 <div className="px-4 pt-4 pb-4">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-[20px]">🔑</span>
                     <div>
-                      <p className="text-white font-black text-[14px]">지금 바로 체험해봐!</p>
-                      <p className="text-white/60 text-[10px]">비밀번호 없이 · 즉시 입장</p>
+                      <p className="text-white font-black text-[14px]">앱 체험 신청</p>
+                      <p className="text-white/60 text-[10px]">신청 후 문자로 계정 발급 · 체험 기간 3일</p>
                     </div>
                   </div>
-                  <div className="rounded-2xl overflow-hidden" style={{background:'rgba(255,255,255,0.18)'}}>
-                    <div className="grid grid-cols-2" style={{borderBottom:'1px solid rgba(255,255,255,0.15)'}}>
-                      <div className="px-3 py-2.5" style={{borderRight:'1px solid rgba(255,255,255,0.15)'}}>
-                        <p className="text-white/50 text-[9px] font-bold mb-0.5">학원</p>
-                        <p className="text-white font-black text-[12px]">[WOODOK]</p>
-                      </div>
-                      <div className="px-3 py-2.5">
-                        <p className="text-white/50 text-[9px] font-bold mb-0.5">비밀번호</p>
-                        <p className="text-white font-black text-[12px]">없음 🙌</p>
-                      </div>
-                    </div>
-                    <div className="px-3 py-2.5">
-                      <p className="text-white/50 text-[9px] font-bold mb-1.5">계정 선택</p>
-                      <div className="flex gap-2 flex-wrap">
-                        <span className="px-2.5 py-1 rounded-full bg-white/25 text-white text-[10px] font-black">학생1 (학생 체험)</span>
-                        <span className="px-2.5 py-1 rounded-full bg-white/25 text-white text-[10px] font-black">GUEST (학부모)</span>
-                      </div>
+                  <div className="rounded-2xl overflow-hidden mb-3" style={{background:'rgba(255,255,255,0.18)'}}>
+                    <div className="px-3 py-2.5 space-y-1.5">
+                      <p className="text-white/50 text-[9px] font-bold">체험 포함 내용</p>
+                      {['어휘 카드 · 테스트 3종', 'AI 튜터 Genie', '리더보드 & 스트릭'].map(t => (
+                        <div key={t} className="flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-white/60" />
+                          <span className="text-white/80 text-[11px] font-bold">{t}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <p className="text-white/35 text-[9px] mt-2">실제 학습 기록에는 영향을 주지 않아요.</p>
+                  <button
+                    onClick={() => { setShowGuide(false); setShowTrialForm(true); }}
+                    className="w-full h-11 rounded-2xl text-[13px] font-black text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+                    style={{background:'rgba(255,255,255,0.22)',border:'1.5px solid rgba(255,255,255,0.4)'}}>
+                    신청 폼 작성하기 <ArrowRight size={14} />
+                  </button>
+                  <p className="text-white/35 text-[9px] mt-2 text-center">신청자에게만 계정이 발급됩니다.</p>
                 </div>
               </div>
 
@@ -535,6 +535,11 @@ export default function Home() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ═══ Trial Application Form ═══════════════════════════════════════════ */}
+      {showTrialForm && (
+        <TrialApplicationForm onClose={() => setShowTrialForm(false)} />
       )}
     </main>
   );

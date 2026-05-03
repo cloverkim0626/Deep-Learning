@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Users, BookOpen, MessageSquare, LogOut, BarChart2, MessageCircle, PenTool, GraduationCap, Bell, FileText } from "lucide-react";
+import { Users, BookOpen, MessageSquare, LogOut, BarChart2, MessageCircle, PenTool, GraduationCap, Bell, FileText, ClipboardList } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/admin/dashboard/classes",       icon: GraduationCap, label: "수업 관리" },
@@ -13,7 +13,8 @@ const NAV_ITEMS = [
   { href: "/admin/dashboard/qna",           icon: MessageCircle,  label: "Q&A 관리" },
   { href: "/admin/dashboard/notices",       icon: Bell,           label: "학부모 공지" },
   { href: "/admin/dashboard/reports",       icon: FileText,       label: "일간 리포트" },
-  { href: "/admin/dashboard/essay-prompts", icon: PenTool,        label: "프롬프트" },
+  { href: "/admin/dashboard/essay-prompts",   icon: PenTool,        label: "프롬프트" },
+  { href: "/admin/dashboard/consultations",   icon: ClipboardList,  label: "상담 신청" },
 ];
 
 export default function AdminDashboardLayout({
