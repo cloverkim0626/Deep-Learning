@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { getAllPassagesForEssay, getEssayPromptTemplates } from "@/lib/database-service";
@@ -258,6 +258,16 @@ export default function EssayPage() {
         setTemplates((t as Template[]).filter(x => x.is_active && x.question_prompt));
       } finally { setLoading(false); }
     })();
+    // 최근 경로 복원
+    try {
+      const saved = localStorage.getItem('essay_last_path');
+      if (saved) {
+        const pt = JSON.parse(saved);
+        if (pt.workbook) setFilterWorkbook(pt.workbook);
+        if (pt.mid) setFilterMid(pt.mid);
+        if (pt.sub) setFilterSub(pt.sub);
+      }
+    } catch { /* noop */ }
   }, []);
 
   // ── 필터 ───────────────────────────────────────────────────────────────────
@@ -524,11 +534,20 @@ export default function EssayPage() {
           <div className="space-y-3 pt-4">
             {[
               { label: "교재", value: filterWorkbook, opts: workbooks,
-                set: (v: string) => { setFilterWorkbook(v); setFilterMid("전체"); setFilterSub("전체"); }},
+                set: (v: string) => {
+                  setFilterWorkbook(v); setFilterMid("전체"); setFilterSub("전체");
+                  try { localStorage.setItem('essay_last_path', JSON.stringify({ workbook: v, mid: '전체', sub: '전체' })); } catch { /* noop */ }
+                }},
               { label: "중분류", value: filterMid, opts: mids,
-                set: (v: string) => { setFilterMid(v); setFilterSub("전체"); }},
+                set: (v: string) => {
+                  setFilterMid(v); setFilterSub("전체");
+                  try { localStorage.setItem('essay_last_path', JSON.stringify({ workbook: filterWorkbook, mid: v, sub: '전체' })); } catch { /* noop */ }
+                }},
               { label: "소분류", value: filterSub, opts: subs,
-                set: (v: string) => setFilterSub(v) },
+                set: (v: string) => {
+                  setFilterSub(v);
+                  try { localStorage.setItem('essay_last_path', JSON.stringify({ workbook: filterWorkbook, mid: filterMid, sub: v })); } catch { /* noop */ }
+                }},
             ].map(({ label, value, opts, set }) => (
               <div key={label} className="relative">
                 <select value={value} onChange={e => set(e.target.value)}
