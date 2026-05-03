@@ -1346,21 +1346,17 @@ export default function WordTestPage() {
     const idsToMark = selectedSetId ? [selectedSetId] : selectedSetIds.filter(id => id !== WRONG_DRILL_ID);
     try {
       if (selectedSetId) {
-        // 단일 세트: gameWords가 해당 세트의 단어들
-        const synCount = gameWords.filter(w => w.testSynonym && w.synonyms.length > 0).length;
-        const antCount = gameWords.filter(w => w.testAntonym && w.antonyms.length > 0).length;
-        const totalWords = synCount + antCount;
+        // 단일 세트: 카드게임 통과 = 전체 단어 100% 처리
+        // gameWords.length를 total로 쓴 (synCount+antCount=0이면 세션이 total_questions:0으로 기록되어 세션이 무시되던 버그)
+        const totalWords = Math.max(gameWords.length, 1);
         const session = await createTestSession({ student_name: name, set_id: selectedSetId, total_questions: totalWords, test_type: 'card_game' });
         if (session?.id) await completeTestSession(session.id, totalWords);
       } else {
-        // 멀티세트: 각 set_id 별로 해당 세트의 단어수만 기록 (이중집계 방지)
+        // 멀티세트: 각 set_id 별로 해당 세트의 단어수만 기록
         for (const id of idsToMark) {
           const setWords = allSets.find(s => s.id === id)?.words || [];
-          const setSynCount = setWords.filter(w => w.testSynonym && w.synonyms.length > 0).length;
-          const setAntCount = setWords.filter(w => w.testAntonym && w.antonyms.length > 0).length;
-          const setTotal = setSynCount + setAntCount;
-          if (setTotal === 0) continue;
-          createTestSession({ student_name: name, set_id: id, total_questions: setTotal, test_type: 'card_game' })
+          const setTotal = Math.max(setWords.length, 1);
+          await createTestSession({ student_name: name, set_id: id, total_questions: setTotal, test_type: 'card_game' })
             .then(s => s?.id && completeTestSession(s.id, setTotal)).catch(() => {});
         }
       }

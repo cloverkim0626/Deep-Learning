@@ -35,7 +35,12 @@ export async function GET(req: NextRequest) {
 
     let gold = 0, silver = 0, bronze = 0;
 
-    for (const [, monthSessions] of Object.entries(byMonth)) {
+    // 현재 달은 아직 진행 중 → 제외. 지난 달까지 완료된 달만 집계
+    const now = new Date();
+    const currentMonthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+
+    for (const [monthKey, monthSessions] of Object.entries(byMonth)) {
+      if (monthKey >= currentMonthKey) continue; // 이번 달 이후는 제외
       // 해당 월의 학생별 점수 집계 (mvp/route.ts 동일 로직)
       const bestMap: Record<string, number> = {};
       monthSessions.forEach(s => {
