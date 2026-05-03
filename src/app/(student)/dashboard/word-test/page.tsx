@@ -810,9 +810,9 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
       <div className="flex flex-col h-full select-none"
         style={{
           background:`
-            radial-gradient(ellipse 70% 50% at 50% 20%, ${isSyn ? 'rgba(0,130,170,0.30)' : 'rgba(100,60,180,0.25)'} 0%, transparent 65%),
-            radial-gradient(ellipse 50% 40% at 80% 80%, rgba(0,60,100,0.20) 0%, transparent 60%),
-            linear-gradient(165deg, #030c19 0%, #040e1e 30%, #050d1c 60%, #060f20 100%)
+            radial-gradient(ellipse 80% 55% at 50% 15%, ${isSyn ? 'rgba(0,150,210,0.50)' : 'rgba(80,40,200,0.35)'} 0%, transparent 60%),
+            radial-gradient(ellipse 60% 45% at 15% 85%, rgba(0,100,180,0.30) 0%, transparent 55%),
+            linear-gradient(175deg, #051628 0%, #071e3a 30%, #061830 60%, #081e38 100%)
           `
         }}>
         <style>{`
@@ -879,54 +879,54 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
                   style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.05)'}}/>
               );
 
-              /* ── 물방울 카드 (SYN/ANT) ── */
+              /* ── 물방울 느낌 둥근 네모 카드 (SYN/ANT) ── */
               const dropletStyle: React.CSSProperties = {
-                borderRadius: '50% 50% 48% 48% / 55% 55% 45% 45%',
+                borderRadius: '16px 10px 16px 10px',
                 background: isWrong
-                  ? 'rgba(240,80,80,0.25)'
+                  ? 'rgba(240,80,80,0.22)'
                   : isSelected
-                  ? 'rgba(255,255,255,0.90)'
+                  ? 'rgba(255,255,255,0.92)'
                   : isSyn
-                  ? 'linear-gradient(160deg, rgba(0,200,240,0.32) 0%, rgba(0,120,180,0.18) 100%)'
-                  : 'linear-gradient(160deg, rgba(160,80,255,0.32) 0%, rgba(80,30,160,0.18) 100%)',
+                  ? 'linear-gradient(150deg, rgba(0,170,230,0.38) 0%, rgba(0,110,180,0.22) 100%)'
+                  : 'linear-gradient(150deg, rgba(140,70,255,0.38) 0%, rgba(70,20,160,0.22) 100%)',
                 border: isWrong
-                  ? '1.5px solid rgba(255,100,100,0.6)'
+                  ? '1.5px solid rgba(255,100,100,0.55)'
                   : isSelected
                   ? '1.5px solid rgba(255,255,255,0.95)'
-                  : `1.5px solid ${isSyn ? 'rgba(80,200,240,0.45)' : 'rgba(180,120,255,0.45)'}`,
-                color: isWrong ? '#fca5a5' : isSelected ? '#0a1628' : 'rgba(220,245,255,0.95)',
+                  : `1.5px solid ${isSyn ? 'rgba(50,190,240,0.50)' : 'rgba(160,100,255,0.50)'}`,
+                color: isWrong ? '#fca5a5' : isSelected ? '#0a1628' : 'rgba(215,245,255,0.95)',
                 boxShadow: isWrong
-                  ? '0 0 12px rgba(240,80,80,0.35)'
+                  ? '0 0 12px rgba(240,80,80,0.30)'
                   : isSelected
-                  ? `0 0 18px ${accentColor}55, inset 0 -3px 10px rgba(0,0,0,0.1)`
-                  : `0 4px 16px rgba(0,0,0,0.35), inset 0 -3px 8px rgba(0,100,150,0.2), 0 0 8px ${accentColor}22`,
+                  ? `0 0 16px ${accentColor}60, inset 0 1px 6px rgba(255,255,255,0.2)`
+                  : `0 4px 14px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.18), 0 0 6px ${accentColor}28`,
                 animation:`dropIn 0.35s cubic-bezier(.34,1.56,.64,1) ${ci*0.04}s both${isWrong ? ', wrongShake 0.35s ease' : ''}`,
-                backdropFilter: 'blur(4px)',
+                backdropFilter: 'blur(6px)',
                 position: 'relative',
                 overflow: 'hidden',
               };
 
-              /* ── 조약돌 카드 (WORD) ── */
+              /* ── 유리 네모 카드 (WORD) ── */
               const pebbleStyle: React.CSSProperties = {
-                borderRadius: '52% 48% 55% 45% / 45% 50% 50% 55%',
+                borderRadius: '12px 18px 12px 18px',
                 background: isWrong
-                  ? 'rgba(240,80,80,0.2)'
+                  ? 'rgba(240,80,80,0.18)'
                   : isSelected
                   ? 'rgba(255,255,255,0.92)'
-                  : 'linear-gradient(145deg, rgba(255,255,255,0.14) 0%, rgba(200,230,255,0.07) 100%)',
+                  : 'linear-gradient(145deg, rgba(255,255,255,0.16) 0%, rgba(180,220,255,0.08) 100%)',
                 border: isWrong
-                  ? '1.5px solid rgba(255,100,100,0.6)'
+                  ? '1.5px solid rgba(255,100,100,0.55)'
                   : isSelected
-                  ? '1.5px solid rgba(255,255,255,0.9)'
-                  : '1.5px solid rgba(160,210,240,0.28)',
-                color: isWrong ? '#fca5a5' : isSelected ? '#0a1628' : 'rgba(240,250,255,0.92)',
+                  ? '1.5px solid rgba(255,255,255,0.90)'
+                  : '1.5px solid rgba(150,210,240,0.32)',
+                color: isWrong ? '#fca5a5' : isSelected ? '#0a1628' : 'rgba(240,250,255,0.95)',
                 boxShadow: isWrong
-                  ? '0 0 12px rgba(240,80,80,0.3)'
+                  ? '0 0 12px rgba(240,80,80,0.28)'
                   : isSelected
-                  ? '0 0 20px rgba(160,210,240,0.4), inset 0 1px 4px rgba(255,255,255,0.2)'
-                  : '0 3px 12px rgba(0,0,0,0.4), inset 0 1px 3px rgba(255,255,255,0.12), inset 0 -2px 6px rgba(0,50,100,0.3)',
+                  ? '0 0 18px rgba(150,220,255,0.45), inset 0 1px 5px rgba(255,255,255,0.25)'
+                  : '0 3px 12px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.20), inset 0 -1px 4px rgba(0,60,120,0.25)',
                 animation:`dropIn 0.35s cubic-bezier(.34,1.56,.64,1) ${ci*0.04}s both${isWrong ? ', wrongShake 0.35s ease' : ''}`,
-                backdropFilter: 'blur(6px)',
+                backdropFilter: 'blur(8px)',
                 position: 'relative',
                 overflow: 'hidden',
               };
@@ -937,22 +937,22 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
                 <button key={card.id} onClick={() => handleCardClick(card.id)}
                   className="relative flex flex-col items-center justify-center p-1.5 text-center transition-all duration-200 active:scale-95 min-h-[58px]"
                   style={cardStyle}>
-                  {/* 물방울 상단 하이라이트 (SYN/ANT만) */}
+                  {/* 물방울 shimmer 하이라이트 (SYN/ANT) */}
                   {!card.isHeadword && !isWrong && !isSelected && (
                     <div style={{
-                      position:'absolute', top:'10%', left:'20%', right:'20%', height:'22%',
-                      background:'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 100%)',
-                      borderRadius:'50%',
+                      position:'absolute', top:'6%', left:'10%', right:'10%', height:'18%',
+                      background:'linear-gradient(180deg, rgba(255,255,255,0.52) 0%, rgba(255,255,255,0) 100%)',
+                      borderRadius:'8px',
                       filter:'blur(1px)',
                       animation:'shimmer 2.5s ease-in-out infinite',
                     }}/>
                   )}
-                  {/* 조약돌 표면 광택 (WORD만) */}
+                  {/* 유리 광택 (WORD) */}
                   {card.isHeadword && !isWrong && !isSelected && (
                     <div style={{
-                      position:'absolute', top:'8%', left:'15%', width:'35%', height:'18%',
-                      background:'linear-gradient(135deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0) 100%)',
-                      borderRadius:'50%',
+                      position:'absolute', top:'8%', left:'12%', width:'30%', height:'16%',
+                      background:'linear-gradient(135deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0) 100%)',
+                      borderRadius:'6px',
                       filter:'blur(1.5px)',
                     }}/>
                   )}
@@ -976,6 +976,77 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
     );
   }
 
+  /* ── round_result (유의어 통과 후 → 반의어 도전 안내) ── */
+  if (gamePhase === 'round_result' && synResult) {
+    const passed = synResult.passed;
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-white px-8 text-center gap-6"
+        style={{background:'linear-gradient(160deg, #041428 0%, #072040 50%, #052030 100%)'}}>
+        <div className="w-24 h-24 rounded-[1.8rem] flex items-center justify-center text-5xl"
+          style={{background:'rgba(0,140,200,0.25)', border:'1.5px solid rgba(80,200,240,0.4)', boxShadow:'0 0 30px rgba(0,140,200,0.3)'}}>
+          {passed ? '🎉' : '💧'}
+        </div>
+        <div>
+          <p className="text-[11px] font-light uppercase tracking-[3px] mb-1" style={{color:'rgba(80,200,240,0.6)'}}>유의어 라운드</p>
+          <h2 className="text-3xl font-semibold">{passed ? 'PASS!' : 'FAIL'}</h2>
+          <p className="text-[13px] mt-2" style={{color:'rgba(200,235,255,0.7)'}}>{passed ? '완벽해! 반의어도 도전해봐 🌊' : '아쉬워! 반의어도 도전해봐!'}</p>
+        </div>
+        <button onClick={() => { setCards(buildRound('antonym')); setCurrentRound('antonym'); setSelected([]); setWrong([]); setGamePhase('playing'); }}
+          className="h-14 px-10 font-semibold rounded-2xl text-[14px] hover:-translate-y-0.5 transition-all"
+          style={{background:'linear-gradient(135deg,rgba(0,140,200,0.8),rgba(0,100,160,0.9))', border:'1px solid rgba(80,200,240,0.4)', boxShadow:'0 0 20px rgba(0,140,200,0.35)'}}>
+          반의어 라운드 시작 →
+        </button>
+        <button onClick={onExit} className="text-[12px] font-light underline" style={{color:'rgba(255,255,255,0.35)'}}>종료</button>
+      </div>
+    );
+  }
+
+  /* ── final_result ── */
+  const synPassed = !synResult || synResult.passed;
+  const antPassed = !antResult || antResult.passed;
+  const overallPass = synPassed && antPassed;
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-white px-8 text-center gap-6"
+      style={{background: overallPass
+        ? 'linear-gradient(160deg, #041428 0%, #063050 40%, #0a4060 100%)'
+        : 'linear-gradient(160deg, #140a1e 0%, #1e1030 40%, #0d1428 100%)'}}>
+      <div className="w-28 h-28 rounded-[2rem] flex items-center justify-center text-6xl"
+        style={{
+          background: overallPass ? 'rgba(0,160,220,0.25)' : 'rgba(100,50,180,0.2)',
+          border: `1.5px solid ${overallPass ? 'rgba(80,200,240,0.4)' : 'rgba(180,120,255,0.35)'}`,
+          boxShadow: `0 0 40px ${overallPass ? 'rgba(0,140,200,0.35)' : 'rgba(120,60,200,0.3)'}`,
+          backdropFilter: 'blur(8px)',
+        }}>
+        {overallPass ? '🎉' : '🌊'}
+      </div>
+      <div>
+        <p className="text-[11px] font-light uppercase tracking-[3px] mb-1" style={{color: overallPass ? 'rgba(80,200,240,0.6)' : 'rgba(180,120,255,0.6)'}}>최종 결과</p>
+        <h2 className="text-4xl font-semibold">{overallPass ? 'PASS! 🎉' : 'FAIL'}</h2>
+        <p className="text-[13px] mt-2" style={{color:'rgba(200,235,255,0.7)'}}>{overallPass ? 'PASS 인장이 찍혔어요! 👏' : '한 번 더 연습하면 분명 통과할 수 있어!'}</p>
+      </div>
+      <div className="w-full max-w-xs space-y-2">
+        {synResult && (
+          <div className="flex items-center justify-between px-5 py-3 rounded-2xl"
+            style={{background:'rgba(255,255,255,0.08)', border:`1px solid ${synPassed ? 'rgba(80,200,240,0.3)' : 'rgba(255,120,120,0.3)'}`}}>
+            <span className="text-[13px] font-light">유의어 라운드</span>
+            <span className="text-[12px] font-semibold" style={{color: synPassed ? '#50c8eb' : '#fca5a5'}}>{synPassed ? 'PASS ✓' : 'FAIL ✗'}</span>
+          </div>
+        )}
+        {antResult && (
+          <div className="flex items-center justify-between px-5 py-3 rounded-2xl"
+            style={{background:'rgba(255,255,255,0.08)', border:`1px solid ${antPassed ? 'rgba(80,200,240,0.3)' : 'rgba(255,120,120,0.3)'}`}}>
+            <span className="text-[13px] font-light">반의어 라운드</span>
+            <span className="text-[12px] font-semibold" style={{color: antPassed ? '#50c8eb' : '#fca5a5'}}>{antPassed ? 'PASS ✓' : 'FAIL ✗'}</span>
+          </div>
+        )}
+      </div>
+      <button onClick={onExit}
+        className="h-14 px-10 font-semibold rounded-2xl text-[14px] hover:-translate-y-0.5 transition-all"
+        style={{background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.25)', boxShadow:'0 4px 20px rgba(0,0,0,0.3)'}}>
+        다시 선택
+      </button>
+    </div>
+  );
 } // end GameMode
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
