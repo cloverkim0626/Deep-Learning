@@ -144,7 +144,7 @@ function IntroScreen({
           <Trophy size={18} strokeWidth={1.5} />
         </div>
         <div className="flex-1">
-          <h1 className="text-[17px] font-black text-foreground">어휘 테스트</h1>
+          <h1 className="text-[17px] font-black" style={{ color: '#ffffff' }}>어휘 테스트</h1>
           <p className="text-[11px] text-accent/70 font-medium">
             <span className="text-teal-600 font-black">뜻고르기</span>
             <span className="mx-1 opacity-30">·</span>
@@ -214,9 +214,10 @@ function IntroScreen({
               onClick={() => toggle(s.id)}
               className={`relative w-full flex items-start gap-3 px-4 py-3.5 rounded-2xl border text-left transition-all ${
                 isSelected
-                  ? 'border-foreground/25 bg-foreground/[0.03] shadow-sm'
-                  : 'border-foreground/[0.09] bg-white/70 hover:border-foreground/20'
+                  ? 'border-indigo-400/60 shadow-md'
+                  : 'border-foreground/[0.09] bg-white/75 hover:border-foreground/20'
               }`}
+              style={isSelected ? { background: 'linear-gradient(135deg,rgba(64,93,230,0.22),rgba(131,58,180,0.18))', boxShadow: '0 0 0 1.5px rgba(100,130,255,0.4)' } : {}}
             >
               {/* 체크박스 */}
               <div className={`w-5 h-5 rounded-md border-2 mt-1 shrink-0 flex items-center justify-center transition-all ${
@@ -230,9 +231,9 @@ function IntroScreen({
               {/* 텍스트 3줄 */}
               <div className="flex-1 min-w-0" style={{ paddingRight: hasPassed ? '0' : '0' }}>
                 {/* 줄1: 출처 */}
-                <div className="text-[12px] font-semibold text-accent/60 truncate leading-snug">{source}</div>
+                <div className={`text-[12px] font-bold truncate leading-snug ${isSelected ? 'text-indigo-200' : 'text-foreground/60'}`}>{source}</div>
                 {/* 줄2: 제목 */}
-                <div className="text-[13px] font-black text-foreground mt-0.5 leading-snug">{s.label}</div>
+                <div className={`text-[13px] font-black mt-0.5 leading-snug ${isSelected ? 'text-white' : 'text-foreground'}`}>{s.label}</div>
                 {/* 줄3: 유·반 + 전체단어수 */}
                 <div className="flex items-center gap-1 mt-0.5">
                   {synCount > 0 && <span className="text-blue-600 font-bold text-[10.5px]">유{synCount}</span>}

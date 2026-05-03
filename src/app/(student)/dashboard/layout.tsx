@@ -6,6 +6,7 @@ import { BookOpen, PenTool, Bot, MessageCircle, CalendarPlus, Bell, LogOut, Volu
 import { useState, useEffect, useCallback } from "react";
 import { getClinicQueue, getTestSessionsByStudent, getQnaPosts, changeStudentPassword, updateStudentNickname, getStudentNickname } from "@/lib/database-service";
 import { getAssignmentsByStudent } from "@/lib/assignment-service";
+import { supabase } from "@/lib/supabase";
 
 const INITIAL_NOTIFICATIONS: { id: string; text: string; sub: string; unread: boolean; link: string }[] = [];
 
@@ -168,7 +169,10 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const [profile, setProfile] = useState({
     name: "학생",
     class: "소속 반 없음",
+    school: "",
+    grade: 0,
   });
+  const [medals, setMedals] = useState({ gold: 0, silver: 0, bronze: 0 });
 
   const [stats, setStats] = useState({
     clinicCount: 0,
@@ -191,7 +195,21 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     if (saved) {
       try {
         const data = JSON.parse(saved);
-        setProfile({ name: data.name || "학생", class: data.class || "소속 반 없음" });
+        setProfile({ name: data.name || "학생", class: data.class || "소속 반 없음", school: data.school || "", grade: data.grade || 0 });
+        // DB에서 최신 school/grade 조회
+        if (data.name) {
+          (async () => {
+            try {
+              const { data: stu } = await supabase.from('students').select('school, grade, class_name').eq('name', data.name).single();
+              if (stu) setProfile(p => ({ ...p, school: stu.school || '', grade: stu.grade || 0 }));
+            } catch { /* noop */ }
+          })();
+          // 메달 (MVP) 히스토리 조회
+          fetch(`/api/leaderboard/mvp-history?name=${encodeURIComponent(data.name)}`)
+            .then(r => r.json())
+            .then(d => setMedals(d.medals || { gold: 0, silver: 0, bronze: 0 }))
+            .catch(() => {});
+        }
         // 닉네임 로드 (localStorage 우선, DB 폴백)
         const savedNick = data.nickname || '';
         setNickname(savedNick);
@@ -586,9 +604,16 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           <div className="absolute inset-0 backdrop-blur-md" style={{ background: 'rgba(0,0,0,0.55)' }} onClick={() => { setShowProfile(false); setShowSettings(false); }} />
           <div className="absolute bottom-0 left-0 right-0 rounded-t-[2.8rem] overflow-y-auto max-h-[92vh] custom-scrollbar animate-in slide-in-from-bottom duration-500"
             style={{ background: 'linear-gradient(180deg,#0d0d1a 0%,#09090f 100%)', boxShadow: '0 -24px 80px rgba(0,0,0,0.6)' }}>
-            {/* IG 핸들 바 */}
-            <div className="flex justify-center pt-4 pb-1">
+            {/* 핸들 바 + 닫기 */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-1">
+              <button
+                onClick={() => { setShowProfile(false); setShowSettings(false); }}
+                className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95"
+                style={{ color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.08)' }}>
+                <X size={15} strokeWidth={2.5} />
+              </button>
               <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.2)' }} />
+              <div className="w-8" /> {/* 균형 spacer */}
             </div>
 
             {/* IG 프로필 헤더 */}
@@ -644,12 +669,53 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               </div>
 
 
-              {/* 이름 + 반 */}
-              <div className="mb-2">
-                <p className="text-[16px] font-black text-white leading-tight">{profile.name}</p>
-                <p className="text-[12px] font-bold mt-0.5" style={{ color: 'rgba(160,130,255,0.7)' }}>{profile.class}</p>
+              {/* 이름 + 반 + 학교 + 메달 */}
+              <div className="mt-3 mb-2">
+                <p className="text-[19px] font-black text-white leading-tight tracking-tight">{profile.name}</p>
+                {/* 반 + 학교 */}
+                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: 'rgba(140,100,255,0.18)', color: 'rgba(200,175,255,0.9)', border: '1px solid rgba(140,100,255,0.25)' }}>
+                    {profile.class}
+                  </span>
+                  {profile.school && (
+                    <span className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                      · {profile.school}
+                    </span>
+                  )}
+                </div>
+                {/* 연속 학습 */}
                 {streak > 0 && (
-                  <p className="text-[11px] font-bold mt-1" style={{ color: 'rgba(255,160,50,0.8)' }}>🔥 {streak}일 연속 학습 중</p>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="text-[13px]">🔥</span>
+                    <span className="text-[12px] font-black" style={{ color: 'rgba(255,170,50,0.95)' }}>
+                      {streak}일 연속 학습 중
+                    </span>
+                  </div>
+                )}
+                {/* 메달 */}
+                {(medals.gold > 0 || medals.silver > 0 || medals.bronze > 0) && (
+                  <div className="flex items-center gap-2.5 mt-2">
+                    {medals.gold > 0 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[14px]">🥇</span>
+                        <span className="text-[11px] font-black" style={{ color: '#fbbf24' }}>{medals.gold}회</span>
+                      </div>
+                    )}
+                    {medals.silver > 0 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[14px]">🥈</span>
+                        <span className="text-[11px] font-black" style={{ color: '#94a3b8' }}>{medals.silver}회</span>
+                      </div>
+                    )}
+                    {medals.bronze > 0 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[14px]">🥉</span>
+                        <span className="text-[11px] font-black" style={{ color: '#cd7f32' }}>{medals.bronze}회</span>
+                      </div>
+                    )}
+                    <span className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.30)' }}>월간 리더보드</span>
+                  </div>
                 )}
               </div>
             </div>
@@ -1120,7 +1186,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto w-full pb-[100px]">
+      <main className="flex-1 overflow-y-auto w-full pb-[100px] flex flex-col">
         {children}
       </main>
 

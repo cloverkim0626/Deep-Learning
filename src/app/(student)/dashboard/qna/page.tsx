@@ -191,7 +191,7 @@ export default function QnAPage() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-transparent animate-in fade-in duration-500">
+    <div className="flex flex-col min-h-0 flex-1 bg-transparent animate-in fade-in duration-500">
 
       {/* 헤더 */}
       <div className="px-5 pt-6 pb-4 shrink-0 flex items-center justify-between"
@@ -208,7 +208,7 @@ export default function QnAPage() {
       </div>
 
       {/* 포스트 목록 */}
-      <div className="flex-1 overflow-y-auto px-4 custom-scrollbar pb-10 flex flex-col gap-3 pt-3">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 custom-scrollbar pb-10 pt-3" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignContent: 'flex-start' }}>
         {isLoading ? (
           <div className="text-center py-20 font-bold animate-pulse" style={{ color: "rgba(255,255,255,0.4)" }}>불러오는 중...</div>
         ) : posts.length === 0 ? (

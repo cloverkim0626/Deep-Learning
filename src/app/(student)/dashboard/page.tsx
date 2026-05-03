@@ -479,7 +479,7 @@ export default function VocabDashboard() {
               className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl glass border border-foreground/5 shadow-sm hover:border-foreground/20 transition-all text-left"
             >
               <div>
-                <span className="text-[9px] font-black text-accent uppercase tracking-widest mb-0.5 block">현재 배당된 지문</span>
+                <span className="text-[9px] font-black uppercase tracking-widest mb-0.5 block" style={{ color: 'rgba(180,155,255,0.75)' }}>현재 배당된 지문</span>
                 <div className="flex items-center gap-2">
                   <span className="text-[14px] font-bold text-foreground">
                     {currentSet ? currentSet.label : "배당된 세트가 없습니다."}
@@ -489,7 +489,7 @@ export default function VocabDashboard() {
                   ) : null; })()}
                 </div>
                 {currentSet && (
-                  <div className="text-[10px] text-accent mt-0.5">
+                  <div className="text-[11px] font-bold mt-0.5" style={{ color: 'rgba(220,200,255,0.80)' }}>
                     {[currentSet.workbook, currentSet.chapter, currentSet.passageNumber].filter(Boolean).join(' · ')}
                   </div>
                 )}
