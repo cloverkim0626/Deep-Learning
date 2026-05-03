@@ -369,16 +369,16 @@ function AddHomeworkModal({ session, allStudents, onClose, onAdded }: {
                   <label className="text-[9px] font-black text-amber-700 uppercase tracking-widest block">🎯 단어테스트 설정</label>
                   <input value={item.test_range} onChange={e => updateItem(item.id, { test_range: e.target.value })}
                     placeholder="범위 (예: L1-5 동의어)" className="w-full h-9 px-3 rounded-xl border border-amber-200 bg-white text-[12px] outline-none" />
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={item.is_pf} onChange={e => updateItem(item.id, { is_pf: e.target.checked, pass_score: '' })} className="rounded" />
+                    <span className="text-[11px] font-bold text-amber-700">P/F 방식 활성화 (점수 입력 → 자동 합격 판정)</span>
+                  </label>
                   <div className="flex gap-2">
                     <input type="number" value={item.max_score} onChange={e => updateItem(item.id, { max_score: e.target.value })}
                       placeholder="만점" className="flex-1 h-9 px-3 rounded-xl border border-amber-200 bg-white text-[12px] outline-none" />
-                    {!item.is_pf && <input type="number" value={item.pass_score} onChange={e => updateItem(item.id, { pass_score: e.target.value })}
-                      placeholder="통과기준" className="flex-1 h-9 px-3 rounded-xl border border-amber-200 bg-white text-[12px] outline-none" />}
+                    {item.is_pf && <input type="number" value={item.pass_score} onChange={e => updateItem(item.id, { pass_score: e.target.value })}
+                      placeholder="합격기준점" className="flex-1 h-9 px-3 rounded-xl border border-amber-300 bg-amber-50 text-[12px] outline-none font-bold" />}
                   </div>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={item.is_pf} onChange={e => updateItem(item.id, { is_pf: e.target.checked })} className="rounded" />
-                    <span className="text-[11px] font-bold text-amber-700">P/F 방식으로 기록</span>
-                  </label>
                 </div>
               )}
             </div>
@@ -1312,7 +1312,11 @@ function TestResultPopup({ slot, studentName, existingCheck, onClose, onSaved }:
             </div>
             <button onClick={onClose} style={{color:'#6366f1',background:'rgba(99,102,241,0.15)',borderRadius:'8px',padding:'6px'}}><X size={14}/></button>
           </div>
-          {slot.is_pf && slot.pass_score && <p style={{fontSize:'11px',color:'#a5b4fc',marginTop:'8px'}}>\uD569격기준: {slot.pass_score}점{slot.max_score ? ` / ${slot.max_score}점` : ''}</p>}
+          {slot.is_pf && slot.pass_score && (
+            <div style={{marginTop:'8px',padding:'6px 10px',borderRadius:'8px',background:'rgba(99,102,241,0.2)'}}>
+              <p style={{fontSize:'11px',color:'#c7d2fe'}}>합격기준 <span style={{fontSize:'14px',fontWeight:500,color:'#fff'}}>{slot.pass_score}점</span> {slot.max_score ? `/ 만점 ${slot.max_score}점` : ''}</p>
+            </div>
+          )}
         </div>
 
         <div style={{padding:'16px 20px'}} className="space-y-3">
