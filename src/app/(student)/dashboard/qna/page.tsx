@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Send, MessageCircle, Plus, X, Trash2, Pencil, Check } from "lucide-react";
+import { Send, MessageCircle, Plus, X, Trash2, Pencil, Check, ChevronRight } from "lucide-react";
 import {
   getQnaPosts, createQnaPost, addQnaAnswer,
   deleteQnaPost, updateQnaPost,
