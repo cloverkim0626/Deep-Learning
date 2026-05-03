@@ -1261,18 +1261,37 @@ function TestResultPopup({ slot, studentName, existingCheck, onClose, onSaved }:
   onClose: () => void; onSaved: (check: HomeworkCheck) => void;
 }) {
   const [score, setScore] = useState(existingCheck?.score?.toString() || '');
-  const [isPass, setIsPass] = useState<boolean | null>(existingCheck?.is_pass ?? null);
   const [absent, setAbsent] = useState(existingCheck?.status === 'skipped');
-  const [absentReason, setAbsentReason] = useState(existingCheck?.delay_reason || '결석');
+  const [absentReason, setAbsentReason] = useState(existingCheck?.delay_reason || '');
   const [rolloverDate, setRolloverDate] = useState(existingCheck?.rollover_date || '');
   const [saving, setSaving] = useState(false);
+  // Fail 처리방식: 'oral' = 구두재시완료, 'retake' = 추후재응시, 'absent' = 당일결석/지각-추후재응시
+  const [failMode, setFailMode] = useState<'oral'|'retake'|null>(existingCheck?.delay_reason as any || null);
+  const [retakeDate, setRetakeDate] = useState(existingCheck?.rollover_date || '');
+
+  const numScore = score ? Number(score) : null;
+  const isAutoPass = slot.is_pf && slot.pass_score && numScore != null ? numScore >= slot.pass_score : null;
+  const pct = numScore != null && slot.max_score ? Math.round(numScore / slot.max_score * 100) : null;
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const payload = absent
-        ? { slot_id: slot.id, student_name: studentName, status: 'skipped' as HwStatus, delay_reason: absentReason, rollover_date: rolloverDate || null }
-        : { slot_id: slot.id, student_name: studentName, status: 'done' as HwStatus, score: score ? Number(score) : null, is_pass: slot.is_pf ? isPass : (slot.pass_score && score ? Number(score) >= slot.pass_score : null) };
+      let payload: Parameters<typeof upsertHomeworkCheck>[0];
+      if (absent) {
+        payload = { slot_id: slot.id, student_name: studentName, status: 'skipped', delay_reason: absentReason || '미응시', rollover_date: rolloverDate || null };
+      } else if (slot.is_pf && isAutoPass === false && failMode) {
+        // Fail 케이스
+        payload = {
+          slot_id: slot.id, student_name: studentName,
+          status: failMode === 'oral' ? 'done' : 'delayed',
+          score: numScore, is_pass: false,
+          delay_reason: failMode === 'oral' ? '구두재시완료' : '추후재응시',
+          rollover_date: failMode === 'retake' ? retakeDate || null : null,
+        };
+      } else {
+        const autoPass = slot.is_pf && slot.pass_score && numScore != null ? numScore >= slot.pass_score : null;
+        payload = { slot_id: slot.id, student_name: studentName, status: 'done', score: numScore, is_pass: autoPass };
+      }
       await upsertHomeworkCheck(payload);
       onSaved({ ...(existingCheck || {} as HomeworkCheck), ...payload });
     } catch (e) { alert((e as Error).message); }
@@ -1280,58 +1299,116 @@ function TestResultPopup({ slot, studentName, existingCheck, onClose, onSaved }:
   };
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[400] flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="glass w-full max-w-sm rounded-2xl border border-blue-200 shadow-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-[14px] font-black text-foreground">🎯 테스트 결과 기록</h3>
-            <p className="text-[11px] text-accent">{studentName} · {slot.title}</p>
-            {slot.test_range && <p className="text-[10px] text-accent/70">범위: {slot.test_range}</p>}
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[400] flex items-center justify-center p-4"
+      style={{fontFamily:'var(--font-jakarta),-apple-system,sans-serif'}}>
+      <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
+        {/* 헤더 */}
+        <div style={{background:'#1e1b4b',padding:'16px 20px'}}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p style={{fontSize:'12px',color:'#a5b4fc',fontWeight:500,marginBottom:'2px'}}>테스트 결과 기록</p>
+              <p style={{fontSize:'15px',color:'#fff',fontWeight:500,letterSpacing:'-0.02em'}}>{studentName}</p>
+              <p style={{fontSize:'12px',color:'#818cf8',marginTop:'2px'}}>{slot.title}{slot.test_range ? ` · ${slot.test_range}` : ''}</p>
+            </div>
+            <button onClick={onClose} style={{color:'#6366f1',background:'rgba(99,102,241,0.15)',borderRadius:'8px',padding:'6px'}}><X size={14}/></button>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-foreground/5 text-accent"><X size={14} /></button>
+          {slot.is_pf && slot.pass_score && <p style={{fontSize:'11px',color:'#a5b4fc',marginTop:'8px'}}>\uD569격기준: {slot.pass_score}점{slot.max_score ? ` / ${slot.max_score}점` : ''}</p>}
         </div>
-        <div className="space-y-3">
+
+        <div style={{padding:'16px 20px'}} className="space-y-3">
+          {/* 미응시 */}
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={absent} onChange={e => setAbsent(e.target.checked)} className="w-4 h-4 rounded" />
-            <span className="text-[12px] font-bold text-rose-600">미응시</span>
+            <span style={{fontSize:'13px',fontWeight:500,color:'#dc2626'}}>미응시 (결석/지각)</span>
           </label>
+
           {absent ? (
             <div className="space-y-2">
-              <div className="grid grid-cols-3 gap-1.5">
-                {['결석', '미암기', '기타'].map(r => (
+              <div className="grid grid-cols-2 gap-2">
+                {['결석','지각'].map(r => (
                   <button key={r} onClick={() => setAbsentReason(r)}
-                    className={`py-1.5 rounded-xl text-[11px] font-black border-2 ${absentReason === r ? 'bg-rose-500 text-white border-rose-500' : 'border-rose-200 text-rose-600'}`}>{r}</button>
+                    style={{padding:'8px',borderRadius:'10px',fontSize:'12px',fontWeight:500,
+                      border: absentReason===r ? '2px solid #dc2626' : '1.5px solid #fca5a5',
+                      background: absentReason===r ? '#fee2e2' : '#fff',
+                      color: absentReason===r ? '#dc2626' : '#f87171'}}>{r}</button>
                 ))}
               </div>
-              <input type="date" value={rolloverDate} onChange={e => setRolloverDate(e.target.value)} placeholder="이월 일자"
-                className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none" />
+              <div>
+                <p style={{fontSize:'11px',color:'#94a3b8',marginBottom:'4px'}}>재응시 예정일</p>
+                <input type="date" value={rolloverDate} onChange={e => setRolloverDate(e.target.value)}
+                  style={{width:'100%',height:'38px',padding:'0 12px',borderRadius:'10px',border:'1.5px solid #e2e8f0',fontSize:'13px',outline:'none',fontFamily:'inherit'}} />
+              </div>
             </div>
           ) : (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <input type="number" value={score} onChange={e => setScore(e.target.value)}
-                  placeholder="점수" max={slot.max_score || undefined}
-                  className="flex-1 h-10 px-3 rounded-xl border border-blue-200 bg-white text-[13px] font-bold outline-none text-center" />
-                {slot.max_score && <span className="text-[13px] font-black text-accent">/ {slot.max_score}</span>}
+            <div className="space-y-3">
+              {/* 점수 입력 */}
+              <div>
+                <p style={{fontSize:'11px',color:'#94a3b8',marginBottom:'4px'}}>득점</p>
+                <div className="flex items-center gap-2">
+                  <input type="number" value={score} onChange={e => setScore(e.target.value)}
+                    placeholder="0" max={slot.max_score || undefined}
+                    style={{flex:1,height:'44px',padding:'0 12px',borderRadius:'10px',border:'1.5px solid #c7d2fe',fontSize:'18px',fontWeight:300,outline:'none',textAlign:'center',letterSpacing:'-0.02em',fontFamily:'inherit'}} />
+                  {slot.max_score && <span style={{fontSize:'14px',color:'#94a3b8'}}>/ {slot.max_score}</span>}
+                  {pct != null && <span style={{fontSize:'12px',color:'#6366f1',minWidth:'36px',textAlign:'right'}}>({pct}%)</span>}
+                </div>
               </div>
-              {slot.is_pf && (
-                <div className="flex gap-2">
-                  <button onClick={() => setIsPass(true)} className={`flex-1 py-2 rounded-xl text-[12px] font-black border-2 ${isPass === true ? 'bg-emerald-500 text-white border-emerald-500' : 'border-emerald-200 text-emerald-600'}`}>Pass</button>
-                  <button onClick={() => setIsPass(false)} className={`flex-1 py-2 rounded-xl text-[12px] font-black border-2 ${isPass === false ? 'bg-rose-500 text-white border-rose-500' : 'border-rose-200 text-rose-600'}`}>Fail</button>
+
+              {/* 자동 P/F 판정 */}
+              {slot.is_pf && numScore != null && (
+                <div style={{padding:'10px 12px',borderRadius:'10px',
+                  background: isAutoPass ? '#f0fdf4' : '#fef2f2',
+                  border: `1.5px solid ${isAutoPass ? '#86efac' : '#fca5a5'}`
+                }}>
+                  <p style={{fontSize:'13px',fontWeight:600,
+                    color: isAutoPass ? '#166534' : '#dc2626'}}>
+                    {isAutoPass ? '✅ PASS' : `❌ FAIL (기준 ${slot.pass_score}점)`}
+                  </p>
+                  {/* Fail일 때 처리방식 선택 */}
+                  {!isAutoPass && (
+                    <div className="mt-2 space-y-1.5">
+                      <p style={{fontSize:'10px',color:'#f87171',fontWeight:500}}>처리 방식 선택</p>
+                      <div className="flex gap-2">
+                        {[{k:'oral',l:'구두재시 완료'},{k:'retake',l:'추후 재응시'}].map(({k,l}) => (
+                          <button key={k} onClick={() => setFailMode(k as any)}
+                            style={{flex:1,padding:'6px 4px',borderRadius:'8px',fontSize:'11px',fontWeight:500,
+                              border: failMode===k ? '2px solid #dc2626' : '1.5px solid #fca5a5',
+                              background: failMode===k ? '#fee2e2' : '#fff',
+                              color: failMode===k ? '#dc2626' : '#f87171'}}>{l}</button>
+                        ))}
+                      </div>
+                      {failMode === 'retake' && (
+                        <div>
+                          <p style={{fontSize:'10px',color:'#94a3b8',marginBottom:'3px'}}>재응시 예정일</p>
+                          <input type="date" value={retakeDate} onChange={e => setRetakeDate(e.target.value)}
+                            style={{width:'100%',height:'36px',padding:'0 10px',borderRadius:'8px',border:'1.5px solid #e2e8f0',fontSize:'12px',outline:'none',fontFamily:'inherit'}} />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
-              {slot.pass_score && !slot.is_pf && score && (
-                <p className={`text-[11px] font-black text-center ${Number(score) >= slot.pass_score ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {Number(score) >= slot.pass_score ? '✅ 통과' : `❌ 미통과 (기준: ${slot.pass_score}점)`}
+
+              {/* 일반 통과 기준 (is_pf 아닐 때) */}
+              {!slot.is_pf && slot.pass_score && score && (
+                <p style={{fontSize:'12px',fontWeight:500,textAlign:'center',
+                  color: Number(score)>=slot.pass_score ? '#166534' : '#dc2626'}}>
+                  {Number(score)>=slot.pass_score ? '✅ 통과' : `❌ 미통과 (기준: ${slot.pass_score}점)`}
                 </p>
               )}
             </div>
           )}
         </div>
-        <div className="flex gap-2 mt-4">
-          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-foreground/10 text-[12px] font-black text-accent">취소</button>
-          <button onClick={handleSave} disabled={saving || (!absent && !score && isPass === null)}
-            className="flex-1 h-10 rounded-xl bg-blue-600 text-white text-[12px] font-black hover:-translate-y-0.5 transition-all disabled:opacity-30">
+
+        <div style={{padding:'0 20px 16px 20px',display:'flex',gap:'8px'}}>
+          <button onClick={onClose}
+            style={{flex:1,height:'42px',borderRadius:'10px',border:'1.5px solid #e2e8f0',fontSize:'13px',color:'#94a3b8',fontFamily:'inherit'}}>
+            취소
+          </button>
+          <button onClick={handleSave} disabled={saving ||
+            (!absent && !score) ||
+            (slot.is_pf && !absent && numScore != null && isAutoPass === false && !failMode)}
+            style={{flex:2,height:'42px',borderRadius:'10px',background:'#1e1b4b',color:'#fff',fontSize:'13px',fontWeight:500,fontFamily:'inherit',
+              opacity: (saving || (!absent && !score) || (slot.is_pf && !absent && numScore!=null && isAutoPass===false && !failMode)) ? 0.35 : 1}}>
             {saving ? '저장 중...' : '기록 완료'}
           </button>
         </div>
@@ -1505,7 +1582,8 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
     extra: Partial<{ late_reason: string; late_arrival_time: string; makeup_type: MakeupType; makeup_date: string | null; makeup_video_date: string | null }>
   ) => {
     if (!popup.session) { alert("수업 기록을 먼저 시작해주세요."); return; }
-    await upsertAttendance({ session_id: popup.session.id, student_name: popup.studentName, status, ...extra });
+    await upsertAttendance({ session_id: popup.session.id, student_name: popup.studentName, status, ...extra,
+      note: (extra as any).note ?? undefined });
     setWeekData(prev => {
       if (!prev || !popup.session) return prev;
       const map = { ...prev.attMap, [popup.date]: { ...(prev.attMap[popup.date] || {}) } };
@@ -1927,7 +2005,47 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                     </div>
                                   );
                                 })}
-
+                              {/* 테스트 영역은 오른쪽에 별도 렌더링 - 여기서는 안 듸 */}
+                              </div>
+                              {/* 오른쪽 30%: 테스트 영역 */}
+                              <div className="border-l border-slate-100 py-1 px-1 space-y-1"
+                                style={{width:'30%',minWidth:'52px',flexShrink:0}}>
+                                {myTests.length === 0 && (
+                                  <div style={{height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                    <span style={{fontSize:'9px',color:'#e2e8f0'}}>—</span>
+                                  </div>
+                                )}
+                                {myTests.map(slot=>{
+                                  const chk=weekData.checks[slot.id]?.[stu.student_name];
+                                  const pct = chk?.score != null && slot.max_score ? Math.round(chk.score/slot.max_score*100) : null;
+                                  const isPass = slot.is_pf && slot.pass_score && chk?.score != null ? chk.score >= slot.pass_score : chk?.is_pass;
+                                  return(
+                                    <div key={slot.id}
+                                      onClick={()=>setTestResultPopup({slot,studentName:stu.student_name,existingCheck:chk||null})}
+                                      style={{cursor:'pointer',padding:'4px 6px',borderRadius:'8px',border:'1px solid',
+                                        borderColor: chk?.score!=null||chk?.is_pass!=null ? '#c7d2fe' : '#fde68a',
+                                        background: chk?.score!=null||chk?.is_pass!=null ? '#eef2ff' : '#fffbeb',
+                                      }}>
+                                      <div style={{fontSize:'9px',fontWeight:500,color:'#6366f1',marginBottom:'1px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{slot.title}</div>
+                                      {chk?.score!=null && (
+                                        <div style={{fontSize:'12px',fontWeight:400,color:'#3730a3',letterSpacing:'-0.02em'}}>
+                                          {chk.score}{slot.max_score?`/${slot.max_score}`:''}
+                                          {pct!=null && <span style={{fontSize:'9px',color:'#818cf8',marginLeft:'2px'}}>({pct}%)</span>}
+                                        </div>
+                                      )}
+                                      {(isPass!=null) && (
+                                        <span style={{fontSize:'9px',fontWeight:600,padding:'0px 4px',borderRadius:'3px',
+                                          background: isPass ? '#dcfce7' : '#fee2e2',
+                                          color: isPass ? '#166534' : '#991b1b'}}>
+                                          {isPass ? 'P' : 'F'}
+                                        </span>
+                                      )}
+                                      {chk?.delay_reason && (
+                                        <div style={{fontSize:'9px',color:'#f87171'}}>{chk.delay_reason}</div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           ) : (
