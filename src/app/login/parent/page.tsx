@@ -70,7 +70,7 @@ export default function ParentLoginPage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
       style={{
-        backgroundImage: "url('/forest-window.jpg')",
+        backgroundImage: "url('/parent-bg.png')",
         backgroundSize: 'cover',
         backgroundPosition: 'center top',
         backgroundRepeat: 'no-repeat',
