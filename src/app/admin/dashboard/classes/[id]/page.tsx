@@ -67,7 +67,7 @@ type AttPopup = {
   makeupDate?: string;
 };
 
-type AttRow = { late_reason: string; late_arrival_time: string; makeup_type: MakeupType; makeup_date: string | null; makeup_video_date: string | null };
+type AttRow = { late_reason: string; late_arrival_time: string; makeup_type: MakeupType; makeup_date: string | null; makeup_video_date: string | null; note?: string };
 
 function AttendancePopup({ popup, onClose, onSave, onQuickSave }: {
   popup: AttPopup;
@@ -82,13 +82,15 @@ function AttendancePopup({ popup, onClose, onSave, onQuickSave }: {
     setSaving(true);
     try {
       if (status === 'present') { await onQuickSave('present'); return; }
-      // 상태별 관련없는 필드는 null/빈값으로 명시 초기화
       await onSave(status, {
         late_reason:        status === 'late'   ? (state.lateReason || '') : '',
         late_arrival_time:  status === 'late'   ? (state.lateTime   || '') : '',
         makeup_type:        status === 'absent' ? ((state.makeupType as MakeupType) || '') : '',
         makeup_date:        status === 'absent' && state.makeupType === 'direct' ? (state.makeupDate || null) : null,
         makeup_video_date:  status === 'absent' && state.makeupType === 'video'  ? (state.makeupDate || null) : null,
+        // 대면보강 시간은 note 필드에 저장 (별도 컬럼 없음)
+        note: status === 'absent' && state.makeupType === 'direct' && (state as any).makeupTime
+          ? `time:${(state as any).makeupTime}` : undefined,
       } as Partial<AttRow>);
     } finally { setSaving(false); }
   };
@@ -175,6 +177,15 @@ function AttendancePopup({ popup, onClose, onSave, onQuickSave }: {
                 <input type="date" value={state.makeupDate || ''} onChange={e => setState(s => ({ ...s, makeupDate: e.target.value }))}
                   className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none"
                   style={{fontFamily:'inherit'}} />
+                {state.makeupType === 'direct' && (
+                  <>
+                    <label className="text-[9px] font-bold text-accent uppercase">보강 시간</label>
+                    <input type="time" value={(state as any).makeupTime || ''}
+                      onChange={e => setState(s => ({ ...s, makeupTime: e.target.value } as any))}
+                      className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none"
+                      style={{fontFamily:'inherit'}} />
+                  </>
+                )}
               </div>
             )}
             <button onClick={() => save('absent')} disabled={saving}
@@ -1815,15 +1826,17 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                               <div className="flex-1 min-w-0 py-1 px-1 space-y-0.5">
 
                                 {/* 검사일이 오늘인 과제만 표시 (배당일만인 과제는 숨김) */}
-                                {checkSlots.map(slot => {
+                              {checkSlots.map(slot => {
                                   const chk = weekData.checks[slot.id]?.[stu.student_name];
-                                  const isDone = chk?.status === 'done' || chk?.status === 'done_partial';
+                                  const isDone = chk?.status === 'done';
+                                  const isDonePartial = chk?.status === 'done_partial';
                                   const isDelayed = chk?.status === 'delayed';
+                                  const isAnyDone = isDone || isDonePartial;
                                   return (
                                     <div key={slot.id} className="flex items-center gap-0.5">
                                       <button
                                         onClick={() => {
-                                          if (isDone) {
+                                          if (isAnyDone) {
                                             upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: 'pending' });
                                             setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id]||{}), [stu.student_name]: { ...(chk||{}), slot_id: slot.id, student_name: stu.student_name, status: 'pending' } as HomeworkCheck } } } : prev);
                                           } else {
@@ -1831,13 +1844,19 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                           }
                                         }}
                                         className={`hw-item flex-1 text-left truncate ${
-                                          isDone    ? 'done'    :
-                                          chk?.status === 'done_partial' ? 'partial' :
-                                          isDelayed ? 'delayed' : ''
+                                          isDone        ? 'done'    :
+                                          isDonePartial ? 'partial' :
+                                          isDelayed     ? 'delayed' : ''
                                         }`}>
-                                        {isDone ? '✓ ' : isDelayed ? '⏩ ' : ''}{slot.title}
+                                        {isAnyDone && <span className="line-through">{slot.title}</span>}
+                                        {isAnyDone && (
+                                          <span style={{fontSize:'10px',marginLeft:'4px',opacity:0.6,fontStyle:'italic',textDecoration:'none'}}>
+                                            {isDone ? '등원후' : '완료후'}
+                                          </span>
+                                        )}
+                                        {!isAnyDone && <>{isDelayed ? '⏩ ' : ''}{slot.title}</>}
                                       </button>
-                                      {!isDone && (
+                                      {!isAnyDone && (
                                         <button onClick={() => setRolloverPopup({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk||null })}
                                           style={{flexShrink:0,width:'18px',height:'18px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'6px',fontSize:'11px',color:'#aeaeb2',transition:'all 0.15s'}}>
                                           →
@@ -1871,16 +1890,40 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                   );
                                 })}
 
-                                {/* 테스트 */}
+                                {/* 테스트 - 세부 정보 표시 */}
                                 {myTests.map(slot=>{
                                   const chk=weekData.checks[slot.id]?.[stu.student_name];
+                                  const pct = chk?.score != null && slot.max_score ? Math.round(chk.score/slot.max_score*100) : null;
                                   return(
-                                    <div key={slot.id} className="flex items-center gap-0.5">
-                                      <div className={`flex-1 px-1.5 py-0.5 rounded text-[12px] font-bold truncate ${chk?.score!=null||chk?.is_pass!=null?'bg-indigo-50 text-indigo-700':'bg-amber-50 text-amber-700'}`}>
-                                        🎯{chk?.score!=null?` ${chk.score}${slot.max_score?`/${slot.max_score}`:''}`:slot.is_pf?(chk?.is_pass!=null?(chk.is_pass?' P':' F'):''): ''}
+                                    <div key={slot.id} className="mt-0.5">
+                                      <div className={`px-1.5 py-1 rounded-lg border text-[11px] ${
+                                        chk?.score!=null||chk?.is_pass!=null ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-200'
+                                      }`}>
+                                        <div className="flex items-center justify-between">
+                                          <span style={{fontWeight:500,color:'#3730a3',fontSize:'11px'}}>테스트</span>
+                                          <button onClick={()=>setTestResultPopup({slot,studentName:stu.student_name,existingCheck:chk||null})}
+                                            style={{fontSize:'10px',color:'#6366f1',padding:'0 4px',borderRadius:'4px',background:'#eef2ff'}}>✎</button>
+                                        </div>
+                                        <div style={{fontSize:'11px',color:'#1e1b4b',marginTop:'2px',fontWeight:400}}>{slot.title}</div>
+                                        {(chk?.score!=null || chk?.is_pass!=null) && (
+                                          <div style={{display:'flex',gap:'6px',alignItems:'center',marginTop:'3px',flexWrap:'wrap'}}>
+                                            {chk.score!=null && (
+                                              <span style={{fontSize:'13px',fontWeight:500,color:'#4338ca'}}>
+                                                {chk.score}{slot.max_score ? `/${slot.max_score}` : ''}
+                                              </span>
+                                            )}
+                                            {pct!=null && <span style={{fontSize:'10px',color:'#6366f1'}}>({pct}%)</span>}
+                                            {slot.is_pf && chk.is_pass!=null && (
+                                              <span style={{fontSize:'10px',fontWeight:600,padding:'1px 6px',borderRadius:'4px',
+                                                background: chk.is_pass ? '#dcfce7' : '#fee2e2',
+                                                color: chk.is_pass ? '#166534' : '#991b1b'
+                                              }}>
+                                                {chk.is_pass ? 'PASS' : 'FAIL'}
+                                              </span>
+                                            )}
+                                          </div>
+                                        )}
                                       </div>
-                                      <button onClick={()=>setTestResultPopup({slot,studentName:stu.student_name,existingCheck:chk||null})}
-                                        className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100">✎</button>
                                     </div>
                                   );
                                 })}
@@ -1911,7 +1954,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                             <div className="space-y-1.5 min-w-[150px]">
                               {/* 과제 목록 통합 박스 */}
                               {(() => {
-                                const allSlots = slots.filter(s => s.hw_type !== 'test_prep');
+                                const allSlots = slots.filter(s => s.hw_type !== 'test_prep' && s.hw_type !== 'vocab_test');
                                 const globalSlots = allSlots.filter(s => (weekData.slotStudents[s.id] || []).length === 0);
                                 const indivSlots = allSlots.filter(s => (weekData.slotStudents[s.id] || []).length > 0);
                                 if (allSlots.length === 0) return null;
@@ -2021,7 +2064,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             )}
 
-            {/* 결석: 보강 방식 + 날짜 */}
+            {/* 결석: 보강 방식 + 날짜 + 시간 */}
             {attDetailModal.makeupType && (
               <div className={`mb-4 p-3 rounded-xl border ${
                 attDetailModal.makeupType === 'direct' ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50 border-slate-200'
@@ -2035,6 +2078,11 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                   </p>
                 ) : (
                   <p style={{fontSize:'13px',color:'#818cf8'}}>날짜 미지정</p>
+                )}
+                {(attDetailModal as any).makeupTime && (
+                  <p style={{fontSize:'18px',fontWeight:300,color:'#6366f1',letterSpacing:'-0.02em',marginTop:'4px'}}>
+                    {(attDetailModal as any).makeupTime}
+                  </p>
                 )}
               </div>
             )}
