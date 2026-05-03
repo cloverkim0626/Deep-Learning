@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Send, Sparkles, Loader2, MessageSquare, RotateCcw, BookOpen, ChevronDown } from "lucide-react";
@@ -355,7 +355,7 @@ export default function AITeacherPage() {
                       ? 'rounded-[1.4rem] rounded-bl-sm font-medium'
                       : 'rounded-[1.4rem] rounded-br-sm font-medium'
                   }`} style={msg.sender === 'ai'
-                    ? { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(8px)' }
+                    ? { background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', color: '#1a1a2e', boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }
                     : { background: 'linear-gradient(135deg,#405DE6,#833AB4)', color: '#fff', boxShadow: '0 4px 20px rgba(64,93,230,0.35)' }}>
                     {msg.text}
                   </div>
@@ -395,13 +395,13 @@ export default function AITeacherPage() {
       <div className="fixed bottom-[88px] left-0 right-0 w-full max-w-2xl mx-auto px-4 z-20 pb-4">
         <div className="pt-3" style={{ background: 'linear-gradient(to top, rgba(9,9,15,1) 80%, transparent)' }}>
           <form id="ai-form" onSubmit={handleSend}
-            className="relative flex items-end gap-2 px-4 py-2.5 rounded-[2rem]"
-            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)' }}>
+            className="relative flex items-end gap-2 px-4 py-2.5 rounded-[2rem] bg-white"
+            style={{ border: '1px solid rgba(0,0,0,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }}>
             <textarea value={input} onChange={e => setInput(e.target.value)}
               disabled={isLoading}
               placeholder={selectedSet ? `${selectedSet.label}에 대해 질문해봐...` : '영어에 대해 무엇이든 물어봐...'}
-              className="flex-1 bg-transparent outline-none text-[14px] font-medium resize-none min-h-[36px] max-h-[100px]"
-              style={{ color: 'rgba(255,255,255,0.88)', caretColor: '#E1306C' }}
+              className="flex-1 bg-transparent outline-none text-[14px] font-medium resize-none min-h-[36px] max-h-[100px] text-foreground placeholder:text-accent/50"
+              style={{ caretColor: '#E1306C' }}
               rows={1}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
               onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }}

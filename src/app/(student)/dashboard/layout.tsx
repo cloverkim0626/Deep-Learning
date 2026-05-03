@@ -886,36 +886,36 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'rgba(160,130,255,0.6)' }}>Parallax AI</span>
                 </div>
-                <p className="text-[13px] font-medium leading-relaxed" style={{ color: 'rgba(255,255,255,0.78)' }}>{advice || "학습 데이터를 분석 중이에요..."}</p>
+                <p className="text-[13px] font-medium leading-relaxed" style={{ color: 'rgba(255,255,255,0.82)' }}>{advice || "학습 데이터를 분석 중이에요..."}</p>
               </div>
 
-              {/* 스트릭 카드 — IG 감성 */}
-              <div className="mb-5 px-4 py-4 rounded-[1.4rem]" style={{ background: 'linear-gradient(135deg,rgba(255,100,20,0.15),rgba(255,160,20,0.10))', border: '1px solid rgba(255,130,20,0.25)' }}>
+              {/* 스트릭 카드 — IG 인디고/퍼플 감성 */}
+              <div className="mb-5 px-4 py-4 rounded-[1.4rem]" style={{ background: 'linear-gradient(135deg,rgba(64,93,230,0.20),rgba(131,58,180,0.15))', border: '1px solid rgba(100,80,230,0.30)' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: 'rgba(255,160,60,0.7)' }}>🔥 STREAK</p>
-                    <p className="text-[26px] font-black" style={{ color: '#fb923c' }}>{streak}일 연속</p>
-                    <p className="text-[11px] font-bold mt-0.5" style={{ color: 'rgba(255,160,80,0.7)' }}>{getStreakMessage(profile.name, streak)}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: 'rgba(180,150,255,0.7)' }}>🔥 STREAK</p>
+                    <p className="text-[26px] font-black" style={{ color: '#c4b5fd' }}>{streak}일 연속</p>
+                    <p className="text-[11px] font-bold mt-0.5" style={{ color: 'rgba(200,180,255,0.65)' }}>{getStreakMessage(profile.name, streak)}</p>
                   </div>
                   <div className="text-[44px] leading-none select-none">
                     {streak === 0 ? '👀' : streak <= 3 ? '🔥' : streak <= 7 ? '🔥🔥' : streak <= 14 ? '🔥🔥🔥' : '🔥🔥🔥🔥'}
                   </div>
                 </div>
-                <div className="mt-2 text-[9px] font-bold" style={{ color: 'rgba(255,160,60,0.45)' }}>* 주당 최대 2일 휴식 가능 • 일~토 1주 기준</div>
+                <div className="mt-2 text-[9px] font-bold" style={{ color: 'rgba(180,150,255,0.35)' }}>* 주당 최대 2일 휴식 가능 • 일~토 1주 기준</div>
               </div>
 
-              {/* 오늘의 명문 */}
+              {/* 오늘의 명문 — IG 감성 카드 */}
               {(() => {
                 const q = getDailyQuote();
                 return (
-                  <div className="mb-4 px-5 py-5 glass border border-foreground/5 rounded-[1.5rem]">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Quote size={12} className="text-accent" />
-                      <span className="text-[9px] font-black text-accent tracking-widest uppercase">Today's Quote</span>
-                      <span className="ml-auto text-[9px] font-bold text-accent/40">{new Date().toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</span>
+                  <div className="mb-4 px-4 py-4 rounded-[1.4rem]" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}>
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <Quote size={12} style={{ color: 'rgba(180,140,255,0.7)' }} />
+                      <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'rgba(160,130,255,0.6)' }}>Today&apos;s Quote</span>
+                      <span className="ml-auto text-[9px] font-bold" style={{ color: 'rgba(255,255,255,0.25)' }}>{new Date().toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</span>
                     </div>
-                    <p className="text-[14px] font-bold text-foreground leading-relaxed serif italic mb-2">"{q.text}"</p>
-                    <p className="text-[11px] text-accent font-black">— {q.author}</p>
+                    <p className="text-[14px] font-bold leading-relaxed serif italic mb-2" style={{ color: 'rgba(255,255,255,0.88)' }}>&ldquo;{q.text}&rdquo;</p>
+                    <p className="text-[11px] font-black" style={{ color: 'rgba(180,150,255,0.7)' }}>— {q.author}</p>
                     <button
                       onClick={() => {
                         if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -925,7 +925,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                           window.speechSynthesis.speak(u);
                         }
                       }}
-                      className="mt-3 flex items-center gap-1.5 text-[11px] font-black text-accent hover:text-foreground transition-colors"
+                      className="mt-3 flex items-center gap-1.5 text-[11px] font-black transition-colors"
+                      style={{ color: 'rgba(160,130,255,0.6)' }}
                     >
                       <Volume2 size={13} /> 발음 듣기
                     </button>

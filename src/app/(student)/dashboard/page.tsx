@@ -38,39 +38,54 @@ const TIME_FILTERS: { value: TimeFilter; label: string; icon: React.ReactNode }[
   { value: '1m', label: '1달', icon: <Calendar size={11} /> },
 ];
 
-// ─── TTS Helper — US male voice preferred ─────────────────────────────────────
-function pickUSMaleVoice(): SpeechSynthesisVoice | null {
+// ─── TTS Helper — Windows male voice (Microsoft David/Mark) ──────────────────
+// 남성 목소리 이름 우선순위 (Windows/Mac/Chrome 공통)
+const MALE_NAMES = ['david', 'mark', 'james', 'paul', 'richard', 'fred', 'alex', 'daniel', 'george'];
+const FEMALE_NAMES = ['zira', 'hazel', 'susan', 'samantha', 'victoria', 'karen', 'moira', 'fiona'];
+
+function pickMaleVoice(): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
   if (!voices.length) return null;
-  // 우선순위: Google US English(남) > Microsoft David > Alex > Daniel > en-US 남성
-  const PREFERRED = ['google us english', 'microsoft david', 'alex', 'daniel', 'thomas', 'fred'];
-  const enUS = voices.filter(v => v.lang.startsWith('en-US') || v.lang.startsWith('en_US'));
-  for (const name of PREFERRED) {
-    const found = enUS.find(v => v.name.toLowerCase().includes(name));
-    if (found) return found;
+  const enVoices = voices.filter(v => v.lang.startsWith('en'));
+  // 명시적 남성 이름 포함한 목소리 우선
+  for (const name of MALE_NAMES) {
+    const v = enVoices.find(v => v.name.toLowerCase().includes(name));
+    if (v) return v;
   }
-  // 그 외 en-US 중 첫 번째 (보통 구글 US)
-  return enUS[0] || voices.find(v => v.lang.startsWith('en')) || null;
+  // 여성 이름 제외한 en-US 목소리
+  const nonFemale = enVoices.filter(v => !FEMALE_NAMES.some(f => v.name.toLowerCase().includes(f)));
+  if (nonFemale.length) return nonFemale[0];
+  return enVoices[0] || null;
+}
+
+// 앱 시작 시 voices 미리 로딩 (Chrome은 최초 호출 필요)
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  window.speechSynthesis.getVoices();
 }
 
 function speakWord(word: string) {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-  const utt = new SpeechSynthesisUtterance(word);
-  utt.lang = "en-US";
-  utt.rate = 0.82;
-  utt.pitch = 0.9; // 남성: pitch 낮게
-  const voice = pickUSMaleVoice();
-  if (voice) utt.voice = voice;
-  // voices 로딩 전일 경우 이벤트 후 재시도
-  if (!window.speechSynthesis.getVoices().length) {
-    window.speechSynthesis.onvoiceschanged = () => {
-      const v2 = pickUSMaleVoice();
-      if (v2) utt.voice = v2;
-      window.speechSynthesis.speak(utt);
-    };
-  } else {
+
+  const doSpeak = () => {
+    const utt = new SpeechSynthesisUtterance(word);
+    utt.lang = "en-US";
+    utt.rate = 0.80;
+    utt.pitch = 0.85; // 남성: pitch 낮게
+    const voice = pickMaleVoice();
+    if (voice) utt.voice = voice;
     window.speechSynthesis.speak(utt);
+  };
+
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    doSpeak();
+  } else {
+    // voices 아직 로딩 중 — 완료 후 실행
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.onvoiceschanged = null;
+      doSpeak();
+    };
   }
 }
 

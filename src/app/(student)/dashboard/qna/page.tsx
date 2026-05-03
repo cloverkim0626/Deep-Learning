@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Send, MessageCircle, Plus, X, ChevronRight, User, Trash2, Pencil, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, MessageCircle, Plus, X, Trash2, Pencil, Check } from "lucide-react";
 import {
   getQnaPosts, createQnaPost, addQnaAnswer,
   deleteQnaPost, updateQnaPost,
@@ -190,35 +190,11 @@ export default function QnAPage() {
     finally { setDeletingAnswerId(null); }
   };
 
-  // ── 하트 버튼 컴포넌트 — 항상 박스로 표시, 0도 표시 ──
-  const HeartBtn = ({ targetId, targetType }: { targetId: string; targetType: "post" | "answer" }) => {
-    const likers = hearts[targetId] || [];
-    const liked = likers.includes(studentName);
-    const count = likers.length;
-    return (
-      <button
-        onClick={e => { e.stopPropagation(); handleHeart(targetId, targetType); }}
-        className="flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:scale-105 active:scale-95 select-none"
-        style={{
-          background: liked ? "rgba(210,50,80,0.12)" : "rgba(0,0,0,0.07)",
-          border: liked ? "1px solid rgba(210,50,80,0.3)" : "1px solid rgba(0,0,0,0.10)",
-          color: liked ? "#c0203a" : "rgba(40,40,40,0.6)",
-          fontSize: 10, fontWeight: 700, lineHeight: 1,
-        }}
-      >
-        <span style={{ fontSize: 13 }}>{liked ? "❤️" : "🤍"}</span>
-        <span>{count}</span>
-      </button>
-    );
-  };
-
-  let myPostCount = 0; // 미사용 — 단일색으로 통일
-
   return (
     <div className="flex flex-col h-full bg-transparent animate-in fade-in duration-500">
 
-      {/* ── IG 스타일 헤더 ── */}
-      <div className="px-5 pt-8 pb-4 shrink-0 flex items-center justify-between"
+      {/* 헤더 */}
+      <div className="px-5 pt-6 pb-4 shrink-0 flex items-center justify-between"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <div>
           <h1 className="text-[22px] font-black text-white leading-tight">Q&amp;A</h1>
@@ -231,19 +207,12 @@ export default function QnAPage() {
         </button>
       </div>
 
-      {/* 섹션 라벨 */}
-      <div className="flex items-center gap-3 px-5 py-2.5 shrink-0">
-        <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.07)" }} />
-        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "rgba(160,130,255,0.5)" }}>posts</span>
-        <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.07)" }} />
-      </div>
-
-      {/* ── 포스트 목록 ── */}
-      <div className="flex-1 overflow-y-auto px-4 custom-scrollbar pb-10 flex flex-col gap-2 pt-1">
+      {/* 포스트 목록 */}
+      <div className="flex-1 overflow-y-auto px-4 custom-scrollbar pb-10 flex flex-col gap-3 pt-3">
         {isLoading ? (
-          <div className="text-center py-20 font-bold animate-pulse" style={{ color: "rgba(20,50,70,0.6)" }}>불러오는 중...</div>
+          <div className="text-center py-20 font-bold animate-pulse" style={{ color: "rgba(255,255,255,0.4)" }}>불러오는 중...</div>
         ) : posts.length === 0 ? (
-          <div className="py-24 text-center font-bold opacity-50" style={{ color: "rgba(20,50,70,0.6)" }}>아직 질문이 없어요. 먼저 질문해봐! 👋</div>
+          <div className="py-24 text-center font-bold" style={{ color: "rgba(255,255,255,0.3)" }}>아직 질문이 없어요. 먼저 질문해봐! 👋</div>
         ) : posts.map(post => {
           const isMine = isMyPost(post.author);
           const isEditingThisPost = editingPostId === post.id;

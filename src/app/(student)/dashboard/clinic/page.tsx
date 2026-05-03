@@ -153,8 +153,8 @@ export default function ClinicPage() {
             {/* IG 포스트 스타일 카드 */}
             <div className="rounded-[1.6rem] overflow-hidden"
               style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.10)',
+                background: 'rgba(15,15,30,0.85)',
+                border: '1px solid rgba(255,255,255,0.12)',
                 backdropFilter: 'blur(16px)',
               }}>
               {/* 카드 상단 — 포스팅 헤더 */}
@@ -184,9 +184,9 @@ export default function ClinicPage() {
                   rows={4}
                   className="w-full rounded-xl text-[14px] font-medium resize-none outline-none leading-relaxed"
                   style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.09)',
-                    color: 'rgba(255,255,255,0.88)',
+                    background: 'rgba(0,0,0,0.35)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    color: '#ffffff',
                     padding: '12px 14px',
                   }}
                 />
