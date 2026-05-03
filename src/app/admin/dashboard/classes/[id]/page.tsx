@@ -1260,143 +1260,113 @@ function TestResultPopup({ slot, studentName, existingCheck, onClose, onSaved }:
   existingCheck: HomeworkCheck | null;
   onClose: () => void; onSaved: (check: HomeworkCheck) => void;
 }) {
-  const [score, setScore] = useState(existingCheck?.score?.toString() || '');
-  // failMode: null=미선택, 'oral'=구두재시귀가, 'retake'=추후재응시, 'absent'=지각결석미응시
-  const [failMode, setFailMode] = useState<'oral'|'retake'|'absent'|null>(null);
-  const [retakeDate, setRetakeDate] = useState(existingCheck?.rollover_date || '');
+  const [score, setScore] = useState(existingCheck?.score?.toString() ?? '');
+  const [failType, setFailType] = useState(existingCheck?.delay_reason ?? '');
+  const [retakeDate, setRetakeDate] = useState(existingCheck?.rollover_date ?? '');
   const [saving, setSaving] = useState(false);
 
-  const numScore = score !== '' ? Number(score) : null;
-  const pct = numScore != null && slot.max_score ? Math.round(numScore / slot.max_score * 100) : null;
-  // P/F 자동 판정: is_pf=true이고 pass_score가 있을 때만
-  const isAutoPass = (slot.is_pf && slot.pass_score != null && numScore != null)
-    ? numScore >= slot.pass_score : null;
+  // 점수 숫자값
+  const num = score !== '' ? Number(score) : null;
+  // 퍼센티지
+  const pct = (num != null && slot.max_score) ? Math.round(num / slot.max_score * 100) : null;
+  // P/F 자동판정 (is_pf=true이고 pass_score 있을 때만)
+  const autoPass = (slot.is_pf && slot.pass_score != null && num != null)
+    ? num >= slot.pass_score
+    : null;
+  const isFail = autoPass === false;
 
-  // failMode는 FAIL 판정시에만 유효
-  const showFailOptions = slot.is_pf && isAutoPass === false;
-
-  const canSave = (() => {
-    if (saving) return false;
-    if (numScore === null) return false;
-    if (showFailOptions && !failMode) return false; // FAIL인데 처리방식 미선택
-    if (failMode === 'retake' && !retakeDate) return false;
-    if (failMode === 'absent' && !retakeDate) return false;
-    return true;
-  })();
+  const canSave = num !== null && (!isFail || failType !== '');
 
   const handleSave = async () => {
     if (!canSave) return;
     setSaving(true);
     try {
       let payload: Parameters<typeof upsertHomeworkCheck>[0];
-
-      if (showFailOptions && failMode === 'oral') {
-        // FAIL - 구두재시 후 귀가
-        payload = { slot_id: slot.id, student_name: studentName, status: 'done',
-          score: numScore, is_pass: false, delay_reason: '구두재시귀가', rollover_date: null };
-      } else if (showFailOptions && failMode === 'retake') {
-        // FAIL - 추후 재응시
-        payload = { slot_id: slot.id, student_name: studentName, status: 'delayed',
-          score: numScore, is_pass: false, delay_reason: '추후재응시', rollover_date: retakeDate || null };
-      } else if (showFailOptions && failMode === 'absent') {
-        // FAIL - 지각/결석 미응시
-        payload = { slot_id: slot.id, student_name: studentName, status: 'skipped',
-          score: numScore, is_pass: false, delay_reason: '지각결석미응시', rollover_date: retakeDate || null };
+      if (isFail && failType === 'oral') {
+        payload = { slot_id: slot.id, student_name: studentName, status: 'done', score: num, is_pass: false, delay_reason: '재응시후귀가', rollover_date: null };
+      } else if (isFail && failType === 'retake') {
+        payload = { slot_id: slot.id, student_name: studentName, status: 'delayed', score: num, is_pass: false, delay_reason: '추후재응시', rollover_date: retakeDate || null };
+      } else if (isFail && failType === 'absent') {
+        payload = { slot_id: slot.id, student_name: studentName, status: 'skipped', score: num, is_pass: false, delay_reason: '지각결석미응시', rollover_date: retakeDate || null };
       } else {
-        // PASS 또는 일반 점수 저장
-        payload = { slot_id: slot.id, student_name: studentName, status: 'done',
-          score: numScore, is_pass: isAutoPass };
+        payload = { slot_id: slot.id, student_name: studentName, status: 'done', score: num, is_pass: autoPass };
       }
       await upsertHomeworkCheck(payload);
-      onSaved({ ...(existingCheck || {} as HomeworkCheck), ...payload });
-    } catch (e) { alert((e as Error).message); }
+      onSaved({ ...(existingCheck ?? {} as HomeworkCheck), ...payload });
+    } catch(e) { alert((e as Error).message); }
     finally { setSaving(false); }
   };
 
-  const BTN = (mode: typeof failMode, label: string, sub?: string) => (
-    <button onClick={() => setFailMode(failMode === mode ? null : mode)}
-      style={{
-        flex:1, padding:'10px 6px', borderRadius:'10px', fontSize:'12px', fontWeight:500,
-        textAlign:'center', lineHeight:1.4,
-        border: failMode===mode ? '2px solid #dc2626' : '1.5px solid #fca5a5',
-        background: failMode===mode ? '#fee2e2' : '#fff',
-        color: failMode===mode ? '#b91c1c' : '#f87171',
-        fontFamily:'inherit',
-      }}>
-      {label}{sub && <><br/><span style={{fontSize:'10px',opacity:0.75}}>{sub}</span></>}
-    </button>
-  );
-
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[400] flex items-center justify-center p-4"
+    <div className="fixed inset-0 bg-black/50 z-[400] flex items-center justify-center p-4"
       style={{fontFamily:'var(--font-jakarta),-apple-system,sans-serif'}}>
       <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
 
         {/* 헤더 */}
-        <div style={{background:'#1e1b4b', padding:'16px 20px'}}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p style={{fontSize:'11px',color:'#a5b4fc',fontWeight:500,marginBottom:'2px'}}>테스트 결과 기록</p>
-              <p style={{fontSize:'15px',color:'#fff',fontWeight:500,letterSpacing:'-0.02em'}}>{studentName}</p>
-              <p style={{fontSize:'12px',color:'#818cf8',marginTop:'1px'}}>{slot.title}{slot.test_range ? ` · ${slot.test_range}` : ''}</p>
-            </div>
-            <button onClick={onClose} style={{color:'#6366f1',background:'rgba(99,102,241,0.2)',borderRadius:'8px',padding:'7px'}}><X size={14}/></button>
+        <div style={{background:'#1e1b4b',padding:'16px 20px'}}>
+          <div className="flex items-center justify-between mb-1">
+            <p style={{fontSize:'11px',color:'#a5b4fc',fontWeight:500}}>테스트 결과 기록</p>
+            <button onClick={onClose} style={{color:'#818cf8',background:'rgba(99,102,241,0.2)',borderRadius:'8px',padding:'6px'}}><X size={14}/></button>
           </div>
+          <p style={{fontSize:'15px',color:'#fff',fontWeight:500,letterSpacing:'-0.02em'}}>{studentName}</p>
+          <p style={{fontSize:'12px',color:'#818cf8',marginTop:'2px'}}>{slot.title}{slot.test_range ? ` · ${slot.test_range}` : ''}</p>
           {slot.is_pf && slot.pass_score != null && (
-            <div style={{marginTop:'10px',padding:'7px 10px',borderRadius:'8px',background:'rgba(99,102,241,0.25)',display:'flex',alignItems:'baseline',gap:'6px'}}>
+            <div style={{marginTop:'10px',padding:'7px 12px',borderRadius:'8px',background:'rgba(99,102,241,0.25)',display:'inline-flex',alignItems:'baseline',gap:'6px'}}>
               <span style={{fontSize:'10px',color:'#c7d2fe'}}>합격기준</span>
-              <span style={{fontSize:'16px',fontWeight:500,color:'#fff'}}>{slot.pass_score}점</span>
+              <span style={{fontSize:'16px',fontWeight:500,color:'#fff',letterSpacing:'-0.02em'}}>{slot.pass_score}점</span>
               {slot.max_score && <span style={{fontSize:'11px',color:'#818cf8'}}>/ 만점 {slot.max_score}점</span>}
             </div>
           )}
         </div>
 
-        <div style={{padding:'18px 20px'}} className="space-y-4">
+        <div style={{padding:'20px'}}>
 
-          {/* 점수 입력 */}
-          <div>
-            <p style={{fontSize:'11px',color:'#94a3b8',marginBottom:'6px',fontWeight:500}}>득점 입력</p>
-            <div className="flex items-center gap-3">
-              <input type="number" value={score} onChange={e => { setScore(e.target.value); setFailMode(null); }}
-                placeholder="0" max={slot.max_score || undefined} autoFocus
-                style={{flex:1, height:'52px', padding:'0 16px', borderRadius:'12px',
-                  border: numScore===null ? '1.5px solid #c7d2fe' : isAutoPass===true ? '2px solid #86efac' : isAutoPass===false ? '2px solid #fca5a5' : '1.5px solid #c7d2fe',
-                  fontSize:'24px', fontWeight:300, outline:'none', textAlign:'center',
-                  letterSpacing:'-0.03em', fontFamily:'inherit',
-                  color: isAutoPass===true ? '#166534' : isAutoPass===false ? '#dc2626' : '#1e1b4b',
-                }} />
-              {slot.max_score && <span style={{fontSize:'14px',color:'#94a3b8',flexShrink:0}}>/ {slot.max_score}</span>}
-              {pct != null && (
-                <span style={{fontSize:'13px',color:'#6366f1',flexShrink:0,minWidth:'42px',textAlign:'right'}}>
-                  {pct}%
-                </span>
-              )}
-            </div>
+          {/* ── 점수 입력 ── 항상 보임 */}
+          <p style={{fontSize:'11px',color:'#94a3b8',fontWeight:500,marginBottom:'8px'}}>득점 입력</p>
+          <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}}>
+            <input
+              type="number" value={score} autoFocus
+              onChange={e => { setScore(e.target.value); setFailType(''); setRetakeDate(''); }}
+              placeholder="0" max={slot.max_score ?? undefined}
+              style={{
+                flex:1, height:'56px', borderRadius:'12px', textAlign:'center',
+                fontSize:'28px', fontWeight:300, letterSpacing:'-0.03em',
+                outline:'none', fontFamily:'inherit',
+                border: autoPass === true ? '2px solid #86efac'
+                      : autoPass === false ? '2px solid #fca5a5'
+                      : '1.5px solid #c7d2fe',
+                color: autoPass === true ? '#166534'
+                     : autoPass === false ? '#dc2626'
+                     : '#1e1b4b',
+              }}
+            />
+            {slot.max_score && <span style={{fontSize:'15px',color:'#94a3b8',flexShrink:0}}>/ {slot.max_score}</span>}
+            {pct != null && <span style={{fontSize:'14px',color:'#6366f1',flexShrink:0,minWidth:'44px',textAlign:'right',fontWeight:500}}>{pct}%</span>}
           </div>
 
-          {/* PASS 판정 */}
-          {slot.is_pf && isAutoPass === true && (
-            <div style={{padding:'12px 16px',borderRadius:'12px',background:'#f0fdf4',border:'1.5px solid #86efac',textAlign:'center'}}>
-              <p style={{fontSize:'16px',fontWeight:600,color:'#166534'}}>✅ PASS</p>
+          {/* ── PASS ── */}
+          {autoPass === true && (
+            <div style={{padding:'14px',borderRadius:'12px',background:'#f0fdf4',border:'1.5px solid #86efac',textAlign:'center',marginBottom:'16px'}}>
+              <p style={{fontSize:'18px',fontWeight:600,color:'#166534'}}>✅ PASS</p>
             </div>
           )}
 
-          {/* FAIL 판정 + 처리방식 */}
-          {showFailOptions && (
-            <div style={{padding:'12px',borderRadius:'12px',background:'#fef2f2',border:'1.5px solid #fca5a5'}}>
-              <p style={{fontSize:'13px',fontWeight:600,color:'#dc2626',marginBottom:'10px'}}>
-                ❌ FAIL — 처리 방식을 선택하세요
-              </p>
-              <div style={{display:'flex',gap:'6px'}}>
-                {BTN('oral', '구두재시', '당일 귀가')}
-                {BTN('retake', '추후 재응시', '날짜 선택')}
-                {BTN('absent', '지각·결석', '미응시')}
-              </div>
-              {(failMode === 'retake' || failMode === 'absent') && (
+          {/* ── FAIL + 처리방식 드롭다운 ── */}
+          {isFail && (
+            <div style={{padding:'14px',borderRadius:'12px',background:'#fef2f2',border:'1.5px solid #fca5a5',marginBottom:'16px'}}>
+              <p style={{fontSize:'14px',fontWeight:600,color:'#dc2626',marginBottom:'12px'}}>❌ FAIL</p>
+              <label style={{fontSize:'11px',color:'#f87171',fontWeight:500,display:'block',marginBottom:'6px'}}>처리 방식</label>
+              <select value={failType} onChange={e => { setFailType(e.target.value); setRetakeDate(''); }}
+                style={{width:'100%',height:'40px',borderRadius:'8px',border:'1.5px solid #fca5a5',
+                  padding:'0 12px',fontSize:'13px',fontFamily:'inherit',color:'#1e1b4b',background:'#fff',outline:'none'}}>
+                <option value="">— 선택하세요 —</option>
+                <option value="oral">재응시 후 귀가</option>
+                <option value="retake">추후 재응시</option>
+                <option value="absent">지각 / 결석 미응시</option>
+              </select>
+              {(failType === 'retake' || failType === 'absent') && (
                 <div style={{marginTop:'10px'}}>
-                  <p style={{fontSize:'10px',color:'#94a3b8',marginBottom:'4px'}}>
-                    {failMode === 'retake' ? '재응시 예정일' : '재응시 예정일 (선택)'}
-                  </p>
+                  <label style={{fontSize:'11px',color:'#94a3b8',display:'block',marginBottom:'5px'}}>재응시 예정일</label>
                   <input type="date" value={retakeDate} onChange={e => setRetakeDate(e.target.value)}
                     style={{width:'100%',height:'38px',padding:'0 12px',borderRadius:'8px',
                       border:'1.5px solid #e2e8f0',fontSize:'13px',outline:'none',fontFamily:'inherit'}} />
@@ -1405,16 +1375,8 @@ function TestResultPopup({ slot, studentName, existingCheck, onClose, onSaved }:
             </div>
           )}
 
-          {/* 일반 점수만 (is_pf 아닐 때) */}
-          {!slot.is_pf && slot.pass_score != null && numScore != null && (
-            <div style={{padding:'10px',borderRadius:'10px',textAlign:'center',
-              background: numScore>=slot.pass_score ? '#f0fdf4':'#fef2f2',
-              border: `1.5px solid ${numScore>=slot.pass_score ? '#86efac':'#fca5a5'}`}}>
-              <p style={{fontSize:'13px',fontWeight:600,color:numScore>=slot.pass_score?'#166534':'#dc2626'}}>
-                {numScore>=slot.pass_score ? '✅ 통과' : `❌ 미통과 (기준 ${slot.pass_score}점)`}
-              </p>
-            </div>
-          )}
+
+
         </div>
 
         {/* 저장 버튼 */}
