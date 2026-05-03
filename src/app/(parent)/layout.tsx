@@ -11,13 +11,13 @@ type Period = 'today' | 'week' | 'month';
 type RankEntry = { name: string; displayName: string; score: number; rank: number };
 type HofEntry = { rank: number; name: string; displayName: string; score: number; month: number; year: number };
 
-const PERIOD_LABELS: Record<Period, string> = { today: '오늘', week: '이번 주', month: '이번 달' };
-const MONTH_LABELS: Record<number, string> = { 1:'1월',2:'2월',3:'3월',4:'4월',5:'5월',6:'6월',7:'7월',8:'8월',9:'9월',10:'10월',11:'11월',12:'12월' };
+const PERIOD_LABELS: Record<Period, string> = { today: '\uc624\ub298', week: '\uc774\ubc88 \uc8fc', month: '\uc774\ubc88 \ub2ec' };
+const MONTH_LABELS: Record<number, string> = { 1:'1\uc6d4',2:'2\uc6d4',3:'3\uc6d4',4:'4\uc6d4',5:'5\uc6d4',6:'6\uc6d4',7:'7\uc6d4',8:'8\uc6d4',9:'9\uc6d4',10:'10\uc6d4',11:'11\uc6d4',12:'12\uc6d4' };
 
 function getMedalStyle(rank: number) {
-  if (rank === 1) return { bg: 'from-yellow-400 to-amber-300', text: 'text-yellow-900', icon: '?쪍', glow: '0 0 20px rgba(251,191,36,0.5)' };
-  if (rank === 2) return { bg: 'from-slate-400 to-slate-300', text: 'text-slate-800', icon: '?쪎', glow: '0 0 14px rgba(148,163,184,0.4)' };
-  if (rank === 3) return { bg: 'from-orange-400 to-orange-300', text: 'text-orange-900', icon: '?쪏', glow: '0 0 14px rgba(251,146,60,0.4)' };
+  if (rank === 1) return { bg: 'from-yellow-400 to-amber-300', text: 'text-yellow-900', icon: '🥇', glow: '0 0 20px rgba(251,191,36,0.5)' };
+  if (rank === 2) return { bg: 'from-slate-400 to-slate-300', text: 'text-slate-800', icon: '🥈', glow: '0 0 14px rgba(148,163,184,0.4)' };
+  if (rank === 3) return { bg: 'from-orange-400 to-orange-300', text: 'text-orange-900', icon: '🥉', glow: '0 0 14px rgba(251,146,60,0.4)' };
   return { bg: '', text: 'text-slate-700', icon: `${rank}`, glow: '' };
 }
 
@@ -279,7 +279,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
                   })}
                   {Array.from({ length: 3 - hallOfFame.length }).map((_, i) => (
                     <div key={`e-${i}`} className="flex-1 rounded-2xl border border-dashed border-slate-200 p-3 text-center flex items-center justify-center">
-                      <span className="text-[10px] text-slate-300 font-bold">誘몄젙</span>
+                      <span className="text-[10px] text-slate-300 font-bold">미정</span>
                     </div>
                   ))}
                 </div>

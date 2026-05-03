@@ -1193,9 +1193,16 @@ export default function WordTestPage() {
         (!t || t === 'vocab' || t === 'vocab_drill') ? 'vocab' : 'syn';
 
       const bestMap: Record<string, { correct: number; total: number }> = {};
+      // card_game 완료 세트는 무조건 syn pass (total_questions=0인 과거 기록도 포함)
+      const cardGamePassedSetIds = new Set<string>();
       for (const s of st) {
-        // correct_count가 undefined/null일 때만 skip (0은 유효한 값)
-        if (!s.completed_at || !s.set_id || !s.total_questions || s.correct_count === undefined || s.correct_count === null) continue;
+        if (!s.completed_at || !s.set_id) continue;
+        if (s.test_type === 'card_game') {
+          cardGamePassedSetIds.add(s.set_id); // 완료했으면 무조건 통과
+          continue;
+        }
+        // 일반 세션: total_questions > 0 필요
+        if (!s.total_questions || s.correct_count === undefined || s.correct_count === null) continue;
         const tg = getTypeGroup(s.test_type);
         const key = `${s.set_id}::${tg}`;
         const prev = bestMap[key];
@@ -1204,7 +1211,7 @@ export default function WordTestPage() {
         }
       }
 
-      const synPassedIds = new Set<string>();
+      const synPassedIds = new Set<string>([...cardGamePassedSetIds]); // 카드게임 무조건 포함
       const vocabPassedIds = new Set<string>();
       for (const [key, { correct, total }] of Object.entries(bestMap)) {
         if (total === 0 || correct / total < 0.9) continue;

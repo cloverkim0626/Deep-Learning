@@ -273,9 +273,11 @@ export async function autoCompleteAssignmentIfAllPassed(
 
     if (!sessions || sessions.length === 0) return false;
 
+    // card_game: 완료했으면 무조건 syn pass (total_questions=0인 과거 기록 포함)
     const isSynPass = (s: { test_type: string; correct_count: number; total_questions: number }) =>
-      ['synonym', 'synonym_drill', 'card_game'].includes(s.test_type) &&
-      s.total_questions > 0 && s.correct_count / s.total_questions >= 0.9;
+      s.test_type === 'card_game' ||
+      (['synonym', 'synonym_drill'].includes(s.test_type) &&
+      s.total_questions > 0 && s.correct_count / s.total_questions >= 0.9);
     const isVocabPass = (s: { test_type: string; correct_count: number; total_questions: number }) =>
       ['vocab', 'vocab_drill'].includes(s.test_type) &&
       s.total_questions > 0 && s.correct_count / s.total_questions >= 0.9;
