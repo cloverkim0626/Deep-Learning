@@ -126,13 +126,7 @@ function LoginForm() {
   const isSyncedClass = syncedClasses.some(cls => cls.name === selectedClass);
 
   return (
-    <div className="w-full max-w-sm mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000
-      rounded-3xl px-7 py-8"
-      style={{
-        background:'rgba(5,18,32,0.58)',
-        backdropFilter:'blur(24px)',
-        WebkitBackdropFilter:'blur(24px)',
-      }}>
+    <div className="w-full max-w-sm mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 px-7 py-8">
 
       <Link href="/" className="mb-12 flex items-center gap-2 text-[12px] font-black tracking-[0.2em] transition-all uppercase"
         style={{color:'rgba(100,210,240,0.7)'}}>

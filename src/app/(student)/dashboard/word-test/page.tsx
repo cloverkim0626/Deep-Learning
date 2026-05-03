@@ -800,55 +800,118 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
 
   if (gamePhase === 'playing') {
     const matchedCount = cards.filter(c => c.matched).length / 2;
+    const totalPairs = pairs;
+    const hpPct = timerPct;
+    const hpColor = hpPct > 60 ? '#34d399' : hpPct > 30 ? '#fbbf24' : '#f87171';
+    const isSyn = currentRound === 'synonym';
     return (
-      <div className={`flex flex-col h-full bg-gradient-to-br ${roundBg} select-none`}>
-        <div className="flex items-center justify-between px-5 py-4 text-white shrink-0">
+      <div className={`flex flex-col h-full select-none`}
+        style={{background: isSyn
+          ? 'linear-gradient(160deg,#0d1f3c 0%,#0e2a4a 40%,#0a3060 100%)'
+          : 'linear-gradient(160deg,#1e0d2e 0%,#2d0f3e 40%,#3d0f50 100%)'}}>
+        <style>{`
+          @keyframes dropIn{0%{transform:scale(0.85) translateY(-6px);opacity:0}100%{transform:scale(1) translateY(0);opacity:1}}
+          @keyframes wrongShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+          @keyframes hpPulse{0%,100%{opacity:1}50%{opacity:0.7}}
+          .game-card-in{animation:dropIn 0.28s cubic-bezier(.34,1.56,.64,1) both}
+        `}</style>
+
+        {/* ── 헤더 ── */}
+        <div className="flex items-center justify-between px-5 pt-4 pb-2 shrink-0">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{roundLabel} 짝 찾기</p>
-            <p className="text-[16px] font-black">남은 짝 <span className="text-white/80">{pairs - matchedCount}</span></p>
+            <p className="text-[9px] font-light uppercase tracking-[3px] mb-0.5"
+              style={{color: isSyn ? 'rgba(100,200,255,0.55)' : 'rgba(220,140,255,0.55)'}}>
+              {isSyn ? '유의어' : '반의어'} 짝 찾기
+            </p>
+            <p className="text-[13px] font-light text-white/80">
+              남은 짝 <span className="font-semibold text-white">{totalPairs - matchedCount}</span> / {totalPairs}
+            </p>
           </div>
-          <div className="relative w-14 h-14 shrink-0">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 56 56">
-              <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="4" />
-              <circle cx="28" cy="28" r="24" fill="none" stroke="white" strokeWidth="4"
-                strokeDasharray={`${2 * Math.PI * 24}`}
-                strokeDashoffset={`${2 * Math.PI * 24 * (1 - timerPct / 100)}`}
-                strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1s linear' }} />
+          {/* HP 원형 게이지 */}
+          <div className="relative w-12 h-12 shrink-0">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 48 48">
+              <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3.5"/>
+              <circle cx="24" cy="24" r="20" fill="none"
+                stroke={hpColor} strokeWidth="3.5"
+                strokeDasharray={`${2*Math.PI*20}`}
+                strokeDashoffset={`${2*Math.PI*20*(1-hpPct/100)}`}
+                strokeLinecap="round"
+                style={{transition:'stroke-dashoffset 1s linear, stroke 0.5s ease'}}/>
             </svg>
-            <span className={`absolute inset-0 flex items-center justify-center text-[15px] font-black text-white ${playTimer <= 5 ? 'animate-pulse' : ''}`}>
+            <span className={`absolute inset-0 flex items-center justify-center text-[13px] font-light text-white ${playTimer <= 5 ? 'animate-pulse' : ''}`}>
               {playTimer}
             </span>
           </div>
         </div>
-        <div className="h-1 mx-5 rounded-full bg-white/20 shrink-0 mb-3">
-          <div className={`h-full rounded-full transition-all duration-1000 ${timerPct > 50 ? 'bg-white/70' : timerPct > 25 ? 'bg-amber-400' : 'bg-rose-400'}`} style={{ width: `${timerPct}%` }} />
+
+        {/* ── HP 바 (체력처럼) ── */}
+        <div className="mx-5 mb-3 shrink-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[9px] font-light tracking-widest" style={{color:'rgba(255,255,255,0.35)'}}>TIME HP</span>
+            <span className="text-[9px] font-light ml-auto" style={{color:'rgba(255,255,255,0.35)'}}>{Math.round(hpPct)}%</span>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{background:'rgba(255,255,255,0.08)'}}>
+            <div className="h-full rounded-full transition-all duration-1000"
+              style={{width:`${hpPct}%`, background:`linear-gradient(90deg,${hpColor},${hpColor}cc)`,
+                boxShadow:`0 0 8px ${hpColor}88`,
+                animation: hpPct < 25 ? 'hpPulse 0.8s ease-in-out infinite' : 'none'}}/>
+          </div>
         </div>
-        <div className="flex-1 px-3 pb-3 overflow-hidden">
+
+        {/* ── 카드 그리드 ── */}
+        <div className="flex-1 px-3 pb-2 overflow-hidden">
           <div className="grid grid-cols-4 gap-2 h-full auto-rows-fr">
-            {cards.map(card => {
+            {cards.map((card, ci) => {
               const isSelected = selected.includes(card.id);
               const isWrong = wrong.includes(card.id);
-              if (card.matched) return <div key={card.id} className="rounded-2xl bg-white/10 border border-white/10" />;
+              if (card.matched) return (
+                <div key={card.id} className="rounded-[1.2rem] opacity-20"
+                  style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.06)'}}/>
+              );
+              /* WORD 카드: 날카로운 느낌 (각진 + solid border) */
+              /* SYN/ANT 카드: 물방울 느낌 (비대칭 border-radius + 반투명) */
+              const wordCardStyle = {
+                background: isWrong ? 'rgba(248,113,113,0.2)'
+                  : isSelected ? 'rgba(255,255,255,0.95)'
+                  : 'rgba(255,255,255,0.12)',
+                border: isWrong ? '1.5px solid rgba(248,113,113,0.7)'
+                  : isSelected ? '1.5px solid rgba(255,255,255,0.9)'
+                  : `1.5px solid ${isSyn ? 'rgba(99,179,237,0.4)' : 'rgba(216,180,254,0.4)'}`,
+                borderRadius: '14px 6px 14px 6px',
+                color: isWrong ? '#fca5a5' : isSelected ? '#0f172a' : 'rgba(255,255,255,0.9)',
+                backdropFilter:'blur(8px)',
+                animation:`wrongShake 0.3s ease ${isWrong?'':'0s paused'}, dropIn 0.28s cubic-bezier(.34,1.56,.64,1) ${ci*0.04}s both`,
+              };
+              const synAntCardStyle = {
+                background: isWrong ? 'rgba(248,113,113,0.2)'
+                  : isSelected ? 'rgba(255,255,255,0.92)'
+                  : isSyn ? 'rgba(59,130,246,0.22)' : 'rgba(168,85,247,0.22)',
+                border: isWrong ? '1.5px solid rgba(248,113,113,0.7)'
+                  : isSelected ? '1.5px solid rgba(255,255,255,0.9)'
+                  : isSyn ? '1.5px solid rgba(99,179,237,0.35)' : '1.5px solid rgba(216,180,254,0.35)',
+                borderRadius: '50% 30% 50% 30% / 40% 50% 40% 50%',
+                color: isWrong ? '#fca5a5' : isSelected ? '#0f172a' : 'rgba(255,255,255,0.92)',
+                backdropFilter:'blur(8px)',
+                animation:`dropIn 0.28s cubic-bezier(.34,1.56,.64,1) ${ci*0.04}s both`,
+              };
               return (
                 <button key={card.id} onClick={() => handleCardClick(card.id)}
-                  className={`relative rounded-2xl border-2 flex flex-col items-center justify-center p-2 text-center font-black transition-all duration-200 active:scale-95 min-h-[60px] overflow-hidden ${
-                    isWrong ? 'border-rose-300 bg-rose-100 text-rose-700 scale-95'
-                    : isSelected ? 'border-amber-300 bg-amber-50 text-foreground scale-105 shadow-2xl'
-                    : card.isHeadword ? 'border-white/30 bg-white/10 text-white hover:bg-white/20 hover:scale-105 backdrop-blur-sm'
-                    : currentRound === 'synonym' ? 'border-blue-200/40 bg-blue-400/20 text-white hover:bg-blue-400/35 hover:scale-105'
-                    : 'border-pink-200/40 bg-pink-400/20 text-white hover:bg-pink-400/35 hover:scale-105'
-                  }`}
-                >
-                  <span className="absolute top-1 right-1 text-[6px] font-black uppercase opacity-50 text-white">
-                    {card.isHeadword ? 'word' : roundLabel === '유의어' ? 'syn' : 'ant'}
+                  className="relative flex flex-col items-center justify-center p-1.5 text-center transition-all duration-200 active:scale-95 min-h-[58px] overflow-hidden"
+                  style={card.isHeadword ? wordCardStyle : synAntCardStyle}>
+                  <span className="absolute top-1 right-1.5 text-[5.5px] font-light uppercase tracking-wide opacity-40">
+                    {card.isHeadword ? 'W' : isSyn ? 'S' : 'A'}
                   </span>
-                  <span className="text-[11px] leading-tight break-words w-full">{card.content}</span>
+                  <span className={`text-[10.5px] font-light leading-tight break-words w-full ${isSelected ? 'font-semibold' : ''}`}>
+                    {card.content}
+                  </span>
                 </button>
               );
             })}
           </div>
         </div>
-        <button onClick={onExit} className="shrink-0 text-[11px] text-white/40 font-bold py-3 text-center">← 포기하기</button>
+        <button onClick={onExit} className="shrink-0 text-[10px] font-light text-white/30 py-3 text-center hover:text-white/60 transition-colors">
+          ← 포기하기
+        </button>
       </div>
     );
   }
