@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BookOpen, Briefcase, Zap, Brain, Sparkles, X, Layers, Flame, BarChart2, HelpCircle, Search, MessageCircle } from "lucide-react";
+import { ArrowRight, BookOpen, Briefcase, Zap, Brain, Sparkles, X, Layers, Flame, BarChart2, HelpCircle, Search, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import TrialApplicationForm from "@/components/TrialApplicationForm";
@@ -49,7 +49,7 @@ export default function Home() {
           boxShadow: "0 4px 20px rgba(0,0,0,0.35), 0 0 0 1.5px rgba(255,255,255,0.08)",
         }}
         aria-label="문의하기">
-        <MessageCircle size={19} className="text-white" strokeWidth={1.8} />
+        <Send size={18} className="text-white" strokeWidth={2} style={{ transform: "rotate(45deg)" }} />
         <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 border-2 border-[#08080f]">
           <span className="animate-ping absolute inset-0 rounded-full bg-red-400 opacity-75" />
         </span>
@@ -561,7 +561,10 @@ export default function Home() {
 
       {/* ═══ Contact Modal ═══════════════════════════════════════════════════════ */}
       {showContact && (
-        <ContactModal onClose={() => setShowContact(false)} />
+        <ContactModal
+          onClose={() => setShowContact(false)}
+          onTrialRequest={() => { setShowContact(false); setShowTrialForm(true); }}
+        />
       )}
     </main>
   );
