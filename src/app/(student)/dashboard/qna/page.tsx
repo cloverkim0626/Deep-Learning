@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { Send, MessageCircle, Plus, X, ChevronRight, User, Trash2, Pencil, Check, ChevronDown, ChevronUp } from "lucide-react";

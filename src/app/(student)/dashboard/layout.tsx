@@ -369,16 +369,34 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   ];
 
   return (
-    <div className="flex flex-col h-screen w-full max-w-md mx-auto relative shadow-[0_0_50px_rgba(0,0,0,0.1)] bg-background overflow-hidden border-x border-foreground/5">
+    <div className="flex flex-col h-screen w-full max-w-md mx-auto relative overflow-hidden border-x border-white/5"
+      style={{
+        background:`
+          radial-gradient(ellipse 70% 60% at 10% 15%, rgba(64,93,230,0.32) 0%, transparent 55%),
+          radial-gradient(ellipse 60% 55% at 90% 85%, rgba(131,58,180,0.26) 0%, transparent 50%),
+          radial-gradient(ellipse 50% 45% at 85% 10%, rgba(225,48,108,0.18) 0%, transparent 55%),
+          radial-gradient(ellipse 40% 40% at 15% 85%, rgba(64,93,230,0.18) 0%, transparent 55%),
+          linear-gradient(145deg, #09090f 0%, #0d0b16 40%, #09090f 100%)
+        `
+      }}>
 
       {/* Top Header */}
-      <header className="h-20 flex items-center justify-between px-6 border-b border-foreground/5 bg-background/90 backdrop-blur-xl z-30 shrink-0 sticky top-0">
+      <header className="h-20 flex items-center justify-between px-6 border-b z-30 shrink-0 sticky top-0"
+        style={{
+          background:'rgba(9,9,15,0.75)',
+          borderBottomColor:'rgba(255,255,255,0.07)',
+          backdropFilter:'blur(20px)',
+          WebkitBackdropFilter:'blur(20px)',
+        }}>
         <Link href="/dashboard" className="flex flex-col gap-1">
-          <span className="text-[18px] text-foreground serif font-black leading-none tracking-tight">Deep Learning</span>
+          <span className="text-[18px] serif font-black leading-none tracking-tight"
+            style={{background:'linear-gradient(90deg,#fff 40%,rgba(255,255,255,0.7) 100%)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+            Deep Learning
+          </span>
           <div className="flex items-center gap-1.5">
-            <span className="text-[13px] font-black text-accent leading-none">{profile.name}</span>
-            <div className="w-1 h-1 rounded-full bg-foreground/20" />
-            <span className="text-[10px] font-bold text-accent leading-none">{profile.class}</span>
+            <span className="text-[13px] font-black leading-none" style={{color:'rgba(180,160,255,0.9)'}}>{profile.name}</span>
+            <div className="w-1 h-1 rounded-full" style={{background:'rgba(255,255,255,0.2)'}} />
+            <span className="text-[10px] font-bold leading-none" style={{color:'rgba(255,255,255,0.35)'}}>{profile.class}</span>
           </div>
         </Link>
         <div className="flex items-center gap-3">
@@ -1038,7 +1056,13 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 w-full max-w-md h-[88px] bg-background/90 backdrop-blur-2xl border-t border-foreground/5 flex items-center justify-around z-30 px-4 pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+      <nav className="fixed bottom-0 w-full max-w-md h-[88px] flex items-center justify-around z-30 px-4 pb-safe"
+        style={{
+          background:'rgba(9,9,15,0.82)',
+          borderTop:'1px solid rgba(255,255,255,0.07)',
+          backdropFilter:'blur(24px)',
+          WebkitBackdropFilter:'blur(24px)',
+        }}>
         <NavButton href="/dashboard" icon={<BookOpen size={22} />} label="단어학습" isActive={pathname === "/dashboard"} />
         <NavButton href="/dashboard/essay" icon={<PenTool size={22} />} label="서술형" isActive={pathname.startsWith("/dashboard/essay")} />
         <NavButton href="/dashboard/ai-teacher" icon={<Bot size={22} />} label="AI튜터" isActive={pathname.startsWith("/dashboard/ai-teacher")} />
@@ -1052,14 +1076,17 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 function NavButton({ href, icon, label, isActive = false }: { href: string; icon: React.ReactNode; label: string; isActive?: boolean }) {
   return (
     <Link href={href} className="flex flex-col items-center justify-center flex-1 h-full gap-1.5 group relative">
-      <div className={`transition-all duration-500 relative z-10 ${isActive ? "text-foreground -translate-y-1.5 scale-110" : "text-foreground/30 group-hover:text-foreground/80 group-hover:-translate-y-0.5"}`}>
+      <div className={`transition-all duration-500 relative z-10 ${isActive ? "-translate-y-1.5 scale-110" : "group-hover:-translate-y-0.5"}`}
+        style={{color: isActive ? '#fff' : 'rgba(255,255,255,0.28)'}}>
         {icon}
       </div>
-      <span className={`text-[10px] font-black tracking-tight transition-all duration-500 z-10 ${isActive ? "text-foreground" : "text-foreground/30 group-hover:text-foreground/80"}`}>
+      <span className="text-[10px] font-black tracking-tight transition-all duration-500 z-10"
+        style={{color: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.28)'}}>
         {label}
       </span>
       {isActive && (
-        <div className="absolute inset-x-3 bottom-2 h-1 bg-foreground rounded-full animate-in zoom-in duration-500" />
+        <div className="absolute inset-x-3 bottom-2 h-0.5 rounded-full animate-in zoom-in duration-500"
+          style={{background:'linear-gradient(90deg,#405DE6,#E1306C)'}} />
       )}
     </Link>
   );

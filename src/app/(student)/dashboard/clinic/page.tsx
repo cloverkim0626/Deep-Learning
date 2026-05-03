@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { Send, Users, CheckCircle2, Clock, AlertCircle } from "lucide-react";
@@ -85,7 +85,7 @@ export default function ClinicPage() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background animate-in fade-in duration-500">
+    <div className="flex flex-col h-full bg-transparent animate-in fade-in duration-500">
 
       {/* ── 헤더 ── */}
       <div className="px-6 pt-10 pb-2 shrink-0">

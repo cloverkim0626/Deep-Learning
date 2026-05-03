@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Send, Sparkles, Loader2, MessageSquare, RotateCcw, BookOpen, ChevronDown } from "lucide-react";
@@ -260,7 +260,7 @@ export default function AITeacherPage() {
   );
 
   return (
-    <div className="flex flex-col h-full max-w-2xl mx-auto w-full relative bg-background">
+    <div className="flex flex-col h-full max-w-2xl mx-auto w-full relative bg-transparent">
       {/* Header */}
       <div className="flex items-start gap-3 px-5 pt-6 pb-4 shrink-0 z-20 bg-background/80 backdrop-blur-md sticky top-0 border-b border-foreground/5">
         <div className="w-9 h-9 rounded-[0.8rem] bg-foreground text-background flex items-center justify-center shadow-xl shrink-0 mt-0.5">

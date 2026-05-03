@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
@@ -395,7 +395,7 @@ export default function VocabDashboard() {
   );
 
   return (
-    <div className="flex flex-col h-full bg-background px-4 py-6 max-w-2xl mx-auto w-full relative">
+    <div className="flex flex-col h-full bg-transparent px-4 py-6 max-w-2xl mx-auto w-full relative">
       {/* Tab + Test Button */}
       <div className="flex items-center justify-between mb-5 shrink-0">
         <div className="flex bg-accent-light p-1 rounded-xl border border-foreground/5 shrink-0">
