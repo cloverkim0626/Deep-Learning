@@ -1154,7 +1154,11 @@ export default function WordTestPage() {
         const idsToMark = selectedSetId && selectedSetId !== WRONG_DRILL_ID
           ? [selectedSetId]
           : selectedSetIds.filter(id => id !== WRONG_DRILL_ID);
-        if (idsToMark.length > 0) setSynonymPassedSetIds(prev => new Set([...prev, ...idsToMark]));
+        if (idsToMark.length > 0) setSynonymPassedSetIds(prev => {
+          const next = new Set([...prev, ...idsToMark]);
+          removeFullyPassedFromList(idsToMark, vocabPassedSetIds, next);
+          return next;
+        });
       }
       setResults(all); setPhase('result');
     };
@@ -1189,7 +1193,8 @@ export default function WordTestPage() {
 
       const bestMap: Record<string, { correct: number; total: number }> = {};
       for (const s of st) {
-        if (!s.completed_at || !s.set_id || !s.total_questions || !s.correct_count) continue;
+        // correct_count가 undefined/null일 때만 skip (0은 유효한 값)
+        if (!s.completed_at || !s.set_id || !s.total_questions || s.correct_count === undefined || s.correct_count === null) continue;
         const tg = getTypeGroup(s.test_type);
         const key = `${s.set_id}::${tg}`;
         const prev = bestMap[key];
@@ -1209,19 +1214,30 @@ export default function WordTestPage() {
       setSynonymPassedSetIds(synPassedIds);
       setVocabPassedSetIds(vocabPassedIds);
 
-      // ── 유/반의어 + 뜻쓰기 모두 통과한 세트는 목록에서 즉시 제외 ──
-      // (DB completed 처리 타이밍 관계없이 바로 반영)
-      const fullyPassedIds = new Set([...synPassedIds].filter(id => vocabPassedIds.has(id)));
+      // ── fullyPassed 계산: 세트별로 필요한 테스트를 모두 통과했는지 체크 ──
+      // 유반의어 데이터가 없는 세트 → vocab만 통과하면 ALL PASS
+      // 유반의어 데이터가 있는 세트 → vocab + syn 둘 다 통과해야 ALL PASS
+      const rawSets = (assignments || []).filter(Boolean) as {
+        id: string; words?: { test_synonym?: boolean; test_antonym?: boolean }[];
+      }[];
 
-      // DB 완료 처리 비동기 트리거 (화면 반영은 이미 위에서 처리)
-      if (fullyPassedIds.size > 0) {
-        for (const id of fullyPassedIds) {
-          autoCompleteAssignmentIfAllPassed(name, id).catch(() => {});
+      const fullyPassedIds = new Set<string>();
+      for (const s of rawSets) {
+        if (!vocabPassedIds.has(s.id)) continue; // vocab 미통과면 무조건 제외
+        const hasSynData = (s.words || []).some(w => w.test_synonym || w.test_antonym);
+        if (!hasSynData || synPassedIds.has(s.id)) {
+          // 유반의어 데이터가 없거나, 있는데 통과했거나
+          fullyPassedIds.add(s.id);
         }
       }
 
+      // DB 완료 처리 비동기 트리거
+      for (const id of fullyPassedIds) {
+        autoCompleteAssignmentIfAllPassed(name, id).catch(() => {});
+      }
+
       setAllSets((assignments || []).filter(Boolean)
-        // 유/반의어 + 뜻쓰기 모두 통과한 세트는 목록에서 즉시 제외
+        // ALL PASS 세트는 목록에서 즉시 제외
         .filter((s: { id: string }) => !fullyPassedIds.has(s.id))
         .map((s: {
           id: string; workbook?: string; chapter?: string; label: string;
@@ -1249,6 +1265,25 @@ export default function WordTestPage() {
   }, []);
 
   useEffect(() => { loadSets(); }, [loadSets]);
+
+  // \ud1b5\uacfc \uc9c1\ud6c4 allSets\uc5d0\uc11c \uc989\uc2dc \uc81c\uac70\ud558\ub294 \ud5ec\ud37c
+  // vocab + syn \ubaa8\ub450 \ud1b5\uacfc\ud55c \uc138\ud2b8\ub97c \ubaa9\ub85d\uc5d0\uc11c \ubc14\ub85c \uc9c0\uc6c0
+  const removeFullyPassedFromList = useCallback((
+    idsToRemove: string[],
+    latestVocabPassedIds: Set<string>,
+    latestSynPassedIds: Set<string>
+  ) => {
+    setAllSets(prev => prev.filter(s => {
+      if (!idsToRemove.includes(s.id)) return true; // \ud574\ub2f9 \uc138\ud2b8 \uc544\ub2d8
+      if (!latestVocabPassedIds.has(s.id)) return true; // vocab \ubbf8\ud1b5\uacfc \u2192 \uc720\uc9c0
+      const hasSynData = s.words.some(w => w.testSynonym || w.testAntonym);
+      if (hasSynData && !latestSynPassedIds.has(s.id)) return true; // syn \uc5c6\uc74c \u2192 \uc720\uc9c0
+      // ALL PASS: \ubaa9\ub85d\uc5d0\uc11c \uc81c\uac70
+      const name = (() => { try { const s = localStorage.getItem('stu_session'); return s ? JSON.parse(s).name : ''; } catch { return ''; } })();
+      if (name) autoCompleteAssignmentIfAllPassed(name, s.id).catch(() => {});
+      return false;
+    }));
+  }, []);
 
   const handleStart = async (setIds: string[] | null) => {
     const isDrill = setIds?.includes(WRONG_DRILL_ID);
@@ -1324,7 +1359,11 @@ export default function WordTestPage() {
         }
       }
     } catch { /* noop */ }
-    if (idsToMark.length > 0) setSynonymPassedSetIds(prev => new Set([...prev, ...idsToMark]));
+    if (idsToMark.length > 0) setSynonymPassedSetIds(prev => {
+      const next = new Set([...prev, ...idsToMark]);
+      removeFullyPassedFromList(idsToMark, vocabPassedSetIds, next);
+      return next;
+    });
   };
 
   const handleStartVocab = async (setIds: string[] | null) => {
@@ -1401,11 +1440,12 @@ export default function WordTestPage() {
     } catch (err) { console.error('[handleVocabDone] DB 저장 실패:', err); }
     if (total > 0 && correctCount / total >= 0.9) {
       if (!isDrill && idsToMark.length > 0) {
-        setVocabPassedSetIds(prev => new Set([...prev, ...idsToMark]));
-        // 자동 완료: 단어뜻 테스트 통과 후 배당 완료 체크 (유반의어도 통과했으면 자동 완료)
-        for (const id of idsToMark) {
-          autoCompleteAssignmentIfAllPassed(name, id).catch(() => {});
-        }
+        setVocabPassedSetIds(prev => {
+          const next = new Set([...prev, ...idsToMark]);
+          // vocab 통과 직후 즉시 목록 제거 시도
+          removeFullyPassedFromList(idsToMark, next, synonymPassedSetIds);
+          return next;
+        });
       }
       if (isDrill) {
         const correctWordIds = res.filter(r => r.correct).map(r => r.word.id);
@@ -1438,12 +1478,12 @@ export default function WordTestPage() {
             ? [selectedSetId]
             : selectedSetIds.filter(id => id !== WRONG_DRILL_ID);
           if (idsToMark.length > 0) {
-            setSynonymPassedSetIds(prev => new Set([...prev, ...idsToMark]));
-            // 자동 완료: 유반의어 테스트 통과 후 배당 완료 체크
-            const name3 = getStudentName();
-            for (const id of idsToMark) {
-              autoCompleteAssignmentIfAllPassed(name3, id).catch(() => {});
-            }
+            setSynonymPassedSetIds(prev => {
+              const next = new Set([...prev, ...idsToMark]);
+              // syn \ud1b5\uacfc \uc9c1\ud6c4 \uc989\uc2dc \ubaa9\ub85d \uc81c\uac70 \uc2dc\ub3c4
+              removeFullyPassedFromList(idsToMark, vocabPassedSetIds, next);
+              return next;
+            });
           }
           // One More! 드릴: 정답 단어 삭제
           if (!selectedSetId || selectedSetId === WRONG_DRILL_ID) {
