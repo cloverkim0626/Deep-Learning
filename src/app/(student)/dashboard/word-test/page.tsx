@@ -804,57 +804,66 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
     const hpPct = timerPct;
     const hpColor = hpPct > 60 ? '#34d399' : hpPct > 30 ? '#fbbf24' : '#f87171';
     const isSyn = currentRound === 'synonym';
+    const accentColor = isSyn ? '#50c8eb' : '#b87fff';
+
     return (
-      <div className={`flex flex-col h-full select-none`}
-        style={{background: isSyn
-          ? 'linear-gradient(160deg,#0d1f3c 0%,#0e2a4a 40%,#0a3060 100%)'
-          : 'linear-gradient(160deg,#1e0d2e 0%,#2d0f3e 40%,#3d0f50 100%)'}}>
+      <div className="flex flex-col h-full select-none"
+        style={{
+          background:`
+            radial-gradient(ellipse 70% 50% at 50% 20%, ${isSyn ? 'rgba(0,130,170,0.30)' : 'rgba(100,60,180,0.25)'} 0%, transparent 65%),
+            radial-gradient(ellipse 50% 40% at 80% 80%, rgba(0,60,100,0.20) 0%, transparent 60%),
+            linear-gradient(165deg, #030c19 0%, #040e1e 30%, #050d1c 60%, #060f20 100%)
+          `
+        }}>
         <style>{`
-          @keyframes dropIn{0%{transform:scale(0.85) translateY(-6px);opacity:0}100%{transform:scale(1) translateY(0);opacity:1}}
-          @keyframes wrongShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
-          @keyframes hpPulse{0%,100%{opacity:1}50%{opacity:0.7}}
-          .game-card-in{animation:dropIn 0.28s cubic-bezier(.34,1.56,.64,1) both}
+          @keyframes dropIn{0%{transform:scale(0.7) translateY(-10px);opacity:0}70%{transform:scale(1.04) translateY(2px)}100%{transform:scale(1) translateY(0);opacity:1}}
+          @keyframes wrongShake{0%,100%{transform:translateX(0) scale(1)}20%{transform:translateX(-5px) scale(0.97)}80%{transform:translateX(5px) scale(0.97)}}
+          @keyframes hpPulse{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:0.75;filter:brightness(1.3)}}
+          @keyframes shimmer{0%{opacity:0.5}50%{opacity:0.9}100%{opacity:0.5}}
         `}</style>
 
         {/* ── 헤더 ── */}
         <div className="flex items-center justify-between px-5 pt-4 pb-2 shrink-0">
           <div>
             <p className="text-[9px] font-light uppercase tracking-[3px] mb-0.5"
-              style={{color: isSyn ? 'rgba(100,200,255,0.55)' : 'rgba(220,140,255,0.55)'}}>
+              style={{color:`${accentColor}88`}}>
               {isSyn ? '유의어' : '반의어'} 짝 찾기
             </p>
-            <p className="text-[13px] font-light text-white/80">
+            <p className="text-[13px] font-light" style={{color:'rgba(200,235,255,0.8)'}}>
               남은 짝 <span className="font-semibold text-white">{totalPairs - matchedCount}</span> / {totalPairs}
             </p>
           </div>
-          {/* HP 원형 게이지 */}
+          {/* HP 원형 */}
           <div className="relative w-12 h-12 shrink-0">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 48 48">
-              <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3.5"/>
+              <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3"/>
               <circle cx="24" cy="24" r="20" fill="none"
-                stroke={hpColor} strokeWidth="3.5"
+                stroke={hpColor} strokeWidth="3"
                 strokeDasharray={`${2*Math.PI*20}`}
                 strokeDashoffset={`${2*Math.PI*20*(1-hpPct/100)}`}
                 strokeLinecap="round"
-                style={{transition:'stroke-dashoffset 1s linear, stroke 0.5s ease'}}/>
+                style={{transition:'stroke-dashoffset 1s linear, stroke 0.5s ease', filter:`drop-shadow(0 0 4px ${hpColor}88)`}}/>
             </svg>
-            <span className={`absolute inset-0 flex items-center justify-center text-[13px] font-light text-white ${playTimer <= 5 ? 'animate-pulse' : ''}`}>
+            <span className={`absolute inset-0 flex items-center justify-center text-[12px] font-light text-white ${playTimer <= 5 ? 'animate-pulse' : ''}`}>
               {playTimer}
             </span>
           </div>
         </div>
 
-        {/* ── HP 바 (체력처럼) ── */}
+        {/* ── TIME HP 바 ── */}
         <div className="mx-5 mb-3 shrink-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[9px] font-light tracking-widest" style={{color:'rgba(255,255,255,0.35)'}}>TIME HP</span>
-            <span className="text-[9px] font-light ml-auto" style={{color:'rgba(255,255,255,0.35)'}}>{Math.round(hpPct)}%</span>
+            <span className="text-[8px] font-light tracking-[4px] uppercase" style={{color:'rgba(255,255,255,0.25)'}}>TIME HP</span>
+            <span className="text-[8px] font-light ml-auto" style={{color:'rgba(255,255,255,0.25)'}}>{Math.round(hpPct)}%</span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{background:'rgba(255,255,255,0.08)'}}>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{background:'rgba(255,255,255,0.06)'}}>
             <div className="h-full rounded-full transition-all duration-1000"
-              style={{width:`${hpPct}%`, background:`linear-gradient(90deg,${hpColor},${hpColor}cc)`,
-                boxShadow:`0 0 8px ${hpColor}88`,
-                animation: hpPct < 25 ? 'hpPulse 0.8s ease-in-out infinite' : 'none'}}/>
+              style={{
+                width:`${hpPct}%`,
+                background:`linear-gradient(90deg,${hpColor},${hpColor}cc)`,
+                boxShadow:`0 0 10px ${hpColor}99`,
+                animation: hpPct < 25 ? 'hpPulse 0.8s ease-in-out infinite' : 'none'
+              }}/>
           </div>
         </div>
 
@@ -864,44 +873,94 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
             {cards.map((card, ci) => {
               const isSelected = selected.includes(card.id);
               const isWrong = wrong.includes(card.id);
+
               if (card.matched) return (
-                <div key={card.id} className="rounded-[1.2rem] opacity-20"
-                  style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.06)'}}/>
+                <div key={card.id} className="opacity-15 rounded-full"
+                  style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.05)'}}/>
               );
-              /* WORD 카드: 날카로운 느낌 (각진 + solid border) */
-              /* SYN/ANT 카드: 물방울 느낌 (비대칭 border-radius + 반투명) */
-              const wordCardStyle = {
-                background: isWrong ? 'rgba(248,113,113,0.2)'
-                  : isSelected ? 'rgba(255,255,255,0.95)'
-                  : 'rgba(255,255,255,0.12)',
-                border: isWrong ? '1.5px solid rgba(248,113,113,0.7)'
-                  : isSelected ? '1.5px solid rgba(255,255,255,0.9)'
-                  : `1.5px solid ${isSyn ? 'rgba(99,179,237,0.4)' : 'rgba(216,180,254,0.4)'}`,
-                borderRadius: '14px 6px 14px 6px',
-                color: isWrong ? '#fca5a5' : isSelected ? '#0f172a' : 'rgba(255,255,255,0.9)',
-                backdropFilter:'blur(8px)',
-                animation:`wrongShake 0.3s ease ${isWrong?'':'0s paused'}, dropIn 0.28s cubic-bezier(.34,1.56,.64,1) ${ci*0.04}s both`,
+
+              /* ── 물방울 카드 (SYN/ANT) ── */
+              const dropletStyle: React.CSSProperties = {
+                borderRadius: '50% 50% 48% 48% / 55% 55% 45% 45%',
+                background: isWrong
+                  ? 'rgba(240,80,80,0.25)'
+                  : isSelected
+                  ? 'rgba(255,255,255,0.90)'
+                  : isSyn
+                  ? 'linear-gradient(160deg, rgba(0,200,240,0.32) 0%, rgba(0,120,180,0.18) 100%)'
+                  : 'linear-gradient(160deg, rgba(160,80,255,0.32) 0%, rgba(80,30,160,0.18) 100%)',
+                border: isWrong
+                  ? '1.5px solid rgba(255,100,100,0.6)'
+                  : isSelected
+                  ? '1.5px solid rgba(255,255,255,0.95)'
+                  : `1.5px solid ${isSyn ? 'rgba(80,200,240,0.45)' : 'rgba(180,120,255,0.45)'}`,
+                color: isWrong ? '#fca5a5' : isSelected ? '#0a1628' : 'rgba(220,245,255,0.95)',
+                boxShadow: isWrong
+                  ? '0 0 12px rgba(240,80,80,0.35)'
+                  : isSelected
+                  ? `0 0 18px ${accentColor}55, inset 0 -3px 10px rgba(0,0,0,0.1)`
+                  : `0 4px 16px rgba(0,0,0,0.35), inset 0 -3px 8px rgba(0,100,150,0.2), 0 0 8px ${accentColor}22`,
+                animation:`dropIn 0.35s cubic-bezier(.34,1.56,.64,1) ${ci*0.04}s both${isWrong ? ', wrongShake 0.35s ease' : ''}`,
+                backdropFilter: 'blur(4px)',
+                position: 'relative',
+                overflow: 'hidden',
               };
-              const synAntCardStyle = {
-                background: isWrong ? 'rgba(248,113,113,0.2)'
-                  : isSelected ? 'rgba(255,255,255,0.92)'
-                  : isSyn ? 'rgba(59,130,246,0.22)' : 'rgba(168,85,247,0.22)',
-                border: isWrong ? '1.5px solid rgba(248,113,113,0.7)'
-                  : isSelected ? '1.5px solid rgba(255,255,255,0.9)'
-                  : isSyn ? '1.5px solid rgba(99,179,237,0.35)' : '1.5px solid rgba(216,180,254,0.35)',
-                borderRadius: '50% 30% 50% 30% / 40% 50% 40% 50%',
-                color: isWrong ? '#fca5a5' : isSelected ? '#0f172a' : 'rgba(255,255,255,0.92)',
-                backdropFilter:'blur(8px)',
-                animation:`dropIn 0.28s cubic-bezier(.34,1.56,.64,1) ${ci*0.04}s both`,
+
+              /* ── 조약돌 카드 (WORD) ── */
+              const pebbleStyle: React.CSSProperties = {
+                borderRadius: '52% 48% 55% 45% / 45% 50% 50% 55%',
+                background: isWrong
+                  ? 'rgba(240,80,80,0.2)'
+                  : isSelected
+                  ? 'rgba(255,255,255,0.92)'
+                  : 'linear-gradient(145deg, rgba(255,255,255,0.14) 0%, rgba(200,230,255,0.07) 100%)',
+                border: isWrong
+                  ? '1.5px solid rgba(255,100,100,0.6)'
+                  : isSelected
+                  ? '1.5px solid rgba(255,255,255,0.9)'
+                  : '1.5px solid rgba(160,210,240,0.28)',
+                color: isWrong ? '#fca5a5' : isSelected ? '#0a1628' : 'rgba(240,250,255,0.92)',
+                boxShadow: isWrong
+                  ? '0 0 12px rgba(240,80,80,0.3)'
+                  : isSelected
+                  ? '0 0 20px rgba(160,210,240,0.4), inset 0 1px 4px rgba(255,255,255,0.2)'
+                  : '0 3px 12px rgba(0,0,0,0.4), inset 0 1px 3px rgba(255,255,255,0.12), inset 0 -2px 6px rgba(0,50,100,0.3)',
+                animation:`dropIn 0.35s cubic-bezier(.34,1.56,.64,1) ${ci*0.04}s both${isWrong ? ', wrongShake 0.35s ease' : ''}`,
+                backdropFilter: 'blur(6px)',
+                position: 'relative',
+                overflow: 'hidden',
               };
+
+              const cardStyle = card.isHeadword ? pebbleStyle : dropletStyle;
+
               return (
                 <button key={card.id} onClick={() => handleCardClick(card.id)}
-                  className="relative flex flex-col items-center justify-center p-1.5 text-center transition-all duration-200 active:scale-95 min-h-[58px] overflow-hidden"
-                  style={card.isHeadword ? wordCardStyle : synAntCardStyle}>
-                  <span className="absolute top-1 right-1.5 text-[5.5px] font-light uppercase tracking-wide opacity-40">
-                    {card.isHeadword ? 'W' : isSyn ? 'S' : 'A'}
+                  className="relative flex flex-col items-center justify-center p-1.5 text-center transition-all duration-200 active:scale-95 min-h-[58px]"
+                  style={cardStyle}>
+                  {/* 물방울 상단 하이라이트 (SYN/ANT만) */}
+                  {!card.isHeadword && !isWrong && !isSelected && (
+                    <div style={{
+                      position:'absolute', top:'10%', left:'20%', right:'20%', height:'22%',
+                      background:'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 100%)',
+                      borderRadius:'50%',
+                      filter:'blur(1px)',
+                      animation:'shimmer 2.5s ease-in-out infinite',
+                    }}/>
+                  )}
+                  {/* 조약돌 표면 광택 (WORD만) */}
+                  {card.isHeadword && !isWrong && !isSelected && (
+                    <div style={{
+                      position:'absolute', top:'8%', left:'15%', width:'35%', height:'18%',
+                      background:'linear-gradient(135deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0) 100%)',
+                      borderRadius:'50%',
+                      filter:'blur(1.5px)',
+                    }}/>
+                  )}
+                  <span className="absolute top-1 right-1.5 text-[5px] font-light uppercase tracking-wide opacity-35 z-10"
+                    style={{color: card.isHeadword ? 'rgba(200,230,255,0.8)' : accentColor}}>
+                    {card.isHeadword ? 'W' : isSyn ? 'SYN' : 'ANT'}
                   </span>
-                  <span className={`text-[10.5px] font-light leading-tight break-words w-full ${isSelected ? 'font-semibold' : ''}`}>
+                  <span className={`text-[10.5px] font-light leading-tight break-words w-full text-center z-10 px-1 ${isSelected ? 'font-semibold' : ''}`}>
                     {card.content}
                   </span>
                 </button>
@@ -909,63 +968,18 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
             })}
           </div>
         </div>
-        <button onClick={onExit} className="shrink-0 text-[10px] font-light text-white/30 py-3 text-center hover:text-white/60 transition-colors">
+        <button onClick={onExit} className="shrink-0 text-[10px] font-light py-3 text-center hover:opacity-60 transition-opacity"
+          style={{color:'rgba(255,255,255,0.25)'}}>
           ← 포기하기
         </button>
       </div>
     );
   }
 
-  if (gamePhase === 'round_result' && synResult) {
-    const passed = synResult.passed;
-    return (
-      <div className={`flex flex-col items-center justify-center h-full bg-gradient-to-br ${passed ? 'from-blue-500 to-indigo-600' : 'from-slate-700 to-slate-900'} text-white px-8 text-center gap-6`}>
-        <div className="w-24 h-24 rounded-[1.8rem] flex items-center justify-center text-5xl shadow-2xl bg-white/20">{passed ? '🎉' : '⏰'}</div>
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-widest opacity-60 mb-1">유의어 라운드</p>
-          <h2 className="text-3xl font-black">{passed ? 'PASS!' : 'FAIL'}</h2>
-          <p className="text-[13px] opacity-70 mt-2">{passed ? '완벽해! 반의어도 도전해봐' : '아쉽다… 반의어도 도전해봐!'}</p>
-        </div>
-        {hasAntRound && (
-          <button onClick={() => { setCards(buildRound('antonym')); setCurrentRound('antonym'); setSelected([]); setWrong([]); setGamePhase('playing'); }}
-            className="h-14 px-10 bg-white text-foreground font-black rounded-2xl shadow-xl hover:-translate-y-0.5 transition-all">
-            반의어 라운드 시작 →
-          </button>
-        )}
-        <button onClick={onExit} className="text-[12px] opacity-50 underline">종료</button>
-      </div>
-    );
-  }
-
-  const synPassed = !synResult || synResult.passed;
-  const antPassed = !antResult || antResult.passed;
-  const overallPass = synPassed && antPassed;
-  return (
-    <div className={`flex flex-col items-center justify-center h-full bg-gradient-to-br ${overallPass ? 'from-teal-500 to-emerald-700' : 'from-slate-700 to-slate-900'} text-white px-8 text-center gap-6`}>
-      <div className="w-28 h-28 rounded-[2rem] bg-white/20 flex items-center justify-center text-6xl shadow-2xl backdrop-blur">
-        {overallPass ? '🏆' : '📖'}
-      </div>
-      <div>
-        <p className="text-[11px] font-black uppercase tracking-widest opacity-60 mb-1">최종 결과</p>
-        <h2 className="text-4xl font-black">{overallPass ? 'PASS! 🎉' : 'FAIL'}</h2>
-        <p className="text-[13px] opacity-70 mt-2">{overallPass ? 'PASS 인장이 찍혔어요! 👏' : '한 번 더 연습하면 분명 통과할 수 있어!'}</p>
-      </div>
-      <div className="w-full max-w-xs space-y-2">
-        {synResult && <div className={`flex items-center justify-between px-5 py-3 rounded-2xl bg-white/10 border ${synPassed ? 'border-white/30' : 'border-rose-300/30'}`}>
-          <span className="text-[13px] font-bold">유의어 라운드</span>
-          <span className={`text-[12px] font-black ${synPassed ? 'text-white' : 'text-rose-300'}`}>{synPassed ? 'PASS ✓' : 'FAIL ✗'}</span>
-        </div>}
-        {antResult && <div className={`flex items-center justify-between px-5 py-3 rounded-2xl bg-white/10 border ${antPassed ? 'border-white/30' : 'border-rose-300/30'}`}>
-          <span className="text-[13px] font-bold">반의어 라운드</span>
-          <span className={`text-[12px] font-black ${antPassed ? 'text-white' : 'text-rose-300'}`}>{antPassed ? 'PASS ✓' : 'FAIL ✗'}</span>
-        </div>}
-      </div>
-      <button onClick={onExit} className="h-14 px-10 bg-white text-foreground font-black rounded-2xl shadow-xl hover:-translate-y-0.5 transition-all">다시 선택</button>
-    </div>
-  );
-}
+} // end GameMode
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function WordTestPage() {
   const router = useRouter();
   const [phase, setPhase] = useState<"loading" | "intro" | "vocab_loading" | "vocab_test" | "vocab_result" | "test" | "result" | "game">("loading");

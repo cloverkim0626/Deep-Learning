@@ -231,45 +231,22 @@ function LoginForm() {
 }
 
 function LoginBg({ isStudent }: { isStudent: boolean }) {
+  if (isStudent) return null; // 학생은 main에서 직접 CSS 그라디언트 처리
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-      {isStudent ? (
-        <>
-          {/* 전체 틴트 — 이미지 노출은 살리되 텍스트 대비만 확보 */}
-          <div style={{ position:'absolute', inset:0, background:'rgba(8,14,26,0.38)' }}/>
-          {/* 비네트 — 가장자리 어둡게 */}
-          <div style={{
-            position:'absolute', inset:0,
-            background:'radial-gradient(ellipse 85% 90% at 50% 50%, transparent 50%, rgba(0,0,0,0.55) 100%)',
-          }}/>
-          {/* 상단 다크 — 로고/타이틀 대비 */}
-          <div style={{
-            position:'absolute', top:0, left:0, right:0, height:'45%',
-            background:'linear-gradient(180deg, rgba(5,10,20,0.60) 0%, transparent 100%)',
-          }}/>
-          {/* 하단 그라디언트 — 입력폼 영역 대비 */}
-          <div style={{
-            position:'absolute', bottom:0, left:0, right:0, height:'55%',
-            background:'linear-gradient(0deg, rgba(5,10,20,0.72) 0%, rgba(5,10,20,0.15) 75%, transparent 100%)',
-          }}/>
-        </>
-      ) : (
-        <>
-          <div style={{ position:'absolute', inset:0, background:'rgba(3,12,25,0.52)' }}/>
-          <div style={{
-            position:'absolute', inset:0,
-            background:'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(10,130,175,0.22) 0%, transparent 70%)',
-          }}/>
-          <div style={{
-            position:'absolute', bottom:0, left:0, right:0, height:'35%',
-            background:'linear-gradient(0deg, rgba(2,8,18,0.6) 0%, transparent 100%)',
-          }}/>
-          <div style={{
-            position:'absolute', top:0, left:0, right:0, height:'20%',
-            background:'linear-gradient(180deg, rgba(2,8,18,0.4) 0%, transparent 100%)',
-          }}/>
-        </>
-      )}
+      <div style={{ position:'absolute', inset:0, background:'rgba(3,12,25,0.52)' }}/>
+      <div style={{
+        position:'absolute', inset:0,
+        background:'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(10,130,175,0.22) 0%, transparent 70%)',
+      }}/>
+      <div style={{
+        position:'absolute', bottom:0, left:0, right:0, height:'35%',
+        background:'linear-gradient(0deg, rgba(2,8,18,0.6) 0%, transparent 100%)',
+      }}/>
+      <div style={{
+        position:'absolute', top:0, left:0, right:0, height:'20%',
+        background:'linear-gradient(180deg, rgba(2,8,18,0.4) 0%, transparent 100%)',
+      }}/>
     </div>
   );
 }
@@ -279,10 +256,17 @@ function LoginPageInner() {
   const isStudent = (searchParams.get("role") ?? "student") === "student";
   return (
     <main className="flex justify-center items-center min-h-screen p-6 relative overflow-hidden"
-      style={{
-        backgroundImage: isStudent ? "url('/student-login-bg.jpg')" : "url('/sotw-poster.jpg')",
+      style={isStudent ? {
+        /* 심해 CSS 그라디언트 — 이미지 없이 홈과 동일 계열 */
+        background: `
+          radial-gradient(ellipse 80% 55% at 50% 30%, rgba(0,120,160,0.28) 0%, transparent 65%),
+          radial-gradient(ellipse 60% 40% at 20% 70%, rgba(0,80,120,0.18) 0%, transparent 60%),
+          linear-gradient(170deg, #030c19 0%, #050f20 25%, #060e1c 50%, #071828 75%, #050d1a 100%)
+        `,
+      } : {
+        backgroundImage: "url('/sotw-poster.jpg')",
         backgroundSize: 'cover',
-        backgroundPosition: isStudent ? 'center 30%' : 'center center',
+        backgroundPosition: 'center center',
         backgroundRepeat: 'no-repeat',
       }}>
       <LoginBg isStudent={isStudent} />
@@ -300,5 +284,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-
-
