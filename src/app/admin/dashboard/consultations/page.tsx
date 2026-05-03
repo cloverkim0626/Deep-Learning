@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Search, RefreshCw, ChevronDown, MessageSquare, GraduationCap, Clock, Phone, CheckCircle } from "lucide-react";
+import { Search, RefreshCw, ChevronDown, GraduationCap, Clock, Phone, CheckCircle, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type Application = {
@@ -47,6 +47,7 @@ export default function ConsultationsPage() {
   const [editNote, setEditNote] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -74,6 +75,13 @@ export default function ConsultationsPage() {
     await supabase.from("trial_applications").update({ admin_note: editNote[id] ?? "" }).eq("id", id);
     setApps(prev => prev.map(a => a.id === id ? { ...a, admin_note: editNote[id] ?? "" } : a));
     setSavingId(null);
+  };
+
+  const deleteApp = async (id: string) => {
+    await supabase.from("trial_applications").delete().eq("id", id);
+    setApps(prev => prev.filter(a => a.id !== id));
+    setConfirmDeleteId(null);
+    if (expandedId === id) setExpandedId(null);
   };
 
   const filtered = apps.filter(a => {
@@ -274,6 +282,31 @@ export default function ConsultationsPage() {
                           }
                         </button>
                       </div>
+                    </div>
+
+                    {/* 삭제 */}
+                    <div className="pt-1 border-t border-slate-50">
+                      {confirmDeleteId === app.id ? (
+                        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
+                          style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                          <p className="flex-1 text-[11px] font-black text-red-500">정말 삭제할까요?</p>
+                          <button onClick={() => setConfirmDeleteId(null)}
+                            className="px-3 py-1.5 rounded-lg text-[11px] font-black border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all">
+                            취소
+                          </button>
+                          <button onClick={() => deleteApp(app.id)}
+                            className="px-3 py-1.5 rounded-lg text-[11px] font-black text-white transition-all"
+                            style={{ background: "#ef4444" }}>
+                            삭제 확인
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(app.id)}
+                          className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 hover:text-red-400 transition-colors">
+                          <Trash2 size={12} /> 신청 삭제
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
