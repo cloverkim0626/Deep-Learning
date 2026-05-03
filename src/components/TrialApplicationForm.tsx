@@ -292,7 +292,7 @@ export default function TrialApplicationForm({ onClose }: Props) {
               {/* 청강 반 선택 */}
               {wantsAuditClass && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <label className="text-[11px] font-black text-slate-400 block">청강 희망 반</label>
+                  <label className="text-[11px] font-black text-slate-400 block">청강 희망 반 <span className="font-medium text-slate-300">(검단 우독학원)</span></label>
                   {CLASSES.map(cls => (
                     <button key={cls.name} onClick={() => setAuditClassPref(cls.name)}
                       className="w-full px-4 py-3 rounded-2xl border-2 flex items-center justify-between transition-all"
