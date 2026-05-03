@@ -216,7 +216,8 @@ export default function QnAPage() {
         ) : posts.map(post => {
           const isMine = isMyPost(post.author);
           const isEditingThisPost = editingPostId === post.id;
-          const initial = post.author.length > 1 ? post.author.slice(-2) : post.author.charAt(0);
+          const displayAuthor = isMine ? post.author : '익명';
+          const initial = isMine ? (post.author.length > 1 ? post.author.slice(-2) : post.author.charAt(0)) : '익';
           const heartCount = (hearts[post.id] || []).length;
           const liked = (hearts[post.id] || []).includes(studentName);
 
@@ -236,7 +237,7 @@ export default function QnAPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-black leading-none" style={{ color: "#ffffff" }}>
-                    {isMine ? `${post.author} (나)` : post.author}
+                    {isMine ? `${post.author} (나)` : '익명'}
                   </p>
                   <p className="text-[10px] mt-0.5 truncate" style={{ color: "rgba(180,155,255,0.85)" }}>
                     📚 {post.passage}
@@ -320,7 +321,7 @@ export default function QnAPage() {
                       const isMe = ans.author === studentName;
                       const isEditingThis = editingAnswerId === ans.id;
                       const isDeletingThis = deletingAnswerId === ans.id;
-                      const ansInitial = ans.author.length > 1 ? ans.author.slice(-2) : ans.author.charAt(0);
+                      const ansInitial = ans.isTeacher ? 'T' : isMe ? (ans.author.length > 1 ? ans.author.slice(-2) : ans.author.charAt(0)) : '익';
                       return (
                         <div key={ans.id} className="flex items-start gap-2.5">
                           <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5"
@@ -331,7 +332,7 @@ export default function QnAPage() {
                             <div className="flex items-center gap-1.5 mb-1">
                               {ans.isTeacher && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full" style={{ background: "rgba(245,158,11,0.2)", color: "#fbbf24" }}>⭐ 선생님</span>}
                               <span className="text-[11px] font-bold" style={{ color: ans.isTeacher ? "#fbbf24" : "rgba(255,255,255,0.65)" }}>
-                                {ans.isTeacher ? "선생님" : isMe ? `${ans.author} (나)` : ans.author}
+                                {ans.isTeacher ? '선생님' : isMe ? `${ans.author} (나)` : '익명'}
                               </span>
                               <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.2)" }}>{ans.time}</span>
                             </div>

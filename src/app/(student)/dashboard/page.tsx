@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
@@ -38,24 +38,32 @@ const TIME_FILTERS: { value: TimeFilter; label: string; icon: React.ReactNode }[
   { value: '1m', label: '1달', icon: <Calendar size={11} /> },
 ];
 
-// ─── TTS Helper — Windows male voice (Microsoft David/Mark) ──────────────────
-// 남성 목소리 이름 우선순위 (Windows/Mac/Chrome 공통)
-const MALE_NAMES = ['david', 'mark', 'james', 'paul', 'richard', 'fred', 'alex', 'daniel', 'george'];
-const FEMALE_NAMES = ['zira', 'hazel', 'susan', 'samantha', 'victoria', 'karen', 'moira', 'fiona'];
+// \u2500\u2500\u2500 TTS Helper \u2014 US male voice \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// 우선순위: en-US 난성 명시적 이름 → en-US 여성 제외 → 기타 en-US → 기타 en
+const US_MALE_NAMES = ['guy', 'david', 'mark', 'james', 'paul', 'richard', 'fred', 'alex', 'daniel', 'george', 'liam', 'christopher', 'evan', 'eric', 'oliver', 'wayne', 'tom'];
+const FEMALE_NAMES = ['zira', 'hazel', 'susan', 'samantha', 'victoria', 'karen', 'moira', 'fiona', 'aria', 'jenny', 'ana', 'michelle', 'sonia'];
 
 function pickMaleVoice(): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
   if (!voices.length) return null;
+
+  // 1순위: en-US 만 대상, 남성 이름 일치
+  const usVoices = voices.filter(v => v.lang === 'en-US');
+  for (const name of US_MALE_NAMES) {
+    const v = usVoices.find(v => v.name.toLowerCase().includes(name));
+    if (v) return v;
+  }
+  // 2순위: en-US 여성 제외
+  const usNonFemale = usVoices.filter(v => !FEMALE_NAMES.some(f => v.name.toLowerCase().includes(f)));
+  if (usNonFemale.length) return usNonFemale[0];
+  // 3순위: 기타 en- 난성
   const enVoices = voices.filter(v => v.lang.startsWith('en'));
-  // 명시적 남성 이름 포함한 목소리 우선
-  for (const name of MALE_NAMES) {
+  for (const name of US_MALE_NAMES) {
     const v = enVoices.find(v => v.name.toLowerCase().includes(name));
     if (v) return v;
   }
-  // 여성 이름 제외한 en-US 목소리
-  const nonFemale = enVoices.filter(v => !FEMALE_NAMES.some(f => v.name.toLowerCase().includes(f)));
-  if (nonFemale.length) return nonFemale[0];
-  return enVoices[0] || null;
+  const enNonFemale = enVoices.filter(v => !FEMALE_NAMES.some(f => v.name.toLowerCase().includes(f)));
+  return enNonFemale[0] || enVoices[0] || null;
 }
 
 // 앱 시작 시 voices 미리 로딩 (Chrome은 최초 호출 필요)
@@ -70,10 +78,14 @@ function speakWord(word: string) {
   const doSpeak = () => {
     const utt = new SpeechSynthesisUtterance(word);
     utt.lang = "en-US";
-    utt.rate = 0.80;
-    utt.pitch = 0.85; // 남성: pitch 낮게
+    utt.rate = 0.78;
+    utt.pitch = 0.80; // 난성: pitch 낙게
+    utt.volume = 1.0;
     const voice = pickMaleVoice();
-    if (voice) utt.voice = voice;
+    if (voice) {
+      utt.voice = voice;
+      utt.lang = voice.lang; // 목소리 지정 시 lang도 동기화
+    }
     window.speechSynthesis.speak(utt);
   };
 
@@ -81,14 +93,12 @@ function speakWord(word: string) {
   if (voices.length > 0) {
     doSpeak();
   } else {
-    // voices 아직 로딩 중 — 완료 후 실행
     window.speechSynthesis.onvoiceschanged = () => {
       window.speechSynthesis.onvoiceschanged = null;
       doSpeak();
     };
   }
 }
-
 // ─── POS full name ────────────────────────────────────────────────────────────
 const POS_FULL: Record<string, string> = {
   n: 'noun', v: 'verb', adj: 'adjective', adv: 'adverb',

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { getAllPassagesForEssay, getEssayPromptTemplates } from "@/lib/database-service";
@@ -247,6 +247,7 @@ export default function EssayPage() {
   const [results,       setResults]       = useState<ScoreResult[]>([]);
   const [stage,         setStage]         = useState<Stage>("select-passage");
   const [copied,        setCopied]        = useState<number | null>(null);
+  const [filterOpen,    setFilterOpen]    = useState(true); // 지문 필터 접기
 
   // ── 초기화 ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -532,18 +533,31 @@ export default function EssayPage() {
         {/* ══ STEP 1: 지문 선택 ═══════════════════════════════════════════════ */}
         {stage === "select-passage" && (
           <div className="space-y-3 pt-4">
-            {[
-              { label: "교재", value: filterWorkbook, opts: workbooks,
+            {/* 필터 접기/펼치기 버튼 */}
+            <button
+              onClick={() => setFilterOpen(o => !o)}
+              className="flex items-center gap-1.5 text-[10px] font-black rounded-xl px-3 py-2 transition-all w-full"
+              style={{ background: 'rgba(255,255,255,0.06)', color: filterOpen ? 'rgba(200,180,255,0.9)' : 'rgba(255,255,255,0.50)' }}
+            >
+              <BookOpen size={11} />
+              {filterWorkbook !== '전체' || filterMid !== '전체' || filterSub !== '전체'
+                ? `${[filterWorkbook, filterMid, filterSub].filter(v => v !== '전체').join(' · ')}`
+                : '교재 / 단원 필터'}
+              <ChevronDown size={10} className={`ml-auto transition-transform duration-200 ${filterOpen ? '' : '-rotate-90'}`} />
+            </button>
+            {/* 3개 드롭다운 (접힌 시 숨김) */}
+            {filterOpen && [
+              { label: '교재', value: filterWorkbook, opts: workbooks,
                 set: (v: string) => {
-                  setFilterWorkbook(v); setFilterMid("전체"); setFilterSub("전체");
+                  setFilterWorkbook(v); setFilterMid('전체'); setFilterSub('전체');
                   try { localStorage.setItem('essay_last_path', JSON.stringify({ workbook: v, mid: '전체', sub: '전체' })); } catch { /* noop */ }
                 }},
-              { label: "중분류", value: filterMid, opts: mids,
+              { label: '중분류', value: filterMid, opts: mids,
                 set: (v: string) => {
-                  setFilterMid(v); setFilterSub("전체");
+                  setFilterMid(v); setFilterSub('전체');
                   try { localStorage.setItem('essay_last_path', JSON.stringify({ workbook: filterWorkbook, mid: v, sub: '전체' })); } catch { /* noop */ }
                 }},
-              { label: "소분류", value: filterSub, opts: subs,
+              { label: '소분류', value: filterSub, opts: subs,
                 set: (v: string) => {
                   setFilterSub(v);
                   try { localStorage.setItem('essay_last_path', JSON.stringify({ workbook: filterWorkbook, mid: filterMid, sub: v })); } catch { /* noop */ }

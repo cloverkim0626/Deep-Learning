@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Send, Sparkles, Loader2, MessageSquare, RotateCcw, BookOpen, ChevronDown } from "lucide-react";
@@ -23,10 +23,10 @@ type Passage = {
   full_text: string | null;
 };
 
-const STORAGE_KEY_PREFIX = "parallax_chat_";
+const STORAGE_KEY_PREFIX = "genie_chat_";
 const MAX_HISTORY = 40;
 
-const OPENING_TEXT = `안녕! **Parallax AI 튜터**야. 고등학교 영어 전문 튜터로, 수능 영어와 내신 영어 모두 도와줄 수 있어.
+const OPENING_TEXT = `안녕! **Genie**야. 고등학교 영어 전문 튜터로, 수능 영어와 내신 영어 모두 도와줄 수 있어.
 
 지문 구조 분석, 어법 질문, 어휘 의미, 독해 전략, 공부법 등 영어에 관한 건 뭐든 물어봐.
 
@@ -48,6 +48,7 @@ export default function AITeacherPage() {
   const [studentName, setStudentName] = useState("학생");
   const [chatInitialized, setChatInitialized] = useState(false);
   const [passagesLoading, setPassagesLoading] = useState(true);
+  const [selectorOpen, setSelectorOpen] = useState(true); // 선택기 접기/폼치기
 
   const getName = useCallback(() => {
     try {
@@ -278,48 +279,64 @@ export default function AITeacherPage() {
           <Sparkles size={16} strokeWidth={1.5} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2.5">
-            <h1 className="text-[14px] text-foreground font-black">Parallax AI 튜터</h1>
+          <div className="flex items-center gap-2 mb-2">
+            <h1 className="text-[14px] text-white font-black">✨ Genie</h1>
             <span className="text-[9px] font-black text-accent/60 bg-accent-light px-2 py-0.5 rounded-md border border-foreground/5 uppercase tracking-widest">
               {messages.length > 1 ? `${messages.length}개 대화` : "새 대화"}
             </span>
             {passagesLoading && <span className="text-[9px] text-accent/40 font-bold">지문 로딩 중...</span>}
           </div>
 
-          {/* ── 3단계 필터 ── */}
-          <div className="space-y-1.5">
-            {/* Row 1: 교재 + 중분류 */}
-            <div className="grid grid-cols-2 gap-1.5">
-              <SelectBox value={filterWorkbook} onChange={changeWorkbook}>
-                {workbooks.map(w => <option key={w} value={w}>{w === "전체" ? "📚 교재 전체" : w}</option>)}
-              </SelectBox>
-              <SelectBox value={filterMid} onChange={changeMid}>
-                {midCategories.map(c => <option key={c} value={c}>{c === "전체" ? "📂 단원 전체" : c}</option>)}
-              </SelectBox>
+          {/* ── 지문 선택 버튼 (접기/폼치기) ── */}
+          <button
+            onClick={() => setSelectorOpen(o => !o)}
+            className="flex items-center gap-1.5 text-[10px] font-black rounded-xl px-2.5 py-1.5 transition-all mb-1.5"
+            style={{ background: 'rgba(255,255,255,0.06)', color: selectorOpen ? 'rgba(200,180,255,0.9)' : 'rgba(255,255,255,0.40)' }}
+          >
+            <BookOpen size={11} />
+            {selectedSetId !== 'none' && !selectorOpen
+              ? (() => { const p = passages.find(x => x.id === selectedSetId); return p ? (p.label || '지문 선택됨') : '지문 선택'; })()
+              : '지문 선택'
+            }
+            <ChevronDown size={10} className={`ml-auto transition-transform duration-200 ${selectorOpen ? '' : '-rotate-90'}`} />
+          </button>
+
+          {/* ── 3단계 필터 (selectorOpen 일 때만 표시) ── */}
+          {selectorOpen && (
+            <div className="space-y-1.5">
+              {/* Row 1: 교재 + 중분류 */}
+              <div className="grid grid-cols-2 gap-1.5">
+                <SelectBox value={filterWorkbook} onChange={changeWorkbook}>
+                  {workbooks.map(w => <option key={w} value={w}>{w === "전체" ? "📚 교재 전체" : w}</option>)}
+                </SelectBox>
+                <SelectBox value={filterMid} onChange={changeMid}>
+                  {midCategories.map(c => <option key={c} value={c}>{c === "전체" ? "📂 단원 전체" : c}</option>)}
+                </SelectBox>
+              </div>
+              {/* Row 2: 소분류 (있을 때만) */}
+              {subCategories.length > 0 && (
+                <SelectBox value={filterSub} onChange={changeSub}>
+                  {subCategories.map(c => <option key={c} value={c}>{c === "전체" ? "📁 소단원 전체" : c}</option>)}
+                </SelectBox>
+              )}
+              {/* Row 3: 지문 선택 */}
+              <div className="relative">
+                <select
+                  value={selectedSetId}
+                  onChange={e => { setSelectedSetId(e.target.value); if (e.target.value !== 'none') setSelectorOpen(false); }}
+                  className="w-full bg-foreground/5 border border-foreground/10 text-foreground text-[11px] font-bold rounded-xl px-3 py-2 appearance-none focus:outline-none cursor-pointer pr-8 hover:border-foreground/20 transition-all"
+                >
+                  <option value="none">지문 없이 자유 질문</option>
+                  {filteredPassages.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {[a.sub_sub_category, a.passage_number ? `${a.passage_number}번` : ""].filter(Boolean).join(" · ")}{" "}{a.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
+              </div>
             </div>
-            {/* Row 2: 소분류 (있을 때만) */}
-            {subCategories.length > 0 && (
-              <SelectBox value={filterSub} onChange={changeSub}>
-                {subCategories.map(c => <option key={c} value={c}>{c === "전체" ? "📁 소단원 전체" : c}</option>)}
-              </SelectBox>
-            )}
-            {/* Row 3: 지문 선택 */}
-            <div className="relative">
-              <select
-                value={selectedSetId}
-                onChange={e => setSelectedSetId(e.target.value)}
-                className="w-full bg-foreground/5 border border-foreground/10 text-foreground text-[11px] font-bold rounded-xl px-3 py-2 appearance-none focus:outline-none cursor-pointer pr-8 hover:border-foreground/20 transition-all"
-              >
-                <option value="none">지문 없이 자유 질문</option>
-                {filteredPassages.map(a => (
-                  <option key={a.id} value={a.id}>
-                    {[a.sub_sub_category, a.passage_number ? `${a.passage_number}번` : ""].filter(Boolean).join(" · ")}{" "}{a.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
-            </div>
-          </div>
+          )}
         </div>
         <button
           onClick={handleClearChat}
