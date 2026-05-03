@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Send, MessageCircle, Plus, X, Trash2, Pencil, Check, ChevronRight } from "lucide-react";
 import {
   getQnaPosts, createQnaPost, addQnaAnswer,
@@ -63,6 +64,8 @@ export default function QnAPage() {
   // ── Supabase 기반 하트 state ──
   const [hearts, setHearts] = useState<Hearts>({});
   const [heartLoading, setHeartLoading] = useState<string | null>(null); // 낙관적 업데이트 중 중복 방지
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     try {
@@ -402,9 +405,9 @@ export default function QnAPage() {
           );
         })}
       </div>
-      {/* ── 질문 등록 모달 ── */}
-      {showModal && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center animate-in fade-in duration-300">
+      {/* ── 질문 등록 모달 (Portal — overflow clip 회피) ── */}
+      {showModal && mounted && createPortal(
+        <div className="fixed inset-0 z-[500] flex items-end justify-center animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-foreground/20 backdrop-blur-md" onClick={() => { setShowModal(false); resetModal(); }} />
           <div className="relative w-full max-w-md bg-background rounded-t-[3rem] p-8 shadow-[0_-24px_80px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom duration-500 max-h-[85vh] flex flex-col">
             <div className="flex justify-center mb-8"><div className="w-14 h-1.5 rounded-full bg-foreground/10" /></div>
@@ -471,7 +474,8 @@ export default function QnAPage() {
             </div>
             <div className="h-6" />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

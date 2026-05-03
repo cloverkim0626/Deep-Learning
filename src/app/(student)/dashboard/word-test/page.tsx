@@ -768,7 +768,7 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
 
   useEffect(() => {
     if (gamePhase !== 'playing') return;
-    const total = Math.max(pairs * 4, 8) + 5;
+    const total = Math.max(pairs * 5, 10) + 5;
     setPlayTimer(total);
     timerRef.current = setInterval(() => {
       setPlayTimer(t => { if (t <= 1) { clearInterval(timerRef.current!); endRound(false); return 0; } return t - 1; });
@@ -795,7 +795,7 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
     }
   };
 
-  const timerPct = pairs > 0 ? (playTimer / (Math.max(pairs * 4, 8) + 5)) * 100 : 100;
+  const timerPct = pairs > 0 ? (playTimer / (Math.max(pairs * 5, 10) + 5)) * 100 : 100;
   const roundLabel = currentRound === 'synonym' ? '유의어' : '반의어';
   const roundBg = currentRound === 'synonym' ? 'from-blue-600 to-indigo-700' : 'from-rose-600 to-pink-700';
 
@@ -1232,9 +1232,14 @@ export default function WordTestPage() {
         }
       }
 
-      // DB 완료 처리 비동기 트리거
+      // DB 완료 처리 — await으로 확실히 기록
       for (const id of fullyPassedIds) {
-        autoCompleteAssignmentIfAllPassed(name, id).catch(() => {});
+        try {
+          const ok = await autoCompleteAssignmentIfAllPassed(name, id);
+          if (!ok) console.warn('[loadSets] autoComplete returned false for set:', id);
+        } catch (e) {
+          console.error('[loadSets] autoComplete exception for set:', id, e);
+        }
       }
 
       setAllSets((assignments || []).filter(Boolean)

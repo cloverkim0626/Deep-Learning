@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
@@ -401,13 +401,19 @@ export default function VocabDashboard() {
 
   const nextWord = () => {
     if (wordIdx < (currentSet?.words.length || 0) - 1) {
-      setWordIdx(wordIdx + 1); setIsFlipped(false);
+      const nextIdx = wordIdx + 1;
+      setWordIdx(nextIdx); setIsFlipped(false);
+      const nextW = currentSet?.words[nextIdx];
+      if (nextW) speakWord(nextW.word);
     }
   };
 
   const prevWord = () => {
     if (wordIdx > 0) {
-      setWordIdx(wordIdx - 1); setIsFlipped(false);
+      const prevIdx = wordIdx - 1;
+      setWordIdx(prevIdx); setIsFlipped(false);
+      const prevW = currentSet?.words[prevIdx];
+      if (prevW) speakWord(prevW.word);
     }
   };
 
