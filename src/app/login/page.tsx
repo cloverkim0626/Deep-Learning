@@ -239,24 +239,9 @@ function LoginForm() {
 }
 
 function LoginBg({ isStudent }: { isStudent: boolean }) {
-  if (isStudent) return null; // 학생은 main에서 직접 CSS 그라디언트 처리
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-      <div style={{ position:'absolute', inset:0, background:'rgba(3,12,25,0.52)' }}/>
-      <div style={{
-        position:'absolute', inset:0,
-        background:'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(10,130,175,0.22) 0%, transparent 70%)',
-      }}/>
-      <div style={{
-        position:'absolute', bottom:0, left:0, right:0, height:'35%',
-        background:'linear-gradient(0deg, rgba(2,8,18,0.6) 0%, transparent 100%)',
-      }}/>
-      <div style={{
-        position:'absolute', top:0, left:0, right:0, height:'20%',
-        background:'linear-gradient(180deg, rgba(2,8,18,0.4) 0%, transparent 100%)',
-      }}/>
-    </div>
-  );
+  if (isStudent) return null;
+  // 선생님: IG 다크 그라디언트 (main style에서 직접 처리)
+  return null;
 }
 
 function LoginPageInner() {
@@ -265,17 +250,20 @@ function LoginPageInner() {
   return (
     <main className="flex justify-center items-center min-h-screen p-6 relative overflow-hidden"
       style={isStudent ? {
-        /* 심해 CSS 그라디언트 — 이미지 없이 홈과 동일 계열 */
+        /* 학생: 심해 CSS 그라디언트 */
         background: `
           radial-gradient(ellipse 80% 55% at 50% 30%, rgba(0,120,160,0.28) 0%, transparent 65%),
           radial-gradient(ellipse 60% 40% at 20% 70%, rgba(0,80,120,0.18) 0%, transparent 60%),
           linear-gradient(170deg, #030c19 0%, #050f20 25%, #060e1c 50%, #071828 75%, #050d1a 100%)
         `,
       } : {
-        backgroundImage: "url('/sotw-poster.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center center',
-        backgroundRepeat: 'no-repeat',
+        /* 선생님: IG 다크 ambient 배경 */
+        background: `
+          radial-gradient(ellipse 70% 60% at 20% 20%, rgba(64,93,230,0.30) 0%, transparent 60%),
+          radial-gradient(ellipse 60% 55% at 80% 80%, rgba(131,58,180,0.25) 0%, transparent 55%),
+          radial-gradient(ellipse 50% 50% at 50% 50%, rgba(225,48,108,0.12) 0%, transparent 65%),
+          linear-gradient(145deg, #08080f 0%, #0c0814 40%, #08080f 100%)
+        `,
       }}>
       <LoginBg isStudent={isStudent} />
       <Suspense fallback={<div className="serif font-bold animate-pulse z-10 relative" style={{color:'rgba(255,255,255,0.7)'}}>Loading...</div>}>

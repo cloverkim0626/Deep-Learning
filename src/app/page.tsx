@@ -36,110 +36,73 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 relative overflow-hidden">
 
-      {/* Shape of Water — 길예르모 델 토로 수중 감성 배경 */}
+      {/* ── IG 다크 Ambient 배경 ── */}
       <style>{`
-        @keyframes sotWaterRay {
-          0%,100%{opacity:0.08;transform:rotate(var(--ra)) scaleX(1)}
-          40%{opacity:0.16;transform:rotate(calc(var(--ra)+1deg)) scaleX(1.05)}
-          70%{opacity:0.1;transform:rotate(calc(var(--ra)-0.6deg)) scaleX(0.97)}
+        @keyframes igOrb1 {
+          0%,100%{transform:translate(0,0) scale(1);opacity:0.55}
+          40%{transform:translate(12px,-8px) scale(1.08);opacity:0.75}
+          70%{transform:translate(-8px,5px) scale(0.95);opacity:0.60}
         }
-        @keyframes sotGlow {
-          0%,100%{opacity:0.5;transform:scale(1)}
-          50%{opacity:0.8;transform:scale(1.06)}
+        @keyframes igOrb2 {
+          0%,100%{transform:translate(0,0) scale(1);opacity:0.40}
+          33%{transform:translate(-10px,14px) scale(1.06);opacity:0.60}
+          66%{transform:translate(8px,-6px) scale(0.97);opacity:0.45}
         }
-        @keyframes sotBio {
-          0%,100%{opacity:0.15;transform:translate(0,0) scale(1)}
-          40%{opacity:0.35;transform:translate(2px,4px) scale(1.1)}
-          70%{opacity:0.2;transform:translate(-3px,2px) scale(0.95)}
+        @keyframes igOrb3 {
+          0%,100%{transform:translate(0,0) scale(1);opacity:0.30}
+          50%{transform:translate(6px,-10px) scale(1.10);opacity:0.50}
         }
-        @keyframes sotCaustic {
-          0%,100%{opacity:0.06} 50%{opacity:0.14}
-        }
-        @keyframes sotRipple {
-          0%,100%{transform:scaleX(1) scaleY(1);opacity:0.04}
-          33%{transform:scaleX(1.03) scaleY(0.97) translateX(6px);opacity:0.08}
-          66%{transform:scaleX(0.97) scaleY(1.02) translateX(-4px);opacity:0.05}
-        }
-        .sot-ray {
-          position:absolute;top:-5%;left:50%;
-          transform-origin:top center;
-          animation:sotWaterRay var(--pd) ease-in-out infinite;
+        @keyframes igShimmer {
+          0%,100%{opacity:0.4} 50%{opacity:0.7}
         }
       `}</style>
-      <div className="absolute inset-0 pointer-events-none overflow-hidden"
-        style={{background:'linear-gradient(180deg,#040e18 0%,#071828 18%,#0a2438 45%,#0c3050 70%,#061420 100%)'}}>
 
-        {/* ── 수면 황금빛 입수 ── */}
-        <div style={{
-          position:'absolute', top:0, left:'50%', transform:'translateX(-50%)',
-          width:'320px', height:'160px',
-          background:'radial-gradient(ellipse at 50% 0%, rgba(255,215,100,0.18) 0%, rgba(100,220,240,0.1) 45%, transparent 72%)',
-          filter:'blur(18px)', animation:'sotCaustic 5s ease-in-out infinite',
-        }}/>
+      {/* 베이스: 거의 블랙 */}
+      <div className="absolute inset-0" style={{background:'#08080f'}}/>
 
-        {/* ── 중심 발광 상승 — 포스터의 핵심 청록 빛기둥 ── */}
-        <div style={{
-          position:'absolute', bottom:0, left:'50%', transform:'translateX(-50%)',
-          width:'380px', height:'85%',
-          background:'linear-gradient(0deg,rgba(15,160,200,0.22) 0%,rgba(10,140,180,0.12) 35%,rgba(5,100,150,0.04) 65%,transparent 100%)',
-          filter:'blur(28px)', animation:'sotGlow 10s ease-in-out infinite',
-        }}/>
-        {/* 코어 밝은 기둥 */}
-        <div className="sot-ray" style={{
-          width:'90px', height:'80%', marginLeft:'-45px',
-          background:'linear-gradient(180deg,rgba(160,240,255,0.24) 0%,rgba(60,210,240,0.14) 30%,rgba(20,170,210,0.06) 60%,transparent 100%)',
-          filter:'blur(6px)', '--ra':'0deg','--pd':'7s',
-        } as React.CSSProperties}/>
-        <div className="sot-ray" style={{
-          width:'320px', height:'92%', marginLeft:'-160px',
-          background:'linear-gradient(180deg,rgba(20,180,210,0.1) 0%,rgba(10,150,190,0.06) 40%,transparent 100%)',
-          filter:'blur(22px)', '--ra':'-0.8deg','--pd':'9s',
-        } as React.CSSProperties}/>
-
-        {/* ── 보조 광선 ── */}
-        {[{l:'18%',r:'-3deg',d:'6s'},{l:'34%',r:'-1deg',d:'4.5s'},{l:'66%',r:'1.5deg',d:'5.5s'},{l:'82%',r:'4deg',d:'7s'}].map((t,i)=>(
-          <div key={i} style={{
-            position:'absolute', top:0, left:t.l, width:'30px', height:'70%',
-            background:'linear-gradient(180deg,rgba(40,200,230,0.18) 0%,transparent 100%)',
-            filter:'blur(8px)', transformOrigin:'top center', transform:`rotate(${t.r})`,
-            animation:`sotCaustic ${t.d} ease-in-out infinite`, animationDelay:`${i*0.7}s`,
-          }}/>
-        ))}
-
-        {/* ── 생물발광 — 포스터의 파란 반짝임들 ── */}
-        {[
-          {x:'12%',y:'32%',s:100,d:'5.5s',c:'rgba(20,200,240,0.2)'},
-          {x:'80%',y:'25%',s:75,d:'7.2s',c:'rgba(30,210,230,0.16)'},
-          {x:'68%',y:'58%',s:60,d:'6.3s',c:'rgba(10,180,220,0.18)'},
-          {x:'25%',y:'68%',s:85,d:'4.9s',c:'rgba(40,220,250,0.15)'},
-          {x:'50%',y:'40%',s:110,d:'8.5s',c:'rgba(15,190,225,0.12)'},
-          {x:'88%',y:'48%',s:55,d:'5.8s',c:'rgba(50,215,240,0.14)'},
-        ].map((b,i)=>(
-          <div key={i} style={{
-            position:'absolute', left:b.x, top:b.y, width:b.s+'px', height:b.s+'px',
-            background:`radial-gradient(ellipse,${b.c} 0%,transparent 70%)`,
-            borderRadius:'50%', filter:'blur(10px)',
-            animation:`sotBio ${b.d} ease-in-out infinite`, animationDelay:`${i*0.9}s`,
-          }}/>
-        ))}
-
-        {/* ── 수류 물결 ── */}
-        <div style={{
-          position:'absolute', inset:0,
-          background:'radial-gradient(ellipse 120% 45% at 40% 60%,rgba(10,140,180,0.09) 0%,transparent 55%)',
-          animation:'sotRipple 16s ease-in-out infinite',
-        }}/>
-        <div style={{
-          position:'absolute', inset:0,
-          background:'radial-gradient(ellipse 100% 38% at 60% 38%,rgba(20,160,195,0.07) 0%,transparent 52%)',
-          animation:'sotRipple 22s ease-in-out infinite reverse', animationDelay:'5s',
-        }}/>
-
-        {/* ── 하단 깊이감 ── */}
-        <div className="absolute bottom-0 left-0 right-0 h-[40%]" style={{background:'linear-gradient(0deg,rgba(3,8,14,0.8) 0%,transparent 100%)'}}/>
-        {/* ── 전체 청록 틴트 (포스터 특유의 투명한 청록 물) ── */}
-        <div className="absolute inset-0" style={{background:'radial-gradient(ellipse 85% 65% at 50% 55%,rgba(10,130,175,0.16) 0%,rgba(5,80,130,0.06) 55%,transparent 80%)'}}/>
-      </div>
+      {/* IG 그라디언트 ambient 오브들 */}
+      {/* 좌상단 — 보라/파랑 */}
+      <div style={{
+        position:'absolute', top:'-10%', left:'-15%',
+        width:'500px', height:'500px',
+        background:'radial-gradient(ellipse, rgba(64,93,230,0.35) 0%, rgba(88,81,219,0.15) 40%, transparent 70%)',
+        borderRadius:'50%', filter:'blur(60px)',
+        animation:'igOrb1 12s ease-in-out infinite',
+      }}/>
+      {/* 우하단 — 핑크/오렌지 */}
+      <div style={{
+        position:'absolute', bottom:'-15%', right:'-10%',
+        width:'450px', height:'450px',
+        background:'radial-gradient(ellipse, rgba(225,48,108,0.30) 0%, rgba(247,119,55,0.15) 50%, transparent 70%)',
+        borderRadius:'50%', filter:'blur(65px)',
+        animation:'igOrb2 15s ease-in-out infinite',
+      }}/>
+      {/* 중앙 위 — 보라 */}
+      <div style={{
+        position:'absolute', top:'10%', left:'30%',
+        width:'320px', height:'280px',
+        background:'radial-gradient(ellipse, rgba(131,58,180,0.22) 0%, transparent 65%)',
+        borderRadius:'50%', filter:'blur(50px)',
+        animation:'igOrb3 18s ease-in-out infinite',
+      }}/>
+      {/* 좌하단 — 핑크 */}
+      <div style={{
+        position:'absolute', bottom:'15%', left:'-5%',
+        width:'280px', height:'280px',
+        background:'radial-gradient(ellipse, rgba(193,53,132,0.20) 0%, transparent 65%)',
+        borderRadius:'50%', filter:'blur(55px)',
+        animation:'igOrb1 20s ease-in-out infinite reverse',
+      }}/>
+      {/* 전체 IG 그라디언트 미세 틴트 */}
+      <div style={{
+        position:'absolute', inset:0,
+        background:'linear-gradient(135deg,rgba(64,93,230,0.06) 0%,rgba(131,58,180,0.04) 35%,rgba(225,48,108,0.05) 65%,rgba(247,119,55,0.03) 100%)',
+      }}/>
+      {/* 하단 페이드 */}
+      <div style={{
+        position:'absolute', bottom:0, left:0, right:0, height:'30%',
+        background:'linear-gradient(0deg,rgba(0,0,0,0.6) 0%,transparent 100%)',
+      }}/>
 
 
 
