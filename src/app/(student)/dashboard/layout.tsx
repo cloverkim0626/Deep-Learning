@@ -582,52 +582,70 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       {/* Profile Panel */}
       {showProfile && (
         <div className="absolute inset-0 z-50 flex flex-col animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-foreground/30 backdrop-blur-md" onClick={() => { setShowProfile(false); setShowSettings(false); }} />
-          <div className="absolute bottom-0 left-0 right-0 bg-background rounded-t-[3rem] shadow-[0_-24px_60px_rgba(0,0,0,0.2)] overflow-y-auto max-h-[90vh] custom-scrollbar animate-in slide-in-from-bottom duration-700">
-            <div className="flex justify-center pt-6 pb-2">
-              <div className="w-14 h-1.5 rounded-full bg-foreground/10" />
+          <div className="absolute inset-0 backdrop-blur-md" style={{ background: 'rgba(0,0,0,0.55)' }} onClick={() => { setShowProfile(false); setShowSettings(false); }} />
+          <div className="absolute bottom-0 left-0 right-0 rounded-t-[2.8rem] overflow-y-auto max-h-[92vh] custom-scrollbar animate-in slide-in-from-bottom duration-500"
+            style={{ background: 'linear-gradient(180deg,#0d0d1a 0%,#09090f 100%)', boxShadow: '0 -24px 80px rgba(0,0,0,0.6)' }}>
+            {/* IG 핸들 바 */}
+            <div className="flex justify-center pt-4 pb-1">
+              <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.2)' }} />
             </div>
-            <div className="px-8 pb-12">
-              {/* Header */}
-              <div className="relative text-center mb-8 mt-6">
-                {/* 리더보드 아이콘 */}
+
+            {/* IG 프로필 헤더 */}
+            <div className="px-5 pt-4 pb-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              {/* 상단 액션 버튼들 */}
+              <div className="flex items-center justify-between mb-5">
                 <button
                   onClick={async () => {
-                    setShowLeaderboard(true);
-                    setLbLoading(true);
-                    try {
-                      const res = await fetch(`/api/leaderboard?period=${lbPeriod}`);
-                      const data = await res.json();
-                      setLeaderboard(data.ranking || []);
-                    } catch { setLeaderboard([]); }
-                    setLbLoading(false);
-                    // 명예의 전당 로드
-                    setHofLoading(true);
-                    try {
-                      const mvpRes = await fetch(`/api/leaderboard/mvp?year=${hofYear}&month=${hofMonth}`);
-                      const mvpData = await mvpRes.json();
-                      setHofEntries(mvpData.entries || []);
-                    } catch { setHofEntries([]); }
+                    setShowLeaderboard(true); setLbLoading(true);
+                    try { const res = await fetch(`/api/leaderboard?period=${lbPeriod}`); setLeaderboard((await res.json()).ranking || []); } catch { setLeaderboard([]); }
+                    setLbLoading(false); setHofLoading(true);
+                    try { const r = await fetch(`/api/leaderboard/mvp?year=${hofYear}&month=${hofMonth}`); setHofEntries((await r.json()).entries || []); } catch { setHofEntries([]); }
                     setHofLoading(false);
                   }}
-                  className="absolute left-0 top-0 p-2.5 rounded-xl bg-amber-50 text-amber-500 hover:bg-amber-100 transition-all"
-                  title="리더보드"
-                >
-                  <Trophy size={16} strokeWidth={2} />
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-black transition-all"
+                  style={{ background: 'rgba(255,200,0,0.12)', border: '1px solid rgba(255,200,0,0.25)', color: '#fbbf24' }}>
+                  <Trophy size={13} strokeWidth={2} /> 리더보드
                 </button>
-                {/* 설정 버튼 — GUEST 반 제외 */}
                 {profile.class !== 'GUEST' && (
-                  <button
-                    onClick={() => { setShowSettings(true); setPwError(''); setCurrentPw(''); setNewPw(''); }}
-                    className="absolute right-0 top-0 p-2.5 rounded-xl bg-accent-light/60 text-accent hover:bg-foreground/10 transition-all"
-                    title="비밀번호 설정"
-                  >
-                    <Settings size={16} strokeWidth={2} />
+                  <button onClick={() => { setShowSettings(true); setPwError(''); setCurrentPw(''); setNewPw(''); }}
+                    className="p-2 rounded-full transition-all" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    <Settings size={17} strokeWidth={2} />
                   </button>
                 )}
-                <h2 className="text-3xl font-black text-foreground serif mb-2">{profile.name} 학생</h2>
-                <p className="text-[14px] text-accent font-bold tracking-widest">{profile.class}</p>
               </div>
+
+              {/* 아바타 + 스탯 행 */}
+              <div className="flex items-center gap-5 mb-4">
+                {/* IG 스토리 링 아바타 */}
+                <div className="p-[3px] rounded-full shrink-0" style={{ background: 'linear-gradient(135deg,#405DE6,#833AB4,#E1306C,#F77737)' }}>
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center text-[26px] font-black" style={{ background: '#09090f', color: '#fff' }}>
+                    {profile.name.slice(-2)}
+                  </div>
+                </div>
+                {/* IG 스타일 스탯 3열 */}
+                <div className="flex flex-1 justify-around">
+                  {displayStats.map(s => (
+                    <div key={s.label} className="text-center">
+                      <p className="text-[20px] font-black text-white leading-none">{s.value}</p>
+                      <p className="text-[10px] font-bold mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 이름 + 반 */}
+              <div className="mb-4">
+                <p className="text-[16px] font-black text-white leading-tight">{profile.name}</p>
+                <p className="text-[12px] font-bold mt-0.5" style={{ color: 'rgba(160,130,255,0.7)' }}>{profile.class}</p>
+                {streak > 0 && (
+                  <p className="text-[11px] font-bold mt-1" style={{ color: 'rgba(255,160,50,0.8)' }}>🔥 {streak}일 연속 학습 중</p>
+                )}
+              </div>
+            </div>
+
+            <div className="px-5 pb-10">
+              {/* 구분용 상단 여백 */}
+              <div className="pt-4" />
 
               {/* 리더보드 인라인 패널 */}
               {showLeaderboard && (
@@ -858,40 +876,32 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 </div>
               )}
 
-              {/* AI 격려/피드백 */}
-              <div className="mb-4 px-5 py-4 bg-foreground rounded-[1.5rem] text-background">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 rounded-lg bg-background/20 flex items-center justify-center">
-                    <Bot size={13} className="text-background" />
+              {/* AI 어드바이스 — IG DM 말풍선 느낌 */}
+              <div className="mb-4 px-4 py-4 rounded-[1.4rem]" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}>
+                <div className="flex items-center gap-2 mb-2.5">
+                  <div className="p-[2px] rounded-full" style={{ background: 'linear-gradient(135deg,#405DE6,#E1306C)' }}>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#09090f' }}>
+                      <Bot size={12} className="text-white" />
+                    </div>
                   </div>
-                  <span className="text-[10px] font-black tracking-widest opacity-60 uppercase">Parallax AI 어드바이스</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'rgba(160,130,255,0.6)' }}>Parallax AI</span>
                 </div>
-                <p className="text-[14px] font-medium leading-relaxed opacity-90">{advice || "학습 데이터를 분석 중이에요..."}</p>
+                <p className="text-[13px] font-medium leading-relaxed" style={{ color: 'rgba(255,255,255,0.78)' }}>{advice || "학습 데이터를 분석 중이에요..."}</p>
               </div>
 
-              {/* 스트릭 카드 */}
-              <div className="mb-4 px-5 py-4 rounded-[1.5rem] border border-orange-200/60 bg-gradient-to-r from-orange-50 to-amber-50">
+              {/* 스트릭 카드 — IG 감성 */}
+              <div className="mb-5 px-4 py-4 rounded-[1.4rem]" style={{ background: 'linear-gradient(135deg,rgba(255,100,20,0.15),rgba(255,160,20,0.10))', border: '1px solid rgba(255,130,20,0.25)' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">🔥 STUDY STREAK</p>
-                    <p className="text-[22px] font-black text-orange-600">{streak}일 연속</p>
-                    <p className="text-[11px] font-bold text-orange-400 mt-0.5">{getStreakMessage(profile.name, streak)}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: 'rgba(255,160,60,0.7)' }}>🔥 STREAK</p>
+                    <p className="text-[26px] font-black" style={{ color: '#fb923c' }}>{streak}일 연속</p>
+                    <p className="text-[11px] font-bold mt-0.5" style={{ color: 'rgba(255,160,80,0.7)' }}>{getStreakMessage(profile.name, streak)}</p>
                   </div>
-                  <div className="text-[48px] leading-none select-none">
+                  <div className="text-[44px] leading-none select-none">
                     {streak === 0 ? '👀' : streak <= 3 ? '🔥' : streak <= 7 ? '🔥🔥' : streak <= 14 ? '🔥🔥🔥' : '🔥🔥🔥🔥'}
                   </div>
                 </div>
-                <div className="mt-3 text-[9px] text-orange-400 font-bold">* 주당 최대 2일 휴식 가능 • 일요일~토요일 1주 기준</div>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                {displayStats.map(s => (
-                  <div key={s.label} className="bg-white border border-foreground/5 rounded-[1.5rem] px-4 py-5 shadow-sm text-center">
-                    <p className="text-[9px] font-black text-accent uppercase tracking-[0.12em] mb-2 leading-tight">{s.label}</p>
-                    <p className="text-[20px] font-black text-foreground">{s.value}</p>
-                  </div>
-                ))}
+                <div className="mt-2 text-[9px] font-bold" style={{ color: 'rgba(255,160,60,0.45)' }}>* 주당 최대 2일 휴식 가능 • 일~토 1주 기준</div>
               </div>
 
               {/* 오늘의 명문 */}
