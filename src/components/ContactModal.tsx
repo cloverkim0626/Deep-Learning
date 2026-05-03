@@ -73,7 +73,7 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
                 <p className="text-white/65 text-[10px] mt-1.5">모든 상담은 무료로 진행됩니다.</p>
               </div>
               {/* 선생님 사진 - 헤더 오른쪽, 아래로 body까지 겹침 */}
-              <img src="/teacher.jpg" alt="김효진T"
+              <img src="/teacher-nobg.png" alt="김효진T"
                 style={{position:"absolute", right:0, bottom:-60, height:190, width:115, objectFit:"contain", objectPosition:"bottom", filter:"drop-shadow(-4px 0 10px rgba(0,0,0,0.2))", zIndex:10}}
               />
               <div style={{height:16,background:"#fff",borderRadius:"50% 50% 0 0 / 100% 100% 0 0",marginTop:"-1px", position:"relative", zIndex:0}}/>
