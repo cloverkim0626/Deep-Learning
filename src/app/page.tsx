@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { ArrowRight, BookOpen, Briefcase, Zap, Brain, Sparkles, X, Layers, Flame, BarChart2, HelpCircle, Search } from "lucide-react";
@@ -369,161 +369,173 @@ export default function Home() {
       {/* ═══ Guide Modal ══════════════════════════════════════════════════════════ */}
       {showGuide && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowGuide(false)} />
-          <div className="relative w-full max-w-sm max-h-[88vh] bg-background rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-6 duration-400">
+          <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={() => setShowGuide(false)} />
+          <div className="relative w-full max-w-sm max-h-[90vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-6 duration-400"
+            style={{background:'#fafafa'}}>
 
-            {/* 헤더 */}
-            <div className="shrink-0 px-6 pt-5 pb-4 border-b border-foreground/5 flex items-center justify-between">
-              <div>
-                <p className="text-[17px] font-black text-foreground leading-tight">어플 사용법</p>
-                <p className="text-[11px] font-medium text-accent mt-0.5">Deep Learning 완전 정복 가이드 ✨</p>
+            {/* IG 그라디언트 헤더 */}
+            <div className="shrink-0 relative overflow-hidden"
+              style={{background:'linear-gradient(135deg,#405DE6 0%,#5851DB 18%,#833AB4 38%,#C13584 58%,#E1306C 78%,#FD1D1D 90%,#F77737 100%)'}}>
+              <div className="px-5 pt-5 pb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center text-[16px]">📖</div>
+                    <span className="text-white text-[13px] font-black tracking-wide">@deep.learning</span>
+                  </div>
+                  <button onClick={() => setShowGuide(false)}
+                    className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/35 flex items-center justify-center transition-colors">
+                    <X size={15} className="text-white" />
+                  </button>
+                </div>
+                <p className="text-white/60 text-[9px] font-black tracking-[4px] uppercase mb-1.5">Deep Learning</p>
+                <p className="text-white text-[22px] font-black leading-tight">공부도 이제<br/><span className="text-yellow-200">인스타 하듯</span> 해 🔥</p>
+                <p className="text-white/70 text-[11px] mt-2 font-medium">카드 · 테스트 · AI튜터 · 리더보드까지</p>
               </div>
-              <button onClick={() => setShowGuide(false)} className="w-9 h-9 rounded-2xl bg-foreground/5 hover:bg-foreground/10 flex items-center justify-center transition-colors">
-                <X size={16} className="text-foreground/60" />
-              </button>
+              <div style={{height:'20px',background:'#fafafa',borderRadius:'50% 50% 0 0 / 100% 100% 0 0',marginTop:'-2px'}}/>
             </div>
 
             {/* 스크롤 바디 */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-
-              {/* 헤로 배너 */}
-              <div className="rounded-[1.5rem] bg-gradient-to-br from-slate-800 to-slate-900 p-5 text-white">
-                <p className="text-[12px] font-black text-white/50 mb-1">📚 Deep Learning</p>
-                <p className="text-[18px] font-black leading-tight mb-2">깊은 재미와<br />학습효과를 동시에!</p>
-                <p className="text-[11px] text-white/55 leading-relaxed">카드 · 객관식 · 카드게임 · AI 튜터<br />한 앱에서 완결되는 스마트 영어 학습</p>
-              </div>
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
 
               {/* 어휘 카드 */}
-              <div className="rounded-[1.5rem] border border-foreground/8 p-4">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center"><Layers size={15} className="text-teal-600" /></div>
-                  <div><p className="text-[13px] font-black text-foreground">어휘 카드</p><p className="text-[10px] text-accent">홈 탭 · 플립 학습</p></div>
+              <div className="rounded-[1.3rem] overflow-hidden" style={{border:'1px solid #efefef'}}>
+                <div className="px-4 py-3 flex items-center gap-3" style={{background:'#fff'}}>
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                    style={{background:'linear-gradient(135deg,#405DE6,#833AB4)'}}>
+                    <Layers size={16} color="white"/>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[13px] font-black text-gray-900">어휘 카드</p>
+                    <p className="text-[10px] text-gray-400 font-medium">탭하면 플립 · 어원까지 한번에</p>
+                  </div>
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full text-white"
+                    style={{background:'linear-gradient(90deg,#405DE6,#833AB4)'}}>홈 탭</span>
                 </div>
-                <p className="text-[11.5px] text-foreground/70 leading-relaxed">단어를 탭하면 <strong className="text-foreground">앞뒤 플립</strong>으로 뜻·예문 확인! <strong className="text-foreground">어근(어원) 카드</strong>로 단어 구조까지 한번에 이해할 수 있어요.</p>
+                <div className="px-4 py-2.5 text-[11px] text-gray-500 leading-relaxed" style={{borderTop:'1px solid #f3f3f3'}}>
+                  단어 탭 → <strong className="text-gray-800">앞뒤 플립</strong> 뜻·예문 확인! <strong className="text-gray-800">어근 카드</strong>로 단어 구조까지.
+                </div>
               </div>
 
-              {/* TEST */}
-              <div className="rounded-[1.5rem] border border-foreground/8 p-4 space-y-2.5">
-                <div className="flex items-center gap-2.5 mb-1">
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center"><BookOpen size={15} className="text-blue-600" /></div>
-                  <div><p className="text-[13px] font-black text-foreground">어휘 테스트</p><p className="text-[10px] text-accent">TEST 탭 → 3가지 모드</p></div>
+              {/* 테스트 3종 */}
+              <div className="rounded-[1.3rem] overflow-hidden" style={{border:'1px solid #efefef'}}>
+                <div className="px-4 py-3 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                    style={{background:'linear-gradient(135deg,#E1306C,#FD1D1D)'}}>
+                    <BookOpen size={16} color="white"/>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[13px] font-black text-gray-900">어휘 테스트 3종</p>
+                    <p className="text-[10px] text-gray-400 font-medium">90% 넘으면 PASS 인장 🔖</p>
+                  </div>
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full text-white"
+                    style={{background:'linear-gradient(90deg,#E1306C,#F77737)'}}>TEST 탭</span>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="px-2.5 py-1 rounded-lg bg-teal-50 text-teal-700 text-[10px] font-black">뜻고르기</span>
-                  <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-black">유반의어 객관식</span>
-                  <span className="px-2.5 py-1 rounded-lg bg-orange-50 text-orange-700 text-[10px] font-black">유반의어 카드게임</span>
+                <div className="px-4 py-2.5 flex gap-1.5" style={{borderTop:'1px solid #f3f3f3'}}>
+                  <span className="px-2.5 py-1 rounded-lg text-[10px] font-black text-white" style={{background:'#20C997'}}>뜻고르기</span>
+                  <span className="px-2.5 py-1 rounded-lg text-[10px] font-black text-white" style={{background:'#405DE6'}}>유반의어 객관식</span>
+                  <span className="px-2.5 py-1 rounded-lg text-[10px] font-black text-white" style={{background:'#F77737'}}>카드게임</span>
                 </div>
-                <p className="text-[11.5px] text-foreground/70 leading-relaxed"><strong className="text-foreground">90% 이상</strong> 통과하면 SET 완료! <strong className="text-foreground">⚡ One More!</strong> 드릴로 틀린 단어를 즉시 재도전하고, 오답노트에서 약점을 꾸준히 관리해요.</p>
               </div>
 
               {/* AI 튜터 */}
-              <div className="rounded-[1.5rem] border border-purple-200/60 bg-purple-50/30 p-4">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center"><Brain size={15} className="text-purple-600" /></div>
-                  <div><p className="text-[13px] font-black text-foreground">AI 튜터</p><p className="text-[10px] text-accent">모든 등급대 맞춤</p></div>
+              <div className="rounded-[1.3rem] overflow-hidden" style={{border:'1px solid #efefef'}}>
+                <div className="px-4 py-3 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                    style={{background:'linear-gradient(135deg,#833AB4,#5851DB)'}}>
+                    <Brain size={16} color="white"/>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-black text-gray-900">AI 튜터</p>
+                    <p className="text-[10px] text-gray-400 font-medium">1등급 심화 ~ 기초 전수준 맞춤</p>
+                  </div>
                 </div>
-                <p className="text-[11.5px] text-foreground/70 leading-relaxed mb-2">지문을 선택하면 AI가 <strong className="text-foreground">서술형 문장 선정, 어법·구조 분석, 1:1 튜터 풀이</strong>까지 해줘요. 1등급 심화부터 기초 개념까지 모든 수준에 맞게 활용할 수 있어요.</p>
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">서술형 선정</span>
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">어법·구조</span>
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">1:1 튜터 모드</span>
-                </div>
-              </div>
-
-              {/* Streak & 리더보드 */}
-              <div className="rounded-[1.5rem] border border-orange-200/60 bg-orange-50/30 p-4">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center"><Flame size={15} className="text-orange-600" /></div>
-                  <div><p className="text-[13px] font-black text-foreground">Streak &amp; 리더보드</p><p className="text-[10px] text-amber-600 font-bold">🎁 장학 혜택 있음</p></div>
-                </div>
-                <p className="text-[11.5px] text-foreground/70 leading-relaxed mb-2">매일 2세트 이상 통과하면 🔥 Streak 쌓여요. <strong className="text-foreground">주당 2일 휴식도 허용</strong>! 리더보드는 어휘 점수 + Q&amp;A 활동으로 집계, <strong className="text-foreground">월간 1등 및 Streak 상위</strong>에겐 장학 혜택! 자세한 사항은 선생님께 문의하세요.</p>
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">어휘 1개 = 1점</span>
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">Q&amp;A 질문하기 = 10점</span>
+                <div className="px-4 py-2.5 text-[11px] text-gray-500 leading-relaxed" style={{borderTop:'1px solid #f3f3f3'}}>
+                  지문 선택 → AI가 <strong className="text-gray-800">서술형·어법·구조 분석 + 1:1 튜터 풀이</strong>까지.
                 </div>
               </div>
 
-              {/* Q&A / 클리닉 */}
-              <div className="rounded-[1.5rem] border border-foreground/8 p-4">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center"><HelpCircle size={15} className="text-emerald-600" /></div>
-                  <div><p className="text-[13px] font-black text-foreground">Q&amp;A · 클리닉 신청</p></div>
+              {/* Streak & 리더보드 — 강조 (IG 오렌지-레드) */}
+              <div className="rounded-[1.3rem] overflow-hidden"
+                style={{background:'linear-gradient(135deg,#FD1D1D,#F77737)'}}>
+                <div className="px-4 py-3 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                    <Flame size={16} color="white"/>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-black text-white">Streak &amp; 리더보드 🏆</p>
+                    <p className="text-[10px] text-white/70 font-bold">🎁 월간 1등 → 장학 혜택!</p>
+                  </div>
                 </div>
-                <p className="text-[11.5px] text-foreground/70 leading-relaxed"><strong className="text-foreground">Q&amp;A</strong>에서 궁금한 점을 올리면 선생님이 직접 답변! <strong className="text-foreground">클리닉 신청</strong>으로 1:1 집중 상담도 예약할 수 있어요.</p>
-              </div>
-
-              {/* 개인 대시보드 */}
-              <div className="rounded-[1.5rem] border border-foreground/8 p-4">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center"><BarChart2 size={15} className="text-indigo-600" /></div>
-                  <div><p className="text-[13px] font-black text-foreground">개인 대시보드</p><p className="text-[10px] text-accent">로그인 후 오른쪽 상단 이름 클릭</p></div>
+                <div className="px-4 pb-3 pt-0 text-[11px] text-white/85 leading-relaxed">
+                  매일 2세트 통과하면 🔥 연속 Streak! <strong className="text-white">주 2일 휴식 허용</strong>. 상위권엔 <strong className="text-white">실제 장학 혜택</strong>.
+                  <div className="flex gap-1.5 mt-2">
+                    <span className="px-2 py-0.5 rounded-full bg-white/25 text-white text-[9px] font-black">어휘 1개 = 1점</span>
+                    <span className="px-2 py-0.5 rounded-full bg-white/25 text-white text-[9px] font-black">Q&amp;A 질문 = 10점</span>
+                  </div>
                 </div>
-                <p className="text-[11.5px] text-foreground/70 leading-relaxed">어휘 성취도, 남은 시험 수, 클리닉 완료 횟수, 🔥 연속 학습 streak을 한눈에 확인할 수 있어요.</p>
               </div>
 
-              {/* 준비 중 */}
-              <div className="rounded-[1.5rem] border border-dashed border-foreground/15 p-4">
-                <p className="text-[10px] font-black text-foreground/35 mb-1">🔜 준비 중</p>
-                <p className="text-[11.5px] text-foreground/45 leading-relaxed">서술형 연습 및 AI 자동채점 기능이 열심히 준비 중이에요. 잠시만 기다려주세요~ 🙏</p>
+              {/* Q&A + 홈화면 (한 줄 카드) */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-[1.3rem] px-3 py-3 flex flex-col gap-1.5" style={{border:'1px solid #efefef'}}>
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{background:'linear-gradient(135deg,#20C997,#12B886)'}}>
+                    <HelpCircle size={14} color="white"/>
+                  </div>
+                  <p className="text-[11.5px] font-black text-gray-900">Q&amp;A · 클리닉</p>
+                  <p className="text-[9.5px] text-gray-400 leading-relaxed">선생님 직접 답변<br/>1:1 상담 예약</p>
+                </div>
+                <div className="rounded-[1.3rem] px-3 py-3 flex flex-col gap-1.5" style={{background:'#f5f5f5'}}>
+                  <span className="text-[22px] leading-none">📲</span>
+                  <p className="text-[11.5px] font-black text-gray-700">홈화면에 추가</p>
+                  <p className="text-[9.5px] text-gray-400 leading-relaxed">Android: ⋮메뉴<br/>iPhone: 공유 □↑</p>
+                </div>
               </div>
 
-              {/* 홈화면 추가 */}
-              <div className="rounded-[1.5rem] bg-slate-50 border border-foreground/8 p-4">
-                <p className="text-[11px] font-black text-foreground/50 mb-3">📲 앱처럼 홈화면에 추가하기</p>
-                <div className="space-y-3">
-                  <div className="flex gap-3 items-start">
-                    <span className="text-xl leading-none mt-0.5">🤖</span>
+              {/* 체험 계정 — IG 풀 그라디언트 강조 */}
+              <div className="rounded-[1.3rem] overflow-hidden"
+                style={{background:'linear-gradient(135deg,#405DE6,#833AB4,#E1306C)'}}>
+                <div className="px-4 pt-4 pb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[20px]">🔑</span>
                     <div>
-                      <p className="text-[11px] font-black text-foreground">Android (크롬)</p>
-                      <p className="text-[10.5px] text-foreground/55 leading-relaxed mt-0.5">주소창 우측 <strong className="text-foreground">⋮ 메뉴</strong> 탭 →<br /><strong className="text-foreground">홈 화면에 추가</strong> 선택</p>
+                      <p className="text-white font-black text-[14px]">지금 바로 체험해봐!</p>
+                      <p className="text-white/60 text-[10px]">비밀번호 없이 · 즉시 입장</p>
                     </div>
                   </div>
-                  <div className="flex gap-3 items-start">
-                    <span className="text-xl leading-none mt-0.5">🍎</span>
-                    <div>
-                      <p className="text-[11px] font-black text-foreground">iPhone (Safari)</p>
-                      <p className="text-[10.5px] text-foreground/55 leading-relaxed mt-0.5">하단 <strong className="text-foreground">공유 버튼(□↑)</strong> 탭 →<br /><strong className="text-foreground">홈 화면에 추가</strong> 선택</p>
+                  <div className="rounded-2xl overflow-hidden" style={{background:'rgba(255,255,255,0.18)'}}>
+                    <div className="grid grid-cols-2" style={{borderBottom:'1px solid rgba(255,255,255,0.15)'}}>
+                      <div className="px-3 py-2.5" style={{borderRight:'1px solid rgba(255,255,255,0.15)'}}>
+                        <p className="text-white/50 text-[9px] font-bold mb-0.5">학원</p>
+                        <p className="text-white font-black text-[12px]">[WOODOK]</p>
+                      </div>
+                      <div className="px-3 py-2.5">
+                        <p className="text-white/50 text-[9px] font-bold mb-0.5">비밀번호</p>
+                        <p className="text-white font-black text-[12px]">없음 🙌</p>
+                      </div>
+                    </div>
+                    <div className="px-3 py-2.5">
+                      <p className="text-white/50 text-[9px] font-bold mb-1.5">계정 선택</p>
+                      <div className="flex gap-2 flex-wrap">
+                        <span className="px-2.5 py-1 rounded-full bg-white/25 text-white text-[10px] font-black">학생1 (학생 체험)</span>
+                        <span className="px-2.5 py-1 rounded-full bg-white/25 text-white text-[10px] font-black">GUEST (학부모)</span>
+                      </div>
                     </div>
                   </div>
+                  <p className="text-white/35 text-[9px] mt-2">실제 학습 기록에는 영향을 주지 않아요.</p>
                 </div>
-                <p className="text-[10px] text-foreground/30 mt-3">* Safari·Chrome 브라우저에서만 지원됩니다.</p>
               </div>
 
-              {/* 체험 계정 */}
-              <div className="rounded-[1.5rem] bg-gradient-to-br from-slate-700 to-slate-800 p-4 text-white">
-                <p className="text-[11px] font-black text-white/50 mb-1.5">🔑 학부모·학생 체험 계정</p>
-                <p className="text-[13px] font-black mb-3">비밀번호 없이 바로 체험해보세요!</p>
-                <div className="bg-white/10 rounded-xl px-4 py-3 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-white/50 font-bold">학원 선택</span>
-                    <span className="text-[12px] font-black tracking-wide">[WOODOK]</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-white/50 font-bold">계정 선택</span>
-                    <div className="text-right">
-                      <span className="text-[11px] font-black block">GUEST - 학부모</span>
-                      <span className="text-[10px] text-white/50">또는 학생1 (학생 체험)</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-white/50 font-bold">비밀번호</span>
-                    <span className="text-[11px] font-black text-white/60">없음 (바로 입장)</span>
-                  </div>
-                </div>
-                <p className="text-[10px] text-white/35 mt-2.5 leading-relaxed">
-                  로그인 화면에서 학원을 선택한 뒤 계정을 고르면 돼요.<br />실제 학습 기록에는 영향을 주지 않습니다.
-                </p>
-              </div>
-
-              <div className="h-2" />
+              <div className="h-1" />
             </div>
 
             {/* 하단 CTA */}
-            <div className="shrink-0 px-5 pb-5 pt-3 border-t border-foreground/5">
+            <div className="shrink-0 px-4 pb-5 pt-3" style={{borderTop:'1px solid #efefef'}}>
               <Link
                 href="/login?role=student"
                 onClick={() => setShowGuide(false)}
-                className="flex w-full h-12 bg-foreground text-background rounded-2xl text-[13px] font-black items-center justify-center gap-2 hover:-translate-y-0.5 transition-all active:scale-95"
+                className="flex w-full h-12 rounded-2xl text-[13px] font-black items-center justify-center gap-2 hover:-translate-y-0.5 transition-all active:scale-95 text-white"
+                style={{background:'linear-gradient(90deg,#405DE6,#833AB4,#E1306C,#F77737)'}}
               >
                 학습 공간 입장하기 <ArrowRight size={15} />
               </Link>
@@ -534,3 +546,4 @@ export default function Home() {
     </main>
   );
 }
+
