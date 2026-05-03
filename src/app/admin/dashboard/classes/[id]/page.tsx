@@ -82,12 +82,13 @@ function AttendancePopup({ popup, onClose, onSave, onQuickSave }: {
     setSaving(true);
     try {
       if (status === 'present') { await onQuickSave('present'); return; }
+      // 상태별 관련없는 필드는 null/빈값으로 명시 초기화
       await onSave(status, {
-        late_reason: state.lateReason || '',
-        late_arrival_time: state.lateTime || '',
-        makeup_type: (state.makeupType as MakeupType) || '',
-        makeup_date: state.makeupType === 'direct' ? (state.makeupDate || null) : null,
-        makeup_video_date: state.makeupType === 'video' ? (state.makeupDate || null) : null,
+        late_reason:        status === 'late'   ? (state.lateReason || '') : '',
+        late_arrival_time:  status === 'late'   ? (state.lateTime   || '') : '',
+        makeup_type:        status === 'absent' ? ((state.makeupType as MakeupType) || '') : '',
+        makeup_date:        status === 'absent' && state.makeupType === 'direct' ? (state.makeupDate || null) : null,
+        makeup_video_date:  status === 'absent' && state.makeupType === 'video'  ? (state.makeupDate || null) : null,
       } as Partial<AttRow>);
     } finally { setSaving(false); }
   };
@@ -1598,14 +1599,14 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           ) : (
             /* ── 주간 그리드 ── */
-            <div className="flex-1 overflow-auto custom-scrollbar" style={{background: '#f8fafc'}}>
+            <div className="flex-1 overflow-auto custom-scrollbar apple-table" style={{background: '#f8fafc'}}>
               <table className="min-w-full border-separate border-spacing-0">
                 <thead className="sticky top-0 z-20" style={{background: '#f8fafc'}}>
                   <tr>
                     {/* 학생 컬럼 헤더 */}
                     <th className="sticky left-0 z-30 border-b border-r px-1.5 py-2 text-left min-w-[60px] max-w-[70px]" style={{background: '#f8fafc', borderColor: '#e2e8f0'}}>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">학생</p>
-                      <p className="text-[9px] text-slate-400">{students.length}명</p>
+                      <p style={{fontSize:'10px',fontWeight:500,color:'#86868b',letterSpacing:'0.04em',textTransform:'uppercase'}}>학생</p>
+                      <p style={{fontSize:'10px',color:'#aeaeb2'}}>{students.length}명</p>
                     </th>
                     {/* 날짜별 컬럼 헤더 */}
                     {weekData.columns.map(col => {
@@ -1617,12 +1618,13 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                           className="border-b border-r px-2 py-2 min-w-[140px]" style={{background: today ? '#eef2ff' : '#f8fafc', borderColor: '#e2e8f0'}}>
                           {/* 날짜 제목 */}
                           <div className="flex flex-col items-center mb-1.5">
-                            <p className={`text-[12px] font-black ${today ? colColor : 'text-slate-700'} flex items-center gap-1`}>
+                            <p className={`col-date flex items-center gap-1 ${today ? colColor : ''}`}
+                              style={{color: today ? undefined : '#1d1d1f'}}>
                               {col.dayName} {col.date.slice(5).replace('-', '/')}
-                              {col.is_clinic && <span className="text-[8px] bg-teal-100 text-teal-700 px-1 py-0.5 rounded font-black">클리닉</span>}
-                              {today && <span className="text-[8px] bg-indigo-600 text-white px-1 py-0.5 rounded font-black">오늘</span>}
+                              {col.is_clinic && <span style={{fontSize:'9px',background:'#ccfbf1',color:'#0f766e',padding:'1px 5px',borderRadius:'4px',fontWeight:500}}>클리닉</span>}
+                              {today && <span style={{fontSize:'9px',background:'#0071e3',color:'#fff',padding:'1px 5px',borderRadius:'4px',fontWeight:500}}>오늘</span>}
                             </p>
-                            <p className="text-[9px] text-slate-400 font-medium">{col.time}{col.end_time ? ` ~ ${col.end_time}` : ''}</p>
+                            <p className="col-time">{col.time}{col.end_time ? ` ~ ${col.end_time}` : ''}</p>
                           </div>
                           {/* 세션 액션 버튼들 */}
                           {hasSes ? (
@@ -1702,13 +1704,13 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                       {students.map((stu, si) => (
                         <tr key={stu.student_name} className={si % 2 === 0 ? '' : 'bg-foreground/1.5'}>
                       {/* 학생 이름 셀 */}
-                      <td className="sticky left-0 border-b border-r px-1.5 py-2 z-10 min-w-[72px] max-w-[90px]"
+                      <td className="sticky left-0 border-b border-r px-2 py-2 z-10 min-w-[72px] max-w-[90px]"
                         style={{ background: si % 2 === 0 ? '#ffffff' : '#f8fafc', borderColor: '#e2e8f0' }}>
                         <div className="flex items-center justify-between group">
-                          <p className="text-[14px] font-black text-slate-700 leading-tight truncate">{stu.student_name}</p>
+                          <p className="cell-name leading-tight truncate">{stu.student_name}</p>
                           <button onClick={() => setRemoveConfirm(stu.student_name)}
                             className="opacity-0 group-hover:opacity-100 p-0.5 text-red-300 hover:text-red-500 transition-all shrink-0 ml-0.5">
-                            <X size={10} />
+                            <X size={9} />
                           </button>
                         </div>
                       </td>
@@ -1716,16 +1718,21 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                       {/* 날짜별 셀 */}
                       {weekData.columns.map(col => {
                         const att = col.session ? weekData.attMap[col.date]?.[stu.student_name] : undefined;
+                        // 이 날 수업의 슬롯 (테스트용)
                         const sessionSlots = col.session ? (weekData.slots[col.session.id] || []) : [];
-                        const mySlots = sessionSlots.filter(slot => {
+                        const mySessionSlots = sessionSlots.filter(slot => {
                           const assigned = weekData.slotStudents[slot.id];
                           return !assigned || assigned.length === 0 || assigned.includes(stu.student_name);
                         });
-                        const myGeneral = mySlots.filter(s => s.hw_type !== 'vocab_test' && s.hw_type !== 'test_prep');
-                        const myTests   = mySlots.filter(s => s.hw_type === 'vocab_test');
-                        // due_date가 이 컬럼 날짜인 것만 학생셀에 표시 (검사일 기준)
-                        // 배당만 된 것(due_date != col.date)은 학생 셀에 아예 표시 안 함
-                        const checkSlots = myGeneral.filter(s => s.due_date === col.date);
+                        const myTests = mySessionSlots.filter(s => s.hw_type === 'vocab_test');
+                        // ★ 핵심 수정: 과제는 전체 주간 슬롯에서 due_date === col.date인 것을 찾음
+                        // (배당일이 달라도 검사일이 이 날이면 여기 표시)
+                        const allWeekSlots = Object.values(weekData.slots).flat();
+                        const checkSlots = allWeekSlots.filter(s => {
+                          const assigned = weekData.slotStudents[s.id];
+                          const isForMe = !assigned || assigned.length === 0 || assigned.includes(stu.student_name);
+                          return isForMe && s.due_date === col.date && s.hw_type !== 'vocab_test' && s.hw_type !== 'test_prep';
+                        });
 
                         return (
                         <td key={col.date}
@@ -1738,11 +1745,15 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                 style={{ width: '20%', minWidth: '36px' }}>
                                 <div
                                   onClick={() => { if (att) setAttDetailModal({ status: att.status, lateTime: att.late_arrival_time || undefined, reason: (att as any).absence_reason || undefined, makeupType: att.makeup_type || undefined, makeupDate: att.makeup_date || undefined }); }}
-                                  className={`w-full text-center px-0.5 py-0.5 rounded text-[11px] font-black select-none leading-tight ${att ? `${ATT_STYLE[att.status]} cursor-pointer hover:opacity-80 transition-all` : 'text-slate-200'}`}>
+                                  className={`att-badge w-full text-center select-none leading-tight ${att ? `${ATT_STYLE[att.status]} cursor-pointer hover:opacity-80 transition-all` : 'text-slate-200'}`}>
                                   {att ? (<>
                                     <span className="block">{ATT_SHORT[att.status]}</span>
-                                    {att.status === 'late' && att.late_arrival_time && <span className="block text-[9px] opacity-70">{att.late_arrival_time.slice(0,5)}</span>}
-                                    {att.status === 'absent' && att.makeup_type && <span className="block text-[9px] opacity-70">{att.makeup_type === 'direct' ? '보강' : '영상'}</span>}
+                                    {att.status === 'late' && att.late_arrival_time && <span className="block" style={{fontSize:'9px',opacity:0.75}}>{att.late_arrival_time.slice(0,5)}</span>}
+                                    {att.status === 'absent' && att.makeup_type && (
+                                      <span className="block" style={{fontSize:'9px',opacity:0.75}}>
+                                        {att.makeup_type === 'direct' ? `보강${(att as any).makeup_date ? ' '+((att as any).makeup_date as string).slice(5).replace('-','/') : ''}` : '영상'}
+                                      </span>
+                                    )}
                                   </>) : '—'}
                                 </div>
                                 {col.session && (['A','B','C','D','E'] as const).map(g => {
@@ -1780,24 +1791,24 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                       <button
                                         onClick={() => {
                                           if (isDone) {
-                                            // 완료 → 복구
                                             upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: 'pending' });
                                             setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id]||{}), [stu.student_name]: { ...(chk||{}), slot_id: slot.id, student_name: stu.student_name, status: 'pending' } as HomeworkCheck } } } : prev);
                                           } else {
-                                            // 미완료 → 완료 모달
                                             setHwCompleteModal({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk||null });
                                           }
                                         }}
-                                        className={`flex-1 text-left px-1.5 py-1 rounded-lg text-[12px] font-semibold transition-all truncate border ${
-                                          isDone        ? 'bg-emerald-50 text-emerald-600 line-through border-emerald-200' :
-                                          isDelayed     ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                                          'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'
+                                        className={`hw-item flex-1 text-left truncate ${
+                                          isDone    ? 'done'    :
+                                          chk?.status === 'done_partial' ? 'partial' :
+                                          isDelayed ? 'delayed' : ''
                                         }`}>
                                         {isDone ? '✓ ' : isDelayed ? '⏩ ' : ''}{slot.title}
                                       </button>
                                       {!isDone && (
                                         <button onClick={() => setRolloverPopup({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk||null })}
-                                          className="shrink-0 w-5 h-5 flex items-center justify-center rounded-md text-[10px] text-slate-300 hover:text-orange-500 hover:bg-orange-50 transition-all">→</button>
+                                          style={{flexShrink:0,width:'18px',height:'18px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'6px',fontSize:'11px',color:'#aeaeb2',transition:'all 0.15s'}}>
+                                          →
+                                        </button>
                                       )}
                                     </div>
                                   );

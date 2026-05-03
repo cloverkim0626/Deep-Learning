@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Serif_KR, Gaegu } from "next/font/google";
+import { Inter, Noto_Serif_KR, Gaegu, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
 });
 
 const notoSerifKR = Noto_Serif_KR({
@@ -32,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${inter.variable} ${notoSerifKR.variable} ${gaegu.variable} h-full antialiased`}
+      className={`${inter.variable} ${jakarta.variable} ${notoSerifKR.variable} ${gaegu.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground transition-colors duration-700">
         <div className="fixed inset-0 pointer-events-none z-[-1] opacity-40 dark:opacity-20 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent-light via-transparent to-transparent"></div>
