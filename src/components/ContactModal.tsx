@@ -58,6 +58,8 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-[340px] max-h-[82vh] rounded-[1.8rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-6 duration-300" style={{background:"#fff"}}>
+        {/* X 버튼 - 모달 최상단 고정 */}
+        <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors" style={{zIndex:50}}><X size={14} className="text-white"/></button>
 
         {/* ── MENU ── */}
         {view === "menu" && (
@@ -65,9 +67,8 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
             {/* IG 헤더 */}
             <div className="shrink-0 relative" style={{background:"linear-gradient(135deg,#405DE6,#833AB4,#E1306C,#F77737)", minHeight:120}}>
               <div className="px-5 pt-4 pb-6 pr-[115px]">
-                <div className="flex justify-between items-start mb-2">
+                <div className="mb-2">
                   <span className="text-white/60 text-[9px] font-black tracking-[3px] uppercase">Contact</span>
-                  <button onClick={onClose} className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center"><X size={13} className="text-white"/></button>
                 </div>
                 <p className="text-white text-[19px] font-black leading-snug">무엇을<br/>도와드릴까요?</p>
                 <p className="text-white/65 text-[10px] mt-1.5">모든 상담은 무료로 진행됩니다.</p>
@@ -85,14 +86,17 @@ export default function ContactModal({ onClose, onTrialRequest }: Props) {
                 {[
                   { label:"Instagram", color:"#E1306C", svg:<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> },
                   { label:"KakaoTalk", color:"#3A1D1D", svg:
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                      <ellipse cx="12" cy="11" rx="10" ry="8.5" fill="#FEE500"/>
-                      <path d="M8 10.5c0-.83.9-1.5 2-1.5s2 .67 2 1.5-.9 1.5-2 1.5S8 11.33 8 10.5z" fill="#3A1D1D"/>
-                      <path d="M12 10.5c0-.83.9-1.5 2-1.5s2 .67 2 1.5-.9 1.5-2 1.5-2-.67-2-1.5z" fill="#3A1D1D"/>
-                      <path d="M7.5 15.5l1-3h7l1 3-4.5 1.5z" fill="#FEE500"/>
+                    <svg width="26" height="26" viewBox="0 0 36 36" fill="none">
+                      <rect width="36" height="36" rx="8" fill="#FEE500"/>
+                      <path d="M18 8C11.373 8 6 12.477 6 18c0 3.613 2.156 6.785 5.4 8.653l-1.2 4.347 4.8-2.4C15.9 28.84 16.944 29 18 29c6.627 0 12-4.477 12-10S24.627 8 18 8z" fill="#3A1D1D"/>
                     </svg>
                   },
-                  { label:"Blog", color:"#03c75a", svg:<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2H3V5zm0 6h12v2H3v-2zm0 6h18v2H3v-2z"/></svg> },
+                  { label:"Blog", color:"#03c75a", svg:
+                    <svg width="26" height="26" viewBox="0 0 36 36" fill="none">
+                      <rect width="36" height="36" rx="8" fill="#03c75a"/>
+                      <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle" fill="white" fontSize="22" fontWeight="900" fontFamily="Arial Black, sans-serif">N</text>
+                    </svg>
+                  },
                 ].map(s=>(
                   <button key={s.label} className="flex flex-col items-center gap-1 hover:scale-110 transition-transform" style={{color:s.color}}>
                     {s.svg}
