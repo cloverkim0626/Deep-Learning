@@ -283,7 +283,7 @@ export default function Home() {
             <Link href="/login/parent"
               className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
               style={{
-                borderRadius:'1.4rem', height:'82px', display:'flex',
+                borderRadius:'1.4rem', height:'88px', display:'flex',
                 alignItems:'center', gap:'13px', padding:'0 16px',
                 background:'rgba(255,255,255,0.04)',
                 border:'1px solid rgba(255,255,255,0.07)',
@@ -295,7 +295,7 @@ export default function Home() {
               }}/>
               <span style={{ fontSize:'30px', flexShrink:0, lineHeight:1 }}>📬</span>
               <div style={{ minWidth:0 }}>
-                <p style={{ fontSize:15, fontWeight:700, lineHeight:1.1, color:'rgba(200,255,225,0.90)', letterSpacing:'0.01em' }}>리포트 페이지</p>
+                <p style={{ fontSize:15, fontWeight:700, lineHeight:1.25, color:'rgba(200,255,225,0.90)', letterSpacing:'0.01em', whiteSpace:'nowrap' }}>리포트<br/>페이지</p>
                 <p style={{ fontSize:11, marginTop:5, fontWeight:400, color:'rgba(80,200,155,0.50)', fontStyle:'italic' }}>To. 학부모님</p>
               </div>
             </Link>
@@ -304,7 +304,7 @@ export default function Home() {
             <Link href="/login?role=admin"
               className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
               style={{
-                borderRadius:'1.4rem', height:'82px', display:'flex',
+                borderRadius:'1.4rem', height:'88px', display:'flex',
                 alignItems:'center', gap:'13px', padding:'0 16px',
                 background:'rgba(255,255,255,0.04)',
                 border:'1px solid rgba(255,255,255,0.07)',
@@ -316,7 +316,7 @@ export default function Home() {
               }}/>
               <span style={{ fontSize:'28px', flexShrink:0, lineHeight:1 }}>🖋️</span>
               <div style={{ minWidth:0 }}>
-                <p style={{ fontSize:15, fontWeight:700, lineHeight:1.1, color:'rgba(230,230,238,0.90)', letterSpacing:'0.01em' }}>선생님 페이지</p>
+                <p style={{ fontSize:15, fontWeight:700, lineHeight:1.25, color:'rgba(230,230,238,0.90)', letterSpacing:'0.01em', whiteSpace:'nowrap' }}>선생님<br/>페이지</p>
                 <p style={{ fontSize:11, marginTop:5, fontWeight:400, letterSpacing:'0.05em', textTransform:'uppercase', color:'rgba(170,170,182,0.42)' }}>대시보드</p>
               </div>
             </Link>
