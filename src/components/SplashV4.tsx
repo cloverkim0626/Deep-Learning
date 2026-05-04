@@ -36,7 +36,7 @@ const T_FADE = 5500;
 const T_END  = 7000;
 const dDot  = V.map((_, i) => (i / V.length) * T_DOT);
 const dLine = E.map((_, i) => (i / E.length) * T_LD);
-const FULL = 'Connecting the Dots';
+const WORDS = ['Connecting', 'the', 'Dots'];
 type Pt = { x: number; y: number; z: number; s: number };
 
 export default function SplashV4() {
@@ -152,9 +152,9 @@ export default function SplashV4() {
     if (!showText) return;
     let i = 0;
     const iv = setInterval(() => {
-      i++; setTyped(FULL.slice(0, i));
-      if (i >= FULL.length) { clearInterval(iv); setTimeout(() => setShowDL(true), 450); }
-    }, 68);
+      i++; setWordCount(i);
+      if (i >= WORDS.length) { clearInterval(iv); setTimeout(() => setShowDL(true), 700); }
+    }, 750);
     return () => clearInterval(iv);
   }, [showText]);
 

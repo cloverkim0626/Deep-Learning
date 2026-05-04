@@ -278,68 +278,137 @@ export default function Home() {
             </div>
           </button>
 
-          {/* 리포트 | 선생님 — 인스타 하이라이트 스타일 */}
+          {/* 리포트 | 선생님 — 오브젝트 카드 */}
           <div className="grid grid-cols-2 gap-3 w-full">
 
-            {/* 리포트 열람 */}
+            {/* ── 엽서/편지 카드 ── */}
             <Link href="/login/parent"
-              className="group relative flex flex-col gap-2 p-4 rounded-[1.6rem] overflow-hidden hover:-translate-y-1 transition-all duration-400"
-              style={{
-                background:'rgba(255,255,255,0.05)',
-                border:'1px solid rgba(255,255,255,0.08)',
-                backdropFilter:'blur(16px)',
-              }}
-            >
-              <div style={{
-                position:'absolute', inset:0, borderRadius:'1.6rem', padding:'1px', zIndex:0,
-                background:'linear-gradient(135deg,#43e97b,#38f9d7,#4facfe)',
-                WebkitMask:'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                WebkitMaskComposite:'xor', maskComposite:'exclude',
+              className="group relative overflow-hidden hover:-translate-y-1 transition-all duration-400"
+              style={{ borderRadius:'1.6rem', height:'110px', display:'block',
+                background:'linear-gradient(160deg,#0d1c14 0%,#0a1a1f 60%,#071420 100%)',
+                border:'1px solid rgba(80,200,160,0.18)',
+                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)',
+              }}>
+              {/* 편지봉투 — 바디 */}
+              <div style={{ position:'absolute', top:'14px', left:'14px', right:'14px', bottom:'22px',
+                borderRadius:'6px', background:'rgba(255,248,230,0.04)',
+                border:'1px solid rgba(150,220,180,0.20)',
               }}/>
-              <div style={{
-                position:'absolute', top:'-30%', right:'-20%', width:'100px', height:'100px',
-                background:'radial-gradient(ellipse,rgba(67,233,123,0.18) 0%,transparent 70%)',
-                filter:'blur(16px)', pointerEvents:'none',
-              }}/>
-              <div className="relative z-10 pt-0.5">
-                <p className="text-[15px] font-black leading-tight" style={{color:'rgba(220,255,235,0.95)'}}>리포트</p>
-                <p className="text-[10px] font-semibold mt-1" style={{color:'rgba(120,220,160,0.65)'}}>학부모 확인</p>
+              {/* 봉투 V-플랩 (상단 삼각) */}
+              <svg style={{ position:'absolute', top:'14px', left:'14px', right:'14px', width:'calc(100% - 28px)', height:'28px', overflow:'visible' }} viewBox="0 0 100 28" preserveAspectRatio="none">
+                <polyline points="0,0 50,26 100,0" fill="none" stroke="rgba(80,200,155,0.28)" strokeWidth="1"/>
+              </svg>
+              {/* 우표 */}
+              <div style={{ position:'absolute', top:'18px', right:'20px',
+                width:'18px', height:'22px', borderRadius:'2px',
+                border:'1.5px solid rgba(80,200,155,0.35)',
+                background:'linear-gradient(135deg,rgba(67,233,123,0.12),rgba(56,249,215,0.06))',
+              }}>
+                <div style={{ position:'absolute', inset:'2px', borderRadius:'1px',
+                  background:'radial-gradient(circle,rgba(67,233,123,0.25) 0%,transparent 70%)',
+                }}/>
               </div>
-              <ArrowRight size={13} strokeWidth={2}
-                style={{color:'rgba(100,220,155,0.5)'}}
-                className="absolute bottom-3.5 right-3.5 group-hover:translate-x-0.5 transition-all opacity-60 z-10"/>
+              {/* 소인 원형 */}
+              <div style={{ position:'absolute', top:'16px', right:'42px',
+                width:'16px', height:'16px', borderRadius:'50%',
+                border:'1px solid rgba(80,200,155,0.2)', opacity:0.7,
+              }}/>
+              {/* 주소 선 (오른쪽) */}
+              {[0,1,2].map(i => (
+                <div key={i} style={{ position:'absolute', right:'22px', top:`${52+i*10}px`,
+                  width:'30px', height:'1px', background:'rgba(80,200,155,0.14)',
+                }}/>
+              ))}
+              {/* 텍스트 왼쪽 */}
+              <div style={{ position:'absolute', bottom:'14px', left:'16px', zIndex:10 }}>
+                <p style={{ fontSize:15, fontWeight:900, color:'rgba(200,255,230,0.92)', lineHeight:1 }}>리포트</p>
+                <p style={{ fontSize:9, color:'rgba(100,210,160,0.6)', marginTop:4, fontWeight:600 }}>학부모 확인</p>
+              </div>
+              {/* 호버 화살표 */}
+              <ArrowRight size={12} strokeWidth={2}
+                style={{ position:'absolute', bottom:'16px', right:'16px', color:'rgba(80,200,155,0.45)' }}
+                className="group-hover:translate-x-0.5 transition-all"/>
+              {/* ambient */}
+              <div style={{ position:'absolute', top:0, left:0, width:'60px', height:'60px',
+                background:'radial-gradient(ellipse,rgba(67,233,123,0.1) 0%,transparent 70%)',
+                filter:'blur(10px)', pointerEvents:'none',
+              }}/>
             </Link>
 
-            {/* 선생님 페이지 */}
+            {/* ── 노트북 카드 ── */}
             <Link href="/login?role=admin"
-              className="group relative flex flex-col gap-2 p-4 rounded-[1.6rem] overflow-hidden hover:-translate-y-1 transition-all duration-400"
-              style={{
-                background:'rgba(255,255,255,0.05)',
-                border:'1px solid rgba(255,255,255,0.08)',
-                backdropFilter:'blur(16px)',
-              }}
-            >
-              <div style={{
-                position:'absolute', inset:0, borderRadius:'1.6rem', padding:'1px', zIndex:0,
-                background:'linear-gradient(135deg,#405DE6,#833AB4,#C13584)',
-                WebkitMask:'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                WebkitMaskComposite:'xor', maskComposite:'exclude', opacity:0.55,
-              }}/>
-              <div style={{
-                position:'absolute', top:'-30%', right:'-20%', width:'100px', height:'100px',
-                background:'radial-gradient(ellipse,rgba(131,58,180,0.18) 0%,transparent 70%)',
-                filter:'blur(16px)', pointerEvents:'none',
-              }}/>
-              <div className="relative z-10 pt-0.5">
-                <p className="text-[15px] font-black leading-tight text-white/85">선생님</p>
-                <p className="text-[10px] font-semibold mt-1 uppercase tracking-wider" style={{color:'rgba(130,150,255,0.55)'}}>Teacher</p>
+              className="group relative overflow-hidden hover:-translate-y-1 transition-all duration-400"
+              style={{ borderRadius:'1.6rem', height:'110px', display:'block',
+                background:'linear-gradient(160deg,#0a0d20 0%,#0d0f28 50%,#080b1e 100%)',
+                border:'1px solid rgba(100,120,255,0.15)',
+                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.04)',
+              }}>
+              {/* 노트북 스크린 */}
+              <div style={{ position:'absolute', top:'10px', left:'18px', right:'18px', height:'48px',
+                borderRadius:'4px 4px 0 0',
+                background:'rgba(15,20,60,0.9)',
+                border:'1px solid rgba(100,120,255,0.28)',
+                overflow:'hidden',
+              }}>
+                {/* 화면 반사 */}
+                <div style={{ position:'absolute', top:0, left:0, right:0, height:'40%',
+                  background:'linear-gradient(180deg,rgba(130,150,255,0.08) 0%,transparent 100%)',
+                }}/>
+                {/* 코드 라인 애니메이션 느낌 */}
+                {[0,1,2].map(i => (
+                  <div key={i} style={{ position:'absolute', left:`${8+i*4}px`, top:`${8+i*11}px`,
+                    width:`${20+i*8}px`, height:'2px', borderRadius:'1px',
+                    background:`rgba(130,150,255,${0.12+i*0.04})`,
+                  }}/>
+                ))}
+                {/* 커서 점 */}
+                <div style={{ position:'absolute', right:'8px', top:'8px',
+                  width:'5px', height:'5px', borderRadius:'50%',
+                  background:'rgba(130,150,255,0.5)',
+                  boxShadow:'0 0 6px rgba(130,150,255,0.6)',
+                }}/>
               </div>
-              <ArrowRight size={13} strokeWidth={1.8}
-                style={{color:'rgba(130,150,255,0.45)'}}
-                className="absolute bottom-3.5 right-3.5 group-hover:translate-x-0.5 transition-all opacity-55 z-10"/>
+              {/* 힌지 라인 */}
+              <div style={{ position:'absolute', top:'58px', left:'16px', right:'16px',
+                height:'2px', background:'rgba(100,120,255,0.18)',
+                borderRadius:'1px',
+              }}/>
+              {/* 키보드 베이스 */}
+              <div style={{ position:'absolute', top:'60px', left:'16px', right:'16px', height:'22px',
+                borderRadius:'0 0 3px 3px',
+                background:'rgba(20,25,70,0.7)',
+                border:'1px solid rgba(100,120,255,0.18)',
+                borderTop:'none',
+              }}>
+                {/* 키보드 그리드 */}
+                <div style={{ display:'flex', gap:'2px', padding:'4px 6px 0', justifyContent:'center' }}>
+                  {Array(7).fill(0).map((_,j) => (
+                    <div key={j} style={{ flex:1, height:'5px', borderRadius:'1px',
+                      background:'rgba(130,150,255,0.08)', border:'1px solid rgba(130,150,255,0.1)',
+                    }}/>
+                  ))}
+                </div>
+              </div>
+              {/* 텍스트 */}
+              <div style={{ position:'absolute', bottom:'10px', left:'18px', zIndex:10 }}>
+                <p style={{ fontSize:15, fontWeight:900, color:'rgba(200,210,255,0.88)', lineHeight:1 }}>선생님</p>
+                <p style={{ fontSize:9, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em',
+                  color:'rgba(130,150,255,0.5)', marginTop:4,
+                }}>Teacher</p>
+              </div>
+              {/* 호버 화살표 */}
+              <ArrowRight size={12} strokeWidth={1.8}
+                style={{ position:'absolute', bottom:'12px', right:'16px', color:'rgba(130,150,255,0.4)' }}
+                className="group-hover:translate-x-0.5 transition-all"/>
+              {/* ambient */}
+              <div style={{ position:'absolute', top:0, right:0, width:'60px', height:'60px',
+                background:'radial-gradient(ellipse,rgba(100,120,255,0.1) 0%,transparent 70%)',
+                filter:'blur(10px)', pointerEvents:'none',
+              }}/>
             </Link>
 
           </div>
+
         </div>
 
         <p className="text-[10px] font-medium tracking-[0.3em] uppercase select-none" style={{color:'rgba(80,140,200,0.35)'}}>
