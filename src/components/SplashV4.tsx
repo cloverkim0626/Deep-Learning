@@ -60,6 +60,7 @@ export default function SplashV4() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const cvs = canvas; // TypeScript null-safe ref
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let W = 0, H = 0, cx = 0, cy = 0, sc = 0;
@@ -67,8 +68,8 @@ export default function SplashV4() {
 
     function resize() {
       W = window.innerWidth; H = window.innerHeight;
-      canvas.width = W * dpr; canvas.height = H * dpr;
-      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      cvs.width = W * dpr; cvs.height = H * dpr;
+      cvs.style.width = W + 'px'; cvs.style.height = H + 'px';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       cx = W / 2; cy = H / 2 - 16;
       sc = Math.min(W, H) * 0.26;
