@@ -303,86 +303,124 @@ export default function Home() {
               <ArrowRight size={13} className="text-white/50 group-hover:text-white/90 group-hover:translate-x-0.5 transition-all" />
             </div>
           </button>
+          {/* === Plate Cards === */}
+          <style>{`
+            @keyframes igGlow {
+              0%,100%{opacity:0.7;transform:translateX(0)}
+              50%{opacity:1;transform:translateX(4px)}
+            }
+            @keyframes igPulseRing {
+              0%{box-shadow:0 0 0 0 rgba(225,48,108,0.4)}
+              70%{box-shadow:0 0 0 8px rgba(225,48,108,0)}
+              100%{box-shadow:0 0 0 0 rgba(225,48,108,0)}
+            }
+            @keyframes plateGleam1 {
+              0%   { transform:translateX(-130%) skewX(-18deg); opacity:0; }
+              6%   { opacity:1; }
+              94%  { opacity:1; }
+              100% { transform:translateX(560%) skewX(-18deg); opacity:0; }
+            }
+            @keyframes plateGleam2 {
+              0%   { transform:translateX(-130%) skewX(-18deg); opacity:0; }
+              6%   { opacity:1; }
+              94%  { opacity:1; }
+              100% { transform:translateX(560%) skewX(-18deg); opacity:0; }
+            }
+          `}</style>
           <div className="grid grid-cols-2 gap-3 w-full">
 
-            {/* Report */}
+            {/* SILVER PLATE — REPORT */}
             <Link href="/login/parent"
               className="group relative overflow-hidden"
               style={{
-                borderRadius:'1.4rem', height:'80px', display:'flex',
-                alignItems:'center', gap:'13px', padding:'0 16px',
-                background:'rgba(255,255,255,0.04)',
-                border:'1px solid rgba(255,255,255,0.07)',
-                backdropFilter:'blur(14px)',
-                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)',
-                transition:'box-shadow 0.3s',
+                borderRadius:'1.2rem', height:'80px',
+                display:'flex', flexDirection:'column',
+                alignItems:'center', justifyContent:'center',
+                background:`
+                  repeating-linear-gradient(92deg,transparent,transparent 3px,rgba(255,255,255,0.025) 3px,rgba(255,255,255,0.025) 6px),
+                  linear-gradient(155deg,#e0e0e0 0%,#c8c8c8 20%,#d8d8d8 45%,#b8b8b8 70%,#d0d0d0 100%)
+                `,
+                border:'1px solid rgba(255,255,255,0.75)',
+                boxShadow:'0 6px 16px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.75), inset 0 -1px 0 rgba(0,0,0,0.08)',
               }}>
-              {/* 상단 accent — 숨쉬듯 pulse */}
-              <div style={{ position:'absolute', top:0, left:'15%', right:'15%', height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(67,233,123,0.7),rgba(56,249,215,0.7),transparent)',
-                animation:'accentPulse1 3.5s ease-in-out infinite',
-              }}/>
-              {/* shimmer sweep */}
-              <div style={{ position:'absolute', inset:0, pointerEvents:'none', overflow:'hidden', borderRadius:'1.4rem' }}>
-                <div style={{ position:'absolute', top:0, left:0, width:'28%', height:'100%',
-                  background:'linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.055) 50%,transparent 70%)',
-                  animation:'cardShimmer1 6s ease-in-out infinite',
-                  animationDelay:'1s',
+              {/* gleam sweep */}
+              <div style={{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden',borderRadius:'1.2rem'}}>
+                <div style={{position:'absolute',top:0,left:0,width:'35%',height:'100%',
+                  background:'linear-gradient(105deg,transparent 25%,rgba(255,255,255,0.45) 50%,transparent 75%)',
+                  animation:'plateGleam1 5.5s ease-in-out infinite',animationDelay:'0.8s',
                 }}/>
               </div>
-              {/* emoji float */}
-              <span style={{ fontSize:'28px', flexShrink:0, lineHeight:1,
-                display:'inline-block', animation:'emojiFloat1 4s ease-in-out infinite',
-              }}>📬</span>
-              <div style={{ minWidth:0 }}>
-                <p style={{ fontFamily:"var(--font-noto-serif),serif", fontSize:15, fontWeight:400,
-                  lineHeight:1, color:'rgba(220,255,235,0.92)', letterSpacing:'0.02em' }}>Report</p>
-                <p style={{ fontSize:10, marginTop:6, fontWeight:300,
-                  color:'rgba(80,200,155,0.50)', letterSpacing:'0.12em', textTransform:'uppercase' }}>학부모 전용</p>
-              </div>
+              {/* plate edge */}
+              <div style={{position:'absolute',top:'6px',left:'10px',right:'10px',height:'1px',
+                background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.7),transparent)',
+              }}/>
+              <div style={{position:'absolute',bottom:'6px',left:'10px',right:'10px',height:'1px',
+                background:'linear-gradient(90deg,transparent,rgba(0,0,0,0.07),transparent)',
+              }}/>
+              {/* engraved REPORT */}
+              <p style={{
+                fontFamily:"var(--font-jakarta),sans-serif",
+                fontSize:16, fontWeight:700, letterSpacing:'0.28em', textTransform:'uppercase',
+                color:'#888',
+                textShadow:'0 1.5px 2px rgba(255,255,255,0.95), 0 -1px 0 rgba(0,0,0,0.18)',
+              }}>REPORT</p>
+              <p style={{
+                fontFamily:"var(--font-jakarta),sans-serif",
+                fontSize:8.5, fontWeight:500, letterSpacing:'0.18em', textTransform:'uppercase',
+                color:'#aaa',
+                textShadow:'0 1px 1px rgba(255,255,255,0.85), 0 -1px 0 rgba(0,0,0,0.10)',
+                marginTop:6,
+              }}>Parent Portal</p>
             </Link>
 
-            {/* Teacher */}
+            {/* TITANIUM PLATE — TEACHER */}
             <Link href="/login?role=admin"
               className="group relative overflow-hidden"
               style={{
-                borderRadius:'1.4rem', height:'80px', display:'flex',
-                alignItems:'center', gap:'13px', padding:'0 16px',
-                background:'rgba(255,255,255,0.04)',
-                border:'1px solid rgba(255,255,255,0.07)',
-                backdropFilter:'blur(14px)',
-                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)',
-                transition:'box-shadow 0.3s',
+                borderRadius:'1.2rem', height:'80px',
+                display:'flex', flexDirection:'column',
+                alignItems:'center', justifyContent:'center',
+                background:`
+                  repeating-linear-gradient(92deg,transparent,transparent 3px,rgba(255,255,255,0.012) 3px,rgba(255,255,255,0.012) 6px),
+                  linear-gradient(155deg,#7e8188 0%,#64676e 20%,#74777e 45%,#5a5d64 70%,#6c6f76 100%)
+                `,
+                border:'1px solid rgba(255,255,255,0.18)',
+                boxShadow:'0 6px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.18)',
               }}>
-              {/* 상단 accent — pulse */}
-              <div style={{ position:'absolute', top:0, left:'15%', right:'15%', height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(131,58,180,0.7),rgba(193,53,132,0.7),transparent)',
-                animation:'accentPulse2 4s ease-in-out infinite',
-              }}/>
-              {/* shimmer sweep */}
-              <div style={{ position:'absolute', inset:0, pointerEvents:'none', overflow:'hidden', borderRadius:'1.4rem' }}>
-                <div style={{ position:'absolute', top:0, left:0, width:'28%', height:'100%',
-                  background:'linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.05) 50%,transparent 70%)',
-                  animation:'cardShimmer2 6s ease-in-out infinite',
-                  animationDelay:'3.2s',
+              {/* gleam sweep */}
+              <div style={{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden',borderRadius:'1.2rem'}}>
+                <div style={{position:'absolute',top:0,left:0,width:'35%',height:'100%',
+                  background:'linear-gradient(105deg,transparent 25%,rgba(255,255,255,0.14) 50%,transparent 75%)',
+                  animation:'plateGleam2 6s ease-in-out infinite',animationDelay:'3s',
                 }}/>
               </div>
-              {/* emoji float */}
-              <span style={{ fontSize:'26px', flexShrink:0, lineHeight:1,
-                display:'inline-block', animation:'emojiFloat2 4.8s ease-in-out infinite',
-              }}>🖋️</span>
-              <div style={{ minWidth:0 }}>
-                <p style={{ fontFamily:"var(--font-noto-serif),serif", fontSize:15, fontWeight:400,
-                  lineHeight:1, color:'rgba(230,228,245,0.92)', letterSpacing:'0.02em' }}>Teacher</p>
-                <p style={{ fontSize:10, marginTop:6, fontWeight:300,
-                  color:'rgba(170,155,200,0.48)', letterSpacing:'0.12em', textTransform:'uppercase' }}>대시보드</p>
-              </div>
+              {/* plate edge */}
+              <div style={{position:'absolute',top:'6px',left:'10px',right:'10px',height:'1px',
+                background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent)',
+              }}/>
+              <div style={{position:'absolute',bottom:'6px',left:'10px',right:'10px',height:'1px',
+                background:'linear-gradient(90deg,transparent,rgba(0,0,0,0.18),transparent)',
+              }}/>
+              {/* engraved TEACHER */}
+              <p style={{
+                fontFamily:"var(--font-jakarta),sans-serif",
+                fontSize:16, fontWeight:700, letterSpacing:'0.28em', textTransform:'uppercase',
+                color:'#3c3f46',
+                textShadow:'0 1.5px 2px rgba(255,255,255,0.32), 0 -1px 0 rgba(0,0,0,0.28)',
+              }}>TEACHER</p>
+              <p style={{
+                fontFamily:"var(--font-jakarta),sans-serif",
+                fontSize:8.5, fontWeight:500, letterSpacing:'0.18em', textTransform:'uppercase',
+                color:'#58606a',
+                textShadow:'0 1px 1px rgba(255,255,255,0.22), 0 -1px 0 rgba(0,0,0,0.2)',
+                marginTop:6,
+              }}>Dashboard</p>
             </Link>
 
           </div>
 
-
         </div>
+
 
 
 
