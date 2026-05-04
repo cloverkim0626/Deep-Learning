@@ -277,104 +277,73 @@ export default function Home() {
               <ArrowRight size={13} className="text-white/50 group-hover:text-white/90 group-hover:translate-x-0.5 transition-all" />
             </div>
           </button>
-
-          {/* 리포트 | 선생님 — 미니 카드 */}
+          {/* Report | Teacher mini cards */}
           <div className="grid grid-cols-2 gap-3 w-full">
 
-            {/* ── 리포트 카드 — 성취도 게이지 ── */}
+            {/* Mailbox card */}
             <Link href="/login/parent"
               className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
               style={{
-                borderRadius:'1.4rem', height:'88px', display:'block',
+                borderRadius:'1.4rem', height:'72px', display:'flex',
+                alignItems:'center', gap:'11px', padding:'0 14px',
                 background:'rgba(255,255,255,0.04)',
                 border:'1px solid rgba(255,255,255,0.07)',
                 backdropFilter:'blur(16px)',
                 boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)',
               }}>
-              {/* 상단 그린 액센트 라인 */}
-              <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:'1.5px',
-                background:'linear-gradient(90deg,transparent,rgba(67,233,123,0.7),rgba(56,249,215,0.7),transparent)',
+              <div style={{ position:'absolute', top:0, left:'15%', right:'15%', height:'1px',
+                background:'linear-gradient(90deg,transparent,rgba(67,233,123,0.6),rgba(56,249,215,0.6),transparent)',
               }}/>
-              {/* 왼쪽: 레이블 */}
-              <div style={{ position:'absolute', left:'14px', top:'50%', transform:'translateY(-50%)' }}>
-                <p style={{ fontSize:12, fontWeight:800, lineHeight:1, letterSpacing:'0.01em',
-                  color:'rgba(200,255,225,0.88)',
-                }}>리포트</p>
-                <p style={{ fontSize:8, marginTop:5, fontWeight:500, letterSpacing:'0.04em',
-                  color:'rgba(80,200,155,0.50)',
-                }}>학부모 확인</p>
-              </div>
-              {/* 오른쪽: 성취도 게이지 3개 */}
-              <div style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)', width:'68px' }}>
-                {[
-                  { label:'어휘', val:0.84, c1:'#43e97b', c2:'#38f9d7' },
-                  { label:'독해', val:0.68, c1:'#38f9d7', c2:'#4facfe' },
-                  { label:'문법', val:0.91, c1:'#4facfe', c2:'#a18fff' },
-                ].map((b, i) => (
-                  <div key={i} style={{ marginBottom: i<2 ? '7px' : 0 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'3px' }}>
-                      <span style={{ fontSize:7, color:'rgba(120,210,170,0.55)', fontWeight:600, letterSpacing:'0.04em' }}>{b.label}</span>
-                      <span style={{ fontSize:7, color:'rgba(120,210,170,0.55)', fontWeight:600 }}>{Math.round(b.val*100)}</span>
-                    </div>
-                    <div style={{ height:'3px', borderRadius:'3px', background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
-                      <div style={{ height:'100%', width:`${b.val*100}%`, borderRadius:'3px',
-                        background:`linear-gradient(90deg,${b.c1},${b.c2})`,
-                        boxShadow:`0 0 4px ${b.c1}60`,
-                      }}/>
-                    </div>
-                  </div>
-                ))}
+              <svg width="22" height="20" viewBox="0 0 24 20" fill="none"
+                stroke="rgba(80,215,160,0.72)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"
+                style={{ flexShrink:0 }}>
+                <rect x="5" y="4" width="18" height="13" rx="1.5" fill="rgba(67,233,123,0.06)"/>
+                <path d="M5 4 C1 4 1 17 5 17"/>
+                <line x1="3" y1="10.5" x2="20" y2="10.5"/>
+                <line x1="21" y1="4" x2="21" y2="1.5"/>
+                <rect x="18.5" y="1" width="2.5" height="2" rx="0.4" fill="rgba(67,233,123,0.55)" stroke="none"/>
+              </svg>
+              <div style={{ minWidth:0 }}>
+                <p style={{ fontSize:11.5, fontWeight:700, lineHeight:1.1, color:'rgba(200,255,225,0.88)' }}>리포트 페이지</p>
+                <p style={{ fontSize:9, marginTop:4, fontWeight:400, color:'rgba(80,200,155,0.48)', fontStyle:'italic' }}>To. 학부모님</p>
               </div>
             </Link>
 
-            {/* ── 선생님 카드 — Apple 실버 ── */}
+            {/* Apple card */}
             <Link href="/login?role=admin"
               className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
               style={{
-                borderRadius:'1.4rem', height:'88px', display:'block',
+                borderRadius:'1.4rem', height:'72px', display:'flex',
+                alignItems:'center', gap:'11px', padding:'0 14px',
                 background:'rgba(255,255,255,0.04)',
                 border:'1px solid rgba(255,255,255,0.07)',
                 backdropFilter:'blur(16px)',
                 boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)',
               }}>
-              {/* 상단 퍼플 액센트 라인 */}
-              <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:'1.5px',
-                background:'linear-gradient(90deg,transparent,rgba(131,58,180,0.65),rgba(193,53,132,0.65),transparent)',
+              <div style={{ position:'absolute', top:0, left:'15%', right:'15%', height:'1px',
+                background:'linear-gradient(90deg,transparent,rgba(131,58,180,0.6),rgba(193,53,132,0.6),transparent)',
               }}/>
-              {/* 파먹은 사과 로고 */}
-              <div style={{ position:'absolute', left:'16px', top:'50%', transform:'translateY(-54%)' }}>
-                <svg width="20" height="24" viewBox="0 0 56 68" fill="none">
-                  <defs>
-                    <linearGradient id="sg2" x1="0" y1="0" x2="0.5" y2="1">
-                      <stop offset="0%" stopColor="#e0e0e0" stopOpacity="0.85"/>
-                      <stop offset="55%" stopColor="#a8a8a8" stopOpacity="0.70"/>
-                      <stop offset="100%" stopColor="#787878" stopOpacity="0.50"/>
-                    </linearGradient>
-                  </defs>
-                  <path d="M28 14 C28 14 36 3 46 6 C46 6 40 13 28 14 Z" fill="url(#sg2)"/>
-                  <path d="M18 18 C8 18 2 30 2 42 C2 56 10 68 20 68 C24 68 27 66 30 66 C33 66 36 68 40 68 C50 68 54 56 54 42 C54 34 50 24 44 20 A11 11 0 0 0 32 24 C29 24 26 22 22 20 C20.5 18.5 18 18 18 18 Z" fill="url(#sg2)"/>
-                </svg>
+              <svg width="17" height="20" viewBox="0 0 56 68" fill="none" style={{ flexShrink:0 }}>
+                <defs>
+                  <linearGradient id="apg" x1="0" y1="0" x2="0.5" y2="1">
+                    <stop offset="0%" stopColor="#e0e0e0" stopOpacity="0.88"/>
+                    <stop offset="55%" stopColor="#aaaaaa" stopOpacity="0.70"/>
+                    <stop offset="100%" stopColor="#787878" stopOpacity="0.50"/>
+                  </linearGradient>
+                </defs>
+                <path d="M28 14 C28 14 36 3 46 6 C46 6 40 13 28 14 Z" fill="url(#apg)"/>
+                <path d="M18 18 C8 18 2 30 2 42 C2 56 10 68 20 68 C24 68 27 66 30 66 C33 66 36 68 40 68 C50 68 54 56 54 42 C54 34 50 24 44 20 A11 11 0 0 0 32 24 C29 24 26 22 22 20 C20.5 18.5 18 18 18 18 Z" fill="url(#apg)"/>
+              </svg>
+              <div style={{ minWidth:0 }}>
+                <p style={{ fontSize:11.5, fontWeight:700, lineHeight:1.1, color:'rgba(230,230,238,0.88)' }}>선생님 페이지</p>
+                <p style={{ fontSize:9, marginTop:4, fontWeight:400, letterSpacing:'0.05em', textTransform:'uppercase', color:'rgba(170,170,182,0.40)' }}>대시보드</p>
               </div>
-              {/* 텍스트 */}
-              <div style={{ position:'absolute', left:'44px', top:'50%', transform:'translateY(-50%)' }}>
-                <p style={{ fontSize:12, fontWeight:700, lineHeight:1, letterSpacing:'0.01em',
-                  color:'rgba(230,230,238,0.88)',
-                }}>선생님 페이지</p>
-                <p style={{ fontSize:7.5, marginTop:5, fontWeight:400, textTransform:'uppercase',
-                  letterSpacing:'0.12em', color:'rgba(170,170,180,0.38)',
-                }}>Teacher</p>
-              </div>
-              {/* 우측 화살표 */}
-              <ArrowRight size={11} strokeWidth={1.5}
-                style={{ position:'absolute', bottom:'12px', right:'13px', color:'rgba(180,180,190,0.25)' }}
-                className="group-hover:translate-x-0.5 group-hover:opacity-60 transition-all opacity-0"/>
             </Link>
 
           </div>
 
-
-
         </div>
+
 
 
 
