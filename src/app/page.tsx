@@ -283,7 +283,7 @@ export default function Home() {
             <Link href="/login/parent"
               className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
               style={{
-                borderRadius:'1.4rem', height:'88px', display:'flex',
+                borderRadius:'1.4rem', height:'80px', display:'flex',
                 alignItems:'center', gap:'13px', padding:'0 16px',
                 background:'rgba(255,255,255,0.04)',
                 border:'1px solid rgba(255,255,255,0.07)',
@@ -293,10 +293,12 @@ export default function Home() {
               <div style={{ position:'absolute', top:0, left:'15%', right:'15%', height:'1px',
                 background:'linear-gradient(90deg,transparent,rgba(67,233,123,0.55),rgba(56,249,215,0.55),transparent)',
               }}/>
-              <span style={{ fontSize:'30px', flexShrink:0, lineHeight:1 }}>📬</span>
+              <span style={{ fontSize:'28px', flexShrink:0, lineHeight:1 }}>📬</span>
               <div style={{ minWidth:0 }}>
-                <p style={{ fontSize:15, fontWeight:700, lineHeight:1.25, color:'rgba(200,255,225,0.90)', letterSpacing:'0.01em', whiteSpace:'nowrap' }}>리포트<br/>페이지</p>
-                <p style={{ fontSize:11, marginTop:5, fontWeight:400, color:'rgba(80,200,155,0.50)', fontStyle:'italic' }}>To. 학부모님</p>
+                <p style={{ fontFamily:"var(--font-playfair),Georgia,serif", fontSize:18, fontWeight:400, fontStyle:'italic',
+                  lineHeight:1.1, color:'rgba(200,255,228,0.88)', letterSpacing:'0.03em' }}>Report</p>
+                <p style={{ fontSize:10, marginTop:5, fontWeight:300, color:'rgba(80,200,155,0.48)',
+                  letterSpacing:'0.08em', textTransform:'uppercase' }}>학부모 전용</p>
               </div>
             </Link>
 
@@ -304,7 +306,7 @@ export default function Home() {
             <Link href="/login?role=admin"
               className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
               style={{
-                borderRadius:'1.4rem', height:'88px', display:'flex',
+                borderRadius:'1.4rem', height:'80px', display:'flex',
                 alignItems:'center', gap:'13px', padding:'0 16px',
                 background:'rgba(255,255,255,0.04)',
                 border:'1px solid rgba(255,255,255,0.07)',
@@ -314,10 +316,12 @@ export default function Home() {
               <div style={{ position:'absolute', top:0, left:'15%', right:'15%', height:'1px',
                 background:'linear-gradient(90deg,transparent,rgba(131,58,180,0.55),rgba(193,53,132,0.55),transparent)',
               }}/>
-              <span style={{ fontSize:'28px', flexShrink:0, lineHeight:1 }}>🖋️</span>
+              <span style={{ fontSize:'26px', flexShrink:0, lineHeight:1 }}>🖋️</span>
               <div style={{ minWidth:0 }}>
-                <p style={{ fontSize:15, fontWeight:700, lineHeight:1.25, color:'rgba(230,230,238,0.90)', letterSpacing:'0.01em', whiteSpace:'nowrap' }}>선생님<br/>페이지</p>
-                <p style={{ fontSize:11, marginTop:5, fontWeight:400, letterSpacing:'0.05em', textTransform:'uppercase', color:'rgba(170,170,182,0.42)' }}>대시보드</p>
+                <p style={{ fontFamily:"var(--font-playfair),Georgia,serif", fontSize:18, fontWeight:400, fontStyle:'italic',
+                  lineHeight:1.1, color:'rgba(230,228,240,0.88)', letterSpacing:'0.03em' }}>Teacher</p>
+                <p style={{ fontSize:10, marginTop:5, fontWeight:300, color:'rgba(170,160,190,0.45)',
+                  letterSpacing:'0.08em', textTransform:'uppercase' }}>대시보드</p>
               </div>
             </Link>
 

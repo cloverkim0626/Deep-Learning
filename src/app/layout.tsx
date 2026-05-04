@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Serif_KR, Gaegu, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, Noto_Serif_KR, Gaegu, Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import SplashScreen from "@/components/SplashV4";
 
@@ -26,6 +26,13 @@ const gaegu = Gaegu({
   subsets: ["latin"],
 });
 
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["italic"],
+});
+
 export const metadata: Metadata = {
   title: "Deep Learning — Team Parallax",
   description: "Team Parallax의 AI 기반 영어 학습 플랫폼",
@@ -48,7 +55,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${inter.variable} ${jakarta.variable} ${notoSerifKR.variable} ${gaegu.variable} h-full antialiased`}
+      className={`${inter.variable} ${jakarta.variable} ${notoSerifKR.variable} ${gaegu.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground transition-colors duration-700">
         {/* 네이티브 스플래시 이전 순간 — JS 로드 전 검은화면 */}
