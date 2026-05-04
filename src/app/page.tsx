@@ -281,135 +281,114 @@ export default function Home() {
           {/* 리포트 | 선생님 — 오브젝트 카드 */}
           <div className="grid grid-cols-2 gap-3 w-full">
 
-            {/* ── 엽서/편지 카드 ── */}
+            {/* ── 편지지 카드 (리포트) ── */}
             <Link href="/login/parent"
               className="group relative overflow-hidden hover:-translate-y-1 transition-all duration-400"
               style={{ borderRadius:'1.6rem', height:'110px', display:'block',
-                background:'linear-gradient(160deg,#0d1c14 0%,#0a1a1f 60%,#071420 100%)',
-                border:'1px solid rgba(80,200,160,0.18)',
-                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)',
+                background:'linear-gradient(160deg,#1c1408 0%,#211808 50%,#1a1206 100%)',
+                border:'1px solid rgba(200,160,80,0.22)',
               }}>
-              {/* 편지봉투 — 바디 */}
-              <div style={{ position:'absolute', top:'14px', left:'14px', right:'14px', bottom:'22px',
-                borderRadius:'6px', background:'rgba(255,248,230,0.04)',
-                border:'1px solid rgba(150,220,180,0.20)',
-              }}/>
-              {/* 봉투 V-플랩 (상단 삼각) */}
-              <svg style={{ position:'absolute', top:'14px', left:'14px', right:'14px', width:'calc(100% - 28px)', height:'28px', overflow:'visible' }} viewBox="0 0 100 28" preserveAspectRatio="none">
-                <polyline points="0,0 50,26 100,0" fill="none" stroke="rgba(80,200,155,0.28)" strokeWidth="1"/>
-              </svg>
-              {/* 우표 */}
-              <div style={{ position:'absolute', top:'18px', right:'20px',
-                width:'18px', height:'22px', borderRadius:'2px',
-                border:'1.5px solid rgba(80,200,155,0.35)',
-                background:'linear-gradient(135deg,rgba(67,233,123,0.12),rgba(56,249,215,0.06))',
-              }}>
-                <div style={{ position:'absolute', inset:'2px', borderRadius:'1px',
-                  background:'radial-gradient(circle,rgba(67,233,123,0.25) 0%,transparent 70%)',
-                }}/>
-              </div>
-              {/* 소인 원형 */}
-              <div style={{ position:'absolute', top:'16px', right:'42px',
-                width:'16px', height:'16px', borderRadius:'50%',
-                border:'1px solid rgba(80,200,155,0.2)', opacity:0.7,
-              }}/>
-              {/* 주소 선 (오른쪽) */}
-              {[0,1,2].map(i => (
-                <div key={i} style={{ position:'absolute', right:'22px', top:`${52+i*10}px`,
-                  width:'30px', height:'1px', background:'rgba(80,200,155,0.14)',
+              {/* 편지지 라인들 */}
+              {[0,1,2,3].map(i=>(
+                <div key={i} style={{ position:'absolute', left:'14px', right:'14px',
+                  top:`${28+i*14}px`, height:'1px',
+                  background:`rgba(200,165,80,${0.07+i*0.01})`,
                 }}/>
               ))}
-              {/* 텍스트 왼쪽 */}
-              <div style={{ position:'absolute', bottom:'14px', left:'16px', zIndex:10 }}>
-                <p style={{ fontSize:15, fontWeight:900, color:'rgba(200,255,230,0.92)', lineHeight:1 }}>리포트</p>
-                <p style={{ fontSize:9, color:'rgba(100,210,160,0.6)', marginTop:4, fontWeight:600 }}>학부모 확인</p>
-              </div>
-              {/* 호버 화살표 */}
-              <ArrowRight size={12} strokeWidth={2}
-                style={{ position:'absolute', bottom:'16px', right:'16px', color:'rgba(80,200,155,0.45)' }}
-                className="group-hover:translate-x-0.5 transition-all"/>
-              {/* ambient */}
-              <div style={{ position:'absolute', top:0, left:0, width:'60px', height:'60px',
-                background:'radial-gradient(ellipse,rgba(67,233,123,0.1) 0%,transparent 70%)',
-                filter:'blur(10px)', pointerEvents:'none',
+              {/* 왼쪽 여백선 (편지지 특유의 세로선) */}
+              <div style={{ position:'absolute', left:'30px', top:'14px', bottom:'14px',
+                width:'1px', background:'rgba(220,100,80,0.18)',
               }}/>
+              {/* 상단 접힌 모서리 */}
+              <div style={{ position:'absolute', top:0, right:0,
+                width:0, height:0,
+                borderStyle:'solid',
+                borderWidth:'0 22px 22px 0',
+                borderColor:`transparent rgba(200,160,80,0.28) transparent transparent`,
+              }}/>
+              <div style={{ position:'absolute', top:'3px', right:'3px',
+                width:0, height:0,
+                borderStyle:'solid',
+                borderWidth:'0 19px 19px 0',
+                borderColor:`transparent rgba(200,160,80,0.10) transparent transparent`,
+              }}/>
+              {/* 도장 느낌 원형 */}
+              <div style={{ position:'absolute', top:'12px', right:'28px',
+                width:'20px', height:'20px', borderRadius:'50%',
+                border:'1.5px solid rgba(200,160,80,0.3)',
+              }}/>
+              {/* ambient glow */}
+              <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'50%',
+                background:'radial-gradient(ellipse at bottom left,rgba(200,140,40,0.08) 0%,transparent 70%)',
+                pointerEvents:'none',
+              }}/>
+              {/* 텍스트 */}
+              <div style={{ position:'absolute', bottom:'14px', left:'38px' }}>
+                <p style={{ fontSize:15, fontWeight:900, lineHeight:1,
+                  color:'rgba(240,210,140,0.95)',
+                }}>리포트</p>
+                <p style={{ fontSize:9, marginTop:4, fontWeight:600,
+                  color:'rgba(200,160,80,0.55)',
+                }}>학부모 확인</p>
+              </div>
+              <ArrowRight size={12} strokeWidth={2}
+                style={{ position:'absolute', bottom:'16px', right:'14px',
+                  color:'rgba(200,160,80,0.4)',
+                }}
+                className="group-hover:translate-x-0.5 transition-all"/>
             </Link>
 
-            {/* ── 노트북 카드 ── */}
+            {/* ── 애플 은장 카드 (선생님) ── */}
             <Link href="/login?role=admin"
               className="group relative overflow-hidden hover:-translate-y-1 transition-all duration-400"
               style={{ borderRadius:'1.6rem', height:'110px', display:'block',
-                background:'linear-gradient(160deg,#0a0d20 0%,#0d0f28 50%,#080b1e 100%)',
-                border:'1px solid rgba(100,120,255,0.15)',
-                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.04)',
+                background:'linear-gradient(160deg,#0e0e0e 0%,#141414 50%,#0a0a0a 100%)',
+                border:'1px solid rgba(180,180,180,0.12)',
               }}>
-              {/* 노트북 스크린 */}
-              <div style={{ position:'absolute', top:'10px', left:'18px', right:'18px', height:'48px',
-                borderRadius:'4px 4px 0 0',
-                background:'rgba(15,20,60,0.9)',
-                border:'1px solid rgba(100,120,255,0.28)',
-                overflow:'hidden',
+              {/* Apple 로고 SVG — 은장 그라디언트 */}
+              <div style={{ position:'absolute', top:'50%', left:'50%',
+                transform:'translate(-50%,-60%)',
+                width:'38px', height:'38px',
               }}>
-                {/* 화면 반사 */}
-                <div style={{ position:'absolute', top:0, left:0, right:0, height:'40%',
-                  background:'linear-gradient(180deg,rgba(130,150,255,0.08) 0%,transparent 100%)',
-                }}/>
-                {/* 코드 라인 애니메이션 느낌 */}
-                {[0,1,2].map(i => (
-                  <div key={i} style={{ position:'absolute', left:`${8+i*4}px`, top:`${8+i*11}px`,
-                    width:`${20+i*8}px`, height:'2px', borderRadius:'1px',
-                    background:`rgba(130,150,255,${0.12+i*0.04})`,
-                  }}/>
-                ))}
-                {/* 커서 점 */}
-                <div style={{ position:'absolute', right:'8px', top:'8px',
-                  width:'5px', height:'5px', borderRadius:'50%',
-                  background:'rgba(130,150,255,0.5)',
-                  boxShadow:'0 0 6px rgba(130,150,255,0.6)',
-                }}/>
+                <svg viewBox="0 0 56 68" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:'100%'}}>
+                  <defs>
+                    <linearGradient id="ag" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="rgba(240,240,240,0.85)"/>
+                      <stop offset="50%" stopColor="rgba(180,180,180,0.70)"/>
+                      <stop offset="100%" stopColor="rgba(140,140,140,0.55)"/>
+                    </linearGradient>
+                  </defs>
+                  {/* Apple body */}
+                  <path d="M48.5 22.5C47.2 21.0 43.5 18.8 40.5 18.8C37.8 18.8 34.5 20.8 32.0 20.8C29.3 20.8 26.5 18.8 23.2 18.8C17.5 18.8 8.5 23.5 8.5 36.0C8.5 50.0 19.5 67.0 26.0 67.0C28.5 67.0 30.0 65.2 33.0 65.2C36.0 65.2 37.8 67.0 40.5 67.0C47.5 67.0 55.5 50.5 55.5 38.5C55.5 30.5 52.0 25.0 48.5 22.5Z" fill="url(#ag)"/>
+                  {/* Leaf */}
+                  <path d="M33.5 18.5C33.5 18.5 35.0 9.5 43.0 5.0C43.0 5.0 37.0 10.0 33.5 18.5Z" fill="url(#ag)"/>
+                </svg>
               </div>
-              {/* 힌지 라인 */}
-              <div style={{ position:'absolute', top:'58px', left:'16px', right:'16px',
-                height:'2px', background:'rgba(100,120,255,0.18)',
-                borderRadius:'1px',
+              {/* 미세 반사 하이라이트 */}
+              <div style={{ position:'absolute', top:0, left:'20%', right:'20%', height:'1px',
+                background:'linear-gradient(90deg,transparent,rgba(220,220,220,0.15),transparent)',
               }}/>
-              {/* 키보드 베이스 */}
-              <div style={{ position:'absolute', top:'60px', left:'16px', right:'16px', height:'22px',
-                borderRadius:'0 0 3px 3px',
-                background:'rgba(20,25,70,0.7)',
-                border:'1px solid rgba(100,120,255,0.18)',
-                borderTop:'none',
-              }}>
-                {/* 키보드 그리드 */}
-                <div style={{ display:'flex', gap:'2px', padding:'4px 6px 0', justifyContent:'center' }}>
-                  {Array(7).fill(0).map((_,j) => (
-                    <div key={j} style={{ flex:1, height:'5px', borderRadius:'1px',
-                      background:'rgba(130,150,255,0.08)', border:'1px solid rgba(130,150,255,0.1)',
-                    }}/>
-                  ))}
-                </div>
-              </div>
               {/* 텍스트 */}
-              <div style={{ position:'absolute', bottom:'10px', left:'18px', zIndex:10 }}>
-                <p style={{ fontSize:15, fontWeight:900, color:'rgba(200,210,255,0.88)', lineHeight:1 }}>선생님</p>
-                <p style={{ fontSize:9, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em',
-                  color:'rgba(130,150,255,0.5)', marginTop:4,
+              <div style={{ position:'absolute', bottom:'12px', left:0, right:0, textAlign:'center' }}>
+                <p style={{ fontSize:13, fontWeight:700, letterSpacing:'0.04em',
+                  color:'rgba(210,210,210,0.88)',
+                }}>선생님</p>
+                <p style={{ fontSize:8, fontWeight:400, textTransform:'uppercase',
+                  letterSpacing:'0.14em', color:'rgba(150,150,150,0.45)', marginTop:2,
                 }}>Teacher</p>
               </div>
-              {/* 호버 화살표 */}
-              <ArrowRight size={12} strokeWidth={1.8}
-                style={{ position:'absolute', bottom:'12px', right:'16px', color:'rgba(130,150,255,0.4)' }}
+              <ArrowRight size={11} strokeWidth={1.5}
+                style={{ position:'absolute', bottom:'14px', right:'13px',
+                  color:'rgba(160,160,160,0.3)',
+                }}
                 className="group-hover:translate-x-0.5 transition-all"/>
-              {/* ambient */}
-              <div style={{ position:'absolute', top:0, right:0, width:'60px', height:'60px',
-                background:'radial-gradient(ellipse,rgba(100,120,255,0.1) 0%,transparent 70%)',
-                filter:'blur(10px)', pointerEvents:'none',
-              }}/>
             </Link>
 
           </div>
 
+
         </div>
+
 
         <p className="text-[10px] font-medium tracking-[0.3em] uppercase select-none" style={{color:'rgba(80,140,200,0.35)'}}>
           © 2026 Team Parallax
