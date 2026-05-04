@@ -303,7 +303,7 @@ export default function Home() {
               <ArrowRight size={13} className="text-white/50 group-hover:text-white/90 group-hover:translate-x-0.5 transition-all" />
             </div>
           </button>
-          {/* === Metal Plate Cards === */}
+          {/* === IG-gradient CTA cards === */}
           <style>{`
             @keyframes igGlow {
               0%,100%{opacity:0.7;transform:translateX(0)}
@@ -314,128 +314,120 @@ export default function Home() {
               70%{box-shadow:0 0 0 8px rgba(225,48,108,0)}
               100%{box-shadow:0 0 0 0 rgba(225,48,108,0)}
             }
-            @keyframes gleam1 {
-              0%   { transform:translateX(-200%) skewX(-20deg); }
-              100% { transform:translateX(800%) skewX(-20deg); }
+            @keyframes greenRing {
+              0%  { box-shadow:0 0 0 0 rgba(56,249,215,0.55); }
+              70% { box-shadow:0 0 0 7px rgba(56,249,215,0); }
+              100%{ box-shadow:0 0 0 0 rgba(56,249,215,0); }
             }
-            @keyframes gleam2 {
-              0%   { transform:translateX(-200%) skewX(-20deg); }
-              100% { transform:translateX(800%) skewX(-20deg); }
+            @keyframes purpleRing {
+              0%  { box-shadow:0 0 0 0 rgba(184,127,255,0.55); }
+              70% { box-shadow:0 0 0 7px rgba(184,127,255,0); }
+              100%{ box-shadow:0 0 0 0 rgba(184,127,255,0); }
             }
-            @keyframes arrowPing {
-              0%,100%{ transform:translateX(0) translateY(-50%); opacity:0.55; }
-              50%    { transform:translateX(2px) translateY(-50%); opacity:1; }
+            @keyframes cardGleam {
+              0%   { transform:translateX(-160%) skewX(-20deg); }
+              100% { transform:translateX(700%) skewX(-20deg); }
             }
           `}</style>
           <div className="grid grid-cols-2 gap-3 w-full">
 
-            {/* SILVER — REPORT */}
+            {/* REPORT — green-teal IG gradient */}
             <Link href="/login/parent"
-              className="group relative overflow-hidden active:scale-[0.97] transition-transform duration-150"
+              className="group relative overflow-hidden active:scale-[0.97] transition-transform duration-100"
               style={{
-                borderRadius:'1.2rem', height:'80px',
-                display:'flex', flexDirection:'column',
-                alignItems:'center', justifyContent:'center',
-                background:`linear-gradient(160deg,
-                  #f2f2f2 0%, #e6e6e6 10%,
-                  #fefefe 22%, #f0f0f0 30%,
-                  #d8d8d8 50%, #e8e8e8 65%,
-                  #c8c8c8 80%, #dcdcdc 100%)`,
-                border:'1px solid rgba(255,255,255,0.9)',
-                boxShadow:'0 8px 20px rgba(0,0,0,0.40), inset 0 1.5px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(0,0,0,0.10)',
+                borderRadius:'1.4rem', height:'84px',
+                display:'flex', alignItems:'center',
+                gap:'10px', padding:'0 12px',
+                background:'linear-gradient(145deg,#0a7c50 0%,#1ab876 35%,#2ed8a8 70%,#38f9d7 100%)',
+                boxShadow:'0 6px 22px rgba(30,200,140,0.38), 0 2px 8px rgba(0,0,0,0.35)',
+                border:'1px solid rgba(255,255,255,0.18)',
               }}>
-              {/* strong specular gleam */}
-              <div style={{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden',borderRadius:'1.2rem'}}>
-                <div style={{position:'absolute',top:0,left:0,width:'22%',height:'100%',
-                  background:'linear-gradient(105deg,transparent 20%,rgba(255,255,255,0.70) 50%,transparent 80%)',
-                  animation:'gleam1 4.5s ease-in-out infinite',animationDelay:'1s',
+              {/* shimmer */}
+              <div style={{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden',borderRadius:'1.4rem'}}>
+                <div style={{position:'absolute',top:0,left:0,width:'25%',height:'100%',
+                  background:'linear-gradient(105deg,transparent 25%,rgba(255,255,255,0.22) 50%,transparent 75%)',
+                  animation:'cardGleam 4.5s ease-in-out infinite',animationDelay:'1.2s',
                 }}/>
               </div>
-              {/* top-bottom plate edge */}
-              <div style={{position:'absolute',top:'5px',left:'8px',right:'8px',height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.9),transparent)'}}/>
-              <div style={{position:'absolute',bottom:'5px',left:'8px',right:'8px',height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(0,0,0,0.06),transparent)'}}/>
-              {/* engraved text */}
-              <p style={{fontFamily:"var(--font-jakarta),sans-serif",
-                fontSize:17,fontWeight:700,letterSpacing:'0.06em',textTransform:'uppercase',
-                color:'#7a7a7a',
-                textShadow:'0 1.5px 2px rgba(255,255,255,1), 0 -0.5px 0 rgba(0,0,0,0.20)',
-              }}>Report</p>
-              <p style={{fontFamily:"var(--font-jakarta),sans-serif",
-                fontSize:8,fontWeight:500,letterSpacing:'0.10em',textTransform:'uppercase',
-                color:'#aaa',marginTop:5,
-                textShadow:'0 1px 1px rgba(255,255,255,0.9), 0 -0.5px 0 rgba(0,0,0,0.10)',
-              }}>Parent Portal</p>
-              {/* click arrow */}
-              <div style={{position:'absolute',top:'50%',right:'11px',
-                transform:'translateY(-50%)',
-                width:'20px',height:'20px',borderRadius:'50%',
-                background:'rgba(0,0,0,0.07)',
-                border:'1px solid rgba(255,255,255,0.65)',
-                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.6), 0 1px 2px rgba(0,0,0,0.15)',
+              {/* ambient glow bottom */}
+              <div style={{position:'absolute',bottom:0,left:0,right:0,height:'40%',
+                background:'linear-gradient(0deg,rgba(0,0,0,0.18) 0%,transparent 100%)',
+                pointerEvents:'none',borderRadius:'0 0 1.4rem 1.4rem',
+              }}/>
+              {/* icon */}
+              <span style={{fontSize:'24px',flexShrink:0,filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.3))'}}>📊</span>
+              {/* text */}
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:'flex',alignItems:'center',gap:'5px',marginBottom:'4px'}}>
+                  <p style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.97)',
+                    letterSpacing:'0.01em',lineHeight:1}}>학습 리포트</p>
+                  <span style={{fontSize:7,fontWeight:800,color:'#0a7c50',
+                    background:'rgba(255,255,255,0.92)',padding:'2px 5px',borderRadius:'4px',
+                    letterSpacing:'0.06em',lineHeight:1}}>NEW</span>
+                </div>
+                <p style={{fontSize:9,color:'rgba(255,255,255,0.70)',fontWeight:400,
+                  letterSpacing:'0.02em',lineHeight:1}}>성취도 · 어휘 · 독해 분석</p>
+              </div>
+              {/* pulsing CTA arrow */}
+              <div style={{flexShrink:0,width:'26px',height:'26px',borderRadius:'50%',
+                background:'rgba(255,255,255,0.22)',border:'1.5px solid rgba(255,255,255,0.45)',
                 display:'flex',alignItems:'center',justifyContent:'center',
-                animation:'arrowPing 2.2s ease-in-out infinite',
+                animation:'greenRing 1.8s ease-out infinite',
               }}>
-                <span style={{fontSize:'10px',color:'#666',marginLeft:'1px'}}>›</span>
+                <ArrowRight size={12} color="white" strokeWidth={2.5}
+                  className="group-hover:translate-x-0.5 transition-transform"/>
               </div>
             </Link>
 
-            {/* TITANIUM — TEACHER */}
+            {/* TEACHER — purple-blue IG gradient */}
             <Link href="/login?role=admin"
-              className="group relative overflow-hidden active:scale-[0.97] transition-transform duration-150"
+              className="group relative overflow-hidden active:scale-[0.97] transition-transform duration-100"
               style={{
-                borderRadius:'1.2rem', height:'80px',
-                display:'flex', flexDirection:'column',
-                alignItems:'center', justifyContent:'center',
-                background:`linear-gradient(160deg,
-                  #8e8b85 0%, #7c7970 10%,
-                  #9a9790 22%, #888580 30%,
-                  #6e6b65 50%, #7e7b74 65%,
-                  #5e5c57 80%, #706d68 100%)`,
-                border:'1px solid rgba(255,255,255,0.22)',
-                boxShadow:'0 8px 20px rgba(0,0,0,0.55), inset 0 1.5px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.20)',
+                borderRadius:'1.4rem', height:'84px',
+                display:'flex', alignItems:'center',
+                gap:'10px', padding:'0 12px',
+                background:'linear-gradient(145deg,#2d1b8e 0%,#5851DB 35%,#833AB4 70%,#b06eef 100%)',
+                boxShadow:'0 6px 22px rgba(131,58,180,0.38), 0 2px 8px rgba(0,0,0,0.35)',
+                border:'1px solid rgba(255,255,255,0.14)',
               }}>
-              {/* specular gleam */}
-              <div style={{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden',borderRadius:'1.2rem'}}>
-                <div style={{position:'absolute',top:0,left:0,width:'22%',height:'100%',
-                  background:'linear-gradient(105deg,transparent 20%,rgba(255,255,255,0.22) 50%,transparent 80%)',
-                  animation:'gleam2 5.5s ease-in-out infinite',animationDelay:'3s',
+              {/* shimmer */}
+              <div style={{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden',borderRadius:'1.4rem'}}>
+                <div style={{position:'absolute',top:0,left:0,width:'25%',height:'100%',
+                  background:'linear-gradient(105deg,transparent 25%,rgba(255,255,255,0.16) 50%,transparent 75%)',
+                  animation:'cardGleam 5s ease-in-out infinite',animationDelay:'3s',
                 }}/>
               </div>
-              {/* plate edge */}
-              <div style={{position:'absolute',top:'5px',left:'8px',right:'8px',height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.28),transparent)'}}/>
-              <div style={{position:'absolute',bottom:'5px',left:'8px',right:'8px',height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(0,0,0,0.22),transparent)'}}/>
-              {/* engraved text */}
-              <p style={{fontFamily:"var(--font-jakarta),sans-serif",
-                fontSize:17,fontWeight:700,letterSpacing:'0.06em',textTransform:'uppercase',
-                color:'#3a3835',
-                textShadow:'0 1.5px 2px rgba(255,255,255,0.38), 0 -0.5px 0 rgba(0,0,0,0.30)',
-              }}>Teacher</p>
-              <p style={{fontFamily:"var(--font-jakarta),sans-serif",
-                fontSize:8,fontWeight:500,letterSpacing:'0.10em',textTransform:'uppercase',
-                color:'#55524e',marginTop:5,
-                textShadow:'0 1px 1px rgba(255,255,255,0.22), 0 -0.5px 0 rgba(0,0,0,0.20)',
-              }}>Dashboard</p>
-              {/* click arrow */}
-              <div style={{position:'absolute',top:'50%',right:'11px',
-                transform:'translateY(-50%)',
-                width:'20px',height:'20px',borderRadius:'50%',
-                background:'rgba(0,0,0,0.18)',
-                border:'1px solid rgba(255,255,255,0.20)',
-                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.15), 0 1px 2px rgba(0,0,0,0.25)',
+              {/* ambient */}
+              <div style={{position:'absolute',bottom:0,left:0,right:0,height:'40%',
+                background:'linear-gradient(0deg,rgba(0,0,0,0.20) 0%,transparent 100%)',
+                pointerEvents:'none',borderRadius:'0 0 1.4rem 1.4rem',
+              }}/>
+              {/* icon */}
+              <span style={{fontSize:'24px',flexShrink:0,filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.3))'}}>🎓</span>
+              {/* text */}
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{marginBottom:'4px'}}>
+                  <p style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.97)',
+                    letterSpacing:'0.01em',lineHeight:1}}>선생님 페이지</p>
+                </div>
+                <p style={{fontSize:9,color:'rgba(255,255,255,0.65)',fontWeight:400,
+                  letterSpacing:'0.02em',lineHeight:1}}>수업 관리 · 성적 입력</p>
+              </div>
+              {/* pulsing CTA */}
+              <div style={{flexShrink:0,width:'26px',height:'26px',borderRadius:'50%',
+                background:'rgba(255,255,255,0.18)',border:'1.5px solid rgba(255,255,255,0.35)',
                 display:'flex',alignItems:'center',justifyContent:'center',
-                animation:'arrowPing 2.8s ease-in-out infinite',animationDelay:'0.6s',
+                animation:'purpleRing 2.2s ease-out infinite',animationDelay:'0.4s',
               }}>
-                <span style={{fontSize:'10px',color:'rgba(255,255,255,0.5)',marginLeft:'1px'}}>›</span>
+                <ArrowRight size={12} color="white" strokeWidth={2.5}
+                  className="group-hover:translate-x-0.5 transition-transform"/>
               </div>
             </Link>
 
           </div>
 
         </div>
+
 
 
 
