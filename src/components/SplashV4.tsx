@@ -18,9 +18,9 @@ const STARS = [
 /* 각자 다른 타이밍 — 제멋대로 등장 */
 const DELAYS = [0.15, 0.75, 0.05, 1.05, 0.45, 0.85, 0.35, 1.2, 0.6, 0.95];
 
-/* 별자리/뉴런 느낌 (외곽 사각 X) */
+/* 별자리/뉴런: 외곽 사각형 X → 중앙 교차 대각선 위주 */
 const EDGES: [number, number][] = [
-  [0,2],[1,2],[0,3],[2,5],[1,4],[3,5],[4,5],[3,6],[5,7],[5,8],[6,8],[7,9],
+  [0,2],[2,1],[2,4],[0,5],[1,3],[3,5],[4,5],[5,6],[5,7],[6,9],[7,8],
 ];
 
 const FULL_TEXT = 'Connecting the Dots';
@@ -107,11 +107,11 @@ export default function SplashV4() {
           }}>
             {/* Connecting the Dots — 타이핑 */}
             <div style={{
-              fontFamily:'var(--font-noto-serif), Georgia, serif',
-              fontStyle:'italic', fontWeight:700,
-              fontSize:16, letterSpacing:'.04em',
-              color:'rgba(255,255,255,.55)',
-              marginBottom: 10,
+              fontFamily:'var(--font-inter), sans-serif',
+              fontWeight:300, fontSize:13,
+              letterSpacing:'.12em',
+              color:'rgba(255,255,255,.45)',
+              marginBottom: 12,
             }}>
               {typed}
               {typed.length < FULL_TEXT.length && (
