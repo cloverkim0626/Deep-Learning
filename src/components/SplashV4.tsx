@@ -168,19 +168,17 @@ export default function SplashV4() {
       `}</style>
       <div style={{ position:'fixed', inset:0, zIndex:9999, background:'#000', animation: fading ? 'sOut .9s ease forwards' : undefined }}>
         <canvas ref={canvasRef} style={{ display:'block', width:'100%', height:'100%' }} />
-        <div style={{ position:'absolute', bottom:'26%', left:0, width:'100%', textAlign:'center', pointerEvents:'none' }}>
-          {showText && (
-            <div style={{ fontFamily:'var(--font-inter), -apple-system, sans-serif', fontSize:12, letterSpacing:'5.5px', textTransform:'uppercase', color:'rgba(175,185,255,0.88)', fontWeight:300, marginBottom:14 }}>
-              {typed}
-              {typed.length < FULL.length && <span style={{ display:'inline-block', width:1.5, height:'0.8em', background:'rgba(175,185,255,0.6)', marginLeft:2, verticalAlign:'middle', animation:'blink .5s ease infinite' }}/>}
-            </div>
-          )}
-          {showDL && (
-            <div style={{ fontFamily:'var(--font-inter), sans-serif', fontWeight:600, fontSize:18, letterSpacing:'.16em', textTransform:'uppercase', color:'rgba(255,255,255,.88)', animation:'dlIn .7s ease forwards', opacity:0 }}>
-              Deep Learning
-            </div>
-          )}
-        </div>
+        {showText && (
+          <div style={{ position:'absolute', bottom:'30%', left:0, width:'100%', textAlign:'center', pointerEvents:'none', fontFamily:'var(--font-inter), -apple-system, sans-serif', fontSize:12, letterSpacing:'5.5px', textTransform:'uppercase', color:'rgba(175,185,255,0.88)', fontWeight:300 }}>
+            {typed}
+            {typed.length < FULL.length && <span style={{ display:'inline-block', width:1.5, height:'0.8em', background:'rgba(175,185,255,0.6)', marginLeft:2, verticalAlign:'middle', animation:'blink .5s ease infinite' }}/>}
+          </div>
+        )}
+        {showDL && (
+          <div style={{ position:'absolute', bottom:'23%', left:0, width:'100%', textAlign:'center', pointerEvents:'none', fontFamily:'var(--font-inter), sans-serif', fontWeight:600, fontSize:18, letterSpacing:'.16em', textTransform:'uppercase', color:'rgba(255,255,255,.88)', animation:'dlIn .7s ease forwards', opacity:0 }}>
+            Deep Learning
+          </div>
+        )}
       </div>
     </>
   );
