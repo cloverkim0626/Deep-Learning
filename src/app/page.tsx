@@ -303,7 +303,7 @@ export default function Home() {
               <ArrowRight size={13} className="text-white/50 group-hover:text-white/90 group-hover:translate-x-0.5 transition-all" />
             </div>
           </button>
-          {/* === Plate Cards === */}
+          {/* === Metal Plate Cards === */}
           <style>{`
             @keyframes igGlow {
               0%,100%{opacity:0.7;transform:translateX(0)}
@@ -314,112 +314,129 @@ export default function Home() {
               70%{box-shadow:0 0 0 8px rgba(225,48,108,0)}
               100%{box-shadow:0 0 0 0 rgba(225,48,108,0)}
             }
-            @keyframes plateGleam1 {
-              0%   { transform:translateX(-130%) skewX(-18deg); opacity:0; }
-              6%   { opacity:1; }
-              94%  { opacity:1; }
-              100% { transform:translateX(560%) skewX(-18deg); opacity:0; }
+            @keyframes gleam1 {
+              0%   { transform:translateX(-200%) skewX(-20deg); }
+              100% { transform:translateX(800%) skewX(-20deg); }
             }
-            @keyframes plateGleam2 {
-              0%   { transform:translateX(-130%) skewX(-18deg); opacity:0; }
-              6%   { opacity:1; }
-              94%  { opacity:1; }
-              100% { transform:translateX(560%) skewX(-18deg); opacity:0; }
+            @keyframes gleam2 {
+              0%   { transform:translateX(-200%) skewX(-20deg); }
+              100% { transform:translateX(800%) skewX(-20deg); }
+            }
+            @keyframes arrowPing {
+              0%,100%{ transform:translateX(0) translateY(-50%); opacity:0.55; }
+              50%    { transform:translateX(2px) translateY(-50%); opacity:1; }
             }
           `}</style>
           <div className="grid grid-cols-2 gap-3 w-full">
 
-            {/* SILVER PLATE — REPORT */}
+            {/* SILVER — REPORT */}
             <Link href="/login/parent"
-              className="group relative overflow-hidden"
+              className="group relative overflow-hidden active:scale-[0.97] transition-transform duration-150"
               style={{
                 borderRadius:'1.2rem', height:'80px',
                 display:'flex', flexDirection:'column',
                 alignItems:'center', justifyContent:'center',
-                background:`
-                  repeating-linear-gradient(92deg,transparent,transparent 3px,rgba(255,255,255,0.025) 3px,rgba(255,255,255,0.025) 6px),
-                  linear-gradient(155deg,#e0e0e0 0%,#c8c8c8 20%,#d8d8d8 45%,#b8b8b8 70%,#d0d0d0 100%)
-                `,
-                border:'1px solid rgba(255,255,255,0.75)',
-                boxShadow:'0 6px 16px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.75), inset 0 -1px 0 rgba(0,0,0,0.08)',
+                background:`linear-gradient(160deg,
+                  #f2f2f2 0%, #e6e6e6 10%,
+                  #fefefe 22%, #f0f0f0 30%,
+                  #d8d8d8 50%, #e8e8e8 65%,
+                  #c8c8c8 80%, #dcdcdc 100%)`,
+                border:'1px solid rgba(255,255,255,0.9)',
+                boxShadow:'0 8px 20px rgba(0,0,0,0.40), inset 0 1.5px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(0,0,0,0.10)',
               }}>
-              {/* gleam sweep */}
+              {/* strong specular gleam */}
               <div style={{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden',borderRadius:'1.2rem'}}>
-                <div style={{position:'absolute',top:0,left:0,width:'35%',height:'100%',
-                  background:'linear-gradient(105deg,transparent 25%,rgba(255,255,255,0.45) 50%,transparent 75%)',
-                  animation:'plateGleam1 5.5s ease-in-out infinite',animationDelay:'0.8s',
+                <div style={{position:'absolute',top:0,left:0,width:'22%',height:'100%',
+                  background:'linear-gradient(105deg,transparent 20%,rgba(255,255,255,0.70) 50%,transparent 80%)',
+                  animation:'gleam1 4.5s ease-in-out infinite',animationDelay:'1s',
                 }}/>
               </div>
-              {/* plate edge */}
-              <div style={{position:'absolute',top:'6px',left:'10px',right:'10px',height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.7),transparent)',
-              }}/>
-              <div style={{position:'absolute',bottom:'6px',left:'10px',right:'10px',height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(0,0,0,0.07),transparent)',
-              }}/>
-              {/* engraved REPORT */}
-              <p style={{
-                fontFamily:"var(--font-jakarta),sans-serif",
-                fontSize:16, fontWeight:700, letterSpacing:'0.28em', textTransform:'uppercase',
-                color:'#888',
-                textShadow:'0 1.5px 2px rgba(255,255,255,0.95), 0 -1px 0 rgba(0,0,0,0.18)',
-              }}>REPORT</p>
-              <p style={{
-                fontFamily:"var(--font-jakarta),sans-serif",
-                fontSize:8.5, fontWeight:500, letterSpacing:'0.18em', textTransform:'uppercase',
-                color:'#aaa',
-                textShadow:'0 1px 1px rgba(255,255,255,0.85), 0 -1px 0 rgba(0,0,0,0.10)',
-                marginTop:6,
+              {/* top-bottom plate edge */}
+              <div style={{position:'absolute',top:'5px',left:'8px',right:'8px',height:'1px',
+                background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.9),transparent)'}}/>
+              <div style={{position:'absolute',bottom:'5px',left:'8px',right:'8px',height:'1px',
+                background:'linear-gradient(90deg,transparent,rgba(0,0,0,0.06),transparent)'}}/>
+              {/* engraved text */}
+              <p style={{fontFamily:"var(--font-jakarta),sans-serif",
+                fontSize:17,fontWeight:700,letterSpacing:'0.06em',textTransform:'uppercase',
+                color:'#7a7a7a',
+                textShadow:'0 1.5px 2px rgba(255,255,255,1), 0 -0.5px 0 rgba(0,0,0,0.20)',
+              }}>Report</p>
+              <p style={{fontFamily:"var(--font-jakarta),sans-serif",
+                fontSize:8,fontWeight:500,letterSpacing:'0.10em',textTransform:'uppercase',
+                color:'#aaa',marginTop:5,
+                textShadow:'0 1px 1px rgba(255,255,255,0.9), 0 -0.5px 0 rgba(0,0,0,0.10)',
               }}>Parent Portal</p>
+              {/* click arrow */}
+              <div style={{position:'absolute',top:'50%',right:'11px',
+                transform:'translateY(-50%)',
+                width:'20px',height:'20px',borderRadius:'50%',
+                background:'rgba(0,0,0,0.07)',
+                border:'1px solid rgba(255,255,255,0.65)',
+                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.6), 0 1px 2px rgba(0,0,0,0.15)',
+                display:'flex',alignItems:'center',justifyContent:'center',
+                animation:'arrowPing 2.2s ease-in-out infinite',
+              }}>
+                <span style={{fontSize:'10px',color:'#666',marginLeft:'1px'}}>›</span>
+              </div>
             </Link>
 
-            {/* TITANIUM PLATE — TEACHER */}
+            {/* TITANIUM — TEACHER */}
             <Link href="/login?role=admin"
-              className="group relative overflow-hidden"
+              className="group relative overflow-hidden active:scale-[0.97] transition-transform duration-150"
               style={{
                 borderRadius:'1.2rem', height:'80px',
                 display:'flex', flexDirection:'column',
                 alignItems:'center', justifyContent:'center',
-                background:`
-                  repeating-linear-gradient(92deg,transparent,transparent 3px,rgba(255,255,255,0.012) 3px,rgba(255,255,255,0.012) 6px),
-                  linear-gradient(155deg,#7e8188 0%,#64676e 20%,#74777e 45%,#5a5d64 70%,#6c6f76 100%)
-                `,
-                border:'1px solid rgba(255,255,255,0.18)',
-                boxShadow:'0 6px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.18)',
+                background:`linear-gradient(160deg,
+                  #8e8b85 0%, #7c7970 10%,
+                  #9a9790 22%, #888580 30%,
+                  #6e6b65 50%, #7e7b74 65%,
+                  #5e5c57 80%, #706d68 100%)`,
+                border:'1px solid rgba(255,255,255,0.22)',
+                boxShadow:'0 8px 20px rgba(0,0,0,0.55), inset 0 1.5px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.20)',
               }}>
-              {/* gleam sweep */}
+              {/* specular gleam */}
               <div style={{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden',borderRadius:'1.2rem'}}>
-                <div style={{position:'absolute',top:0,left:0,width:'35%',height:'100%',
-                  background:'linear-gradient(105deg,transparent 25%,rgba(255,255,255,0.14) 50%,transparent 75%)',
-                  animation:'plateGleam2 6s ease-in-out infinite',animationDelay:'3s',
+                <div style={{position:'absolute',top:0,left:0,width:'22%',height:'100%',
+                  background:'linear-gradient(105deg,transparent 20%,rgba(255,255,255,0.22) 50%,transparent 80%)',
+                  animation:'gleam2 5.5s ease-in-out infinite',animationDelay:'3s',
                 }}/>
               </div>
               {/* plate edge */}
-              <div style={{position:'absolute',top:'6px',left:'10px',right:'10px',height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent)',
-              }}/>
-              <div style={{position:'absolute',bottom:'6px',left:'10px',right:'10px',height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(0,0,0,0.18),transparent)',
-              }}/>
-              {/* engraved TEACHER */}
-              <p style={{
-                fontFamily:"var(--font-jakarta),sans-serif",
-                fontSize:16, fontWeight:700, letterSpacing:'0.28em', textTransform:'uppercase',
-                color:'#3c3f46',
-                textShadow:'0 1.5px 2px rgba(255,255,255,0.32), 0 -1px 0 rgba(0,0,0,0.28)',
-              }}>TEACHER</p>
-              <p style={{
-                fontFamily:"var(--font-jakarta),sans-serif",
-                fontSize:8.5, fontWeight:500, letterSpacing:'0.18em', textTransform:'uppercase',
-                color:'#58606a',
-                textShadow:'0 1px 1px rgba(255,255,255,0.22), 0 -1px 0 rgba(0,0,0,0.2)',
-                marginTop:6,
+              <div style={{position:'absolute',top:'5px',left:'8px',right:'8px',height:'1px',
+                background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.28),transparent)'}}/>
+              <div style={{position:'absolute',bottom:'5px',left:'8px',right:'8px',height:'1px',
+                background:'linear-gradient(90deg,transparent,rgba(0,0,0,0.22),transparent)'}}/>
+              {/* engraved text */}
+              <p style={{fontFamily:"var(--font-jakarta),sans-serif",
+                fontSize:17,fontWeight:700,letterSpacing:'0.06em',textTransform:'uppercase',
+                color:'#3a3835',
+                textShadow:'0 1.5px 2px rgba(255,255,255,0.38), 0 -0.5px 0 rgba(0,0,0,0.30)',
+              }}>Teacher</p>
+              <p style={{fontFamily:"var(--font-jakarta),sans-serif",
+                fontSize:8,fontWeight:500,letterSpacing:'0.10em',textTransform:'uppercase',
+                color:'#55524e',marginTop:5,
+                textShadow:'0 1px 1px rgba(255,255,255,0.22), 0 -0.5px 0 rgba(0,0,0,0.20)',
               }}>Dashboard</p>
+              {/* click arrow */}
+              <div style={{position:'absolute',top:'50%',right:'11px',
+                transform:'translateY(-50%)',
+                width:'20px',height:'20px',borderRadius:'50%',
+                background:'rgba(0,0,0,0.18)',
+                border:'1px solid rgba(255,255,255,0.20)',
+                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.15), 0 1px 2px rgba(0,0,0,0.25)',
+                display:'flex',alignItems:'center',justifyContent:'center',
+                animation:'arrowPing 2.8s ease-in-out infinite',animationDelay:'0.6s',
+              }}>
+                <span style={{fontSize:'10px',color:'rgba(255,255,255,0.5)',marginLeft:'1px'}}>›</span>
+              </div>
             </Link>
 
           </div>
 
         </div>
+
 
 
 
