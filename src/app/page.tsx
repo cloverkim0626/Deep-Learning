@@ -354,19 +354,18 @@ export default function Home() {
                 background:'linear-gradient(0deg,rgba(0,0,0,0.18) 0%,transparent 100%)',
                 pointerEvents:'none',borderRadius:'0 0 1.4rem 1.4rem',
               }}/>
-              {/* icon */}
-              <span style={{fontSize:'24px',flexShrink:0,filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.3))'}}>📊</span>
+              {/* NEW badge — top-left corner */}
+              <div style={{position:'absolute',top:'8px',left:'10px',
+                fontSize:'7px',fontWeight:800,color:'#0a7c50',
+                background:'rgba(255,255,255,0.94)',padding:'2px 6px',borderRadius:'4px',
+                letterSpacing:'0.07em',lineHeight:1,zIndex:2,
+              }}>NEW</div>
               {/* text */}
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:'flex',alignItems:'center',gap:'5px',marginBottom:'4px'}}>
-                  <p style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.97)',
-                    letterSpacing:'0.01em',lineHeight:1}}>학습 리포트</p>
-                  <span style={{fontSize:7,fontWeight:800,color:'#0a7c50',
-                    background:'rgba(255,255,255,0.92)',padding:'2px 5px',borderRadius:'4px',
-                    letterSpacing:'0.06em',lineHeight:1}}>NEW</span>
-                </div>
-                <p style={{fontSize:9,color:'rgba(255,255,255,0.70)',fontWeight:400,
-                  letterSpacing:'0.02em',lineHeight:1}}>성취도 · 어휘 · 독해 분석</p>
+              <div style={{flex:1,minWidth:0,paddingTop:'2px'}}>
+                <p style={{fontSize:14,fontWeight:700,color:'rgba(255,255,255,0.97)',
+                  letterSpacing:'0.01em',lineHeight:1,whiteSpace:'nowrap',marginBottom:'6px'}}>학습 리포트</p>
+                <p style={{fontSize:9,color:'rgba(255,255,255,0.68)',fontWeight:400,
+                  letterSpacing:'0.02em',lineHeight:1,whiteSpace:'nowrap'}}>성취도 · 어휘 · 독해 분석</p>
               </div>
               {/* pulsing CTA arrow */}
               <div style={{flexShrink:0,width:'26px',height:'26px',borderRadius:'50%',
@@ -402,16 +401,12 @@ export default function Home() {
                 background:'linear-gradient(0deg,rgba(0,0,0,0.20) 0%,transparent 100%)',
                 pointerEvents:'none',borderRadius:'0 0 1.4rem 1.4rem',
               }}/>
-              {/* icon */}
-              <span style={{fontSize:'24px',flexShrink:0,filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.3))'}}>🎓</span>
               {/* text */}
               <div style={{flex:1,minWidth:0}}>
-                <div style={{marginBottom:'4px'}}>
-                  <p style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.97)',
-                    letterSpacing:'0.01em',lineHeight:1}}>선생님 페이지</p>
-                </div>
-                <p style={{fontSize:9,color:'rgba(255,255,255,0.65)',fontWeight:400,
-                  letterSpacing:'0.02em',lineHeight:1}}>수업 관리 · 성적 입력</p>
+                <p style={{fontSize:14,fontWeight:700,color:'rgba(255,255,255,0.97)',
+                  letterSpacing:'0.01em',lineHeight:1,whiteSpace:'nowrap',marginBottom:'6px'}}>선생님 페이지</p>
+                <p style={{fontSize:9,color:'rgba(255,255,255,0.62)',fontWeight:400,
+                  letterSpacing:'0.02em',lineHeight:1,whiteSpace:'nowrap'}}>수업 관리 · 성적 입력</p>
               </div>
               {/* pulsing CTA */}
               <div style={{flexShrink:0,width:'26px',height:'26px',borderRadius:'50%',
