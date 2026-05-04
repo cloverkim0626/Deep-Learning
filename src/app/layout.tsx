@@ -28,6 +28,15 @@ const gaegu = Gaegu({
 export const metadata: Metadata = {
   title: "Deep Learning — Team Parallax",
   description: "Team Parallax의 AI 기반 영어 학습 플랫폼",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Deep Learning",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
