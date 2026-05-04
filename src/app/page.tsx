@@ -125,7 +125,7 @@ export default function Home() {
 
 
 
-      <div className="z-10 w-full max-w-sm mx-auto flex flex-col items-center gap-5 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+      <div className="z-10 w-full max-w-sm mx-auto flex flex-col items-center gap-8 animate-in fade-in slide-in-from-bottom-6 duration-1000">
 
         {/* D-DAY Badge */}
         {dday !== null && (
@@ -247,53 +247,6 @@ export default function Home() {
             </div>
           </Link>
 
-          {/* 리포트 열람 — 여름 풀내음 frosted glass */}
-          <style>{`
-            @keyframes summerBreeze {
-              0%,100%{opacity:0.4;transform:translate(0,0) scale(1)}
-              50%{opacity:0.65;transform:translate(2px,3px) scale(1.04)}
-            }
-          `}</style>
-          <Link
-            href="/login/parent"
-            className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-500"
-            style={{
-              background:'rgba(235,248,232,0.18)',
-              backdropFilter:'blur(18px)',
-              WebkitBackdropFilter:'blur(18px)',
-              boxShadow:'0 4px 24px rgba(60,120,60,0.18), inset 0 1px 0 rgba(255,255,255,0.35)',
-              border:'1px solid rgba(160,210,155,0.32)',
-            }}
-          >
-            {/* 풀밭 녹음 보케 — 창문 너머 여름 */}
-            <div className="absolute pointer-events-none" style={{
-              top:'-25%', right:'-10%', width:'160px', height:'160px',
-              background:'radial-gradient(ellipse,rgba(120,210,110,0.28) 0%,rgba(80,180,80,0.1) 45%,transparent 70%)',
-              borderRadius:'50%', filter:'blur(24px)',
-              animation:'summerBreeze 9s ease-in-out infinite',
-            }}/>
-            <div className="absolute pointer-events-none" style={{
-              bottom:'-20%', left:'-8%', width:'130px', height:'130px',
-              background:'radial-gradient(ellipse,rgba(100,200,95,0.22) 0%,transparent 68%)',
-              borderRadius:'50%', filter:'blur(20px)',
-              animation:'summerBreeze 12s ease-in-out infinite 3s',
-            }}/>
-            {/* 햇살 오버레이 */}
-            <div className="absolute inset-0 pointer-events-none" style={{
-              background:'linear-gradient(135deg,rgba(255,255,255,0.12) 0%,transparent 55%)',
-            }}/>
-            <div className="relative z-10 flex items-center gap-2 font-semibold text-[15px] mb-1">
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest"
-                style={{background:'rgba(255,255,255,0.25)',color:'rgba(50,100,45,0.9)',border:'1px solid rgba(160,210,155,0.4)'}}>REPORT</span>
-              <span className="text-[13px] font-black" style={{color:'rgba(230,248,225,0.97)'}}>리포트 열람하기</span>
-            </div>
-            <p className="relative z-10 text-[11px] font-semibold leading-relaxed" style={{color:'rgba(180,230,175,0.75)'}}>일간·월간 리포트 · 학습 현황 · 질의응답</p>
-            <div className="absolute bottom-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all group-hover:scale-110"
-              style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(160,215,155,0.35)'}}>
-              <ArrowRight strokeWidth={2} size={14} style={{color:'rgba(200,240,195,0.9)'}}
-                className="group-hover:translate-x-0.5 transition-transform" />
-            </div>
-          </Link>
 
           {/* 기능 안내 — 학습공간 바로 아래 */}
           <button
@@ -325,49 +278,84 @@ export default function Home() {
             </div>
           </button>
 
-          {/* 리포트 | 선생님 — 좌우 배치 */}
-          <div className="grid grid-cols-2 gap-2 w-full">
-            <Link
-              href="/login/parent"
-              className="group relative flex flex-col justify-between p-3.5 rounded-[1.8rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-500 h-[70px]"
-              style={{
-                background:'rgba(235,248,232,0.15)',
-                backdropFilter:'blur(18px)',
-                WebkitBackdropFilter:'blur(18px)',
-                boxShadow:'0 4px 24px rgba(60,120,60,0.15), inset 0 1px 0 rgba(255,255,255,0.25)',
-                border:'1px solid rgba(160,210,155,0.28)',
-              }}
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md tracking-widest"
-                  style={{background:'rgba(255,255,255,0.2)',color:'rgba(50,100,45,0.9)',border:'1px solid rgba(160,210,155,0.35)'}}>REPORT</span>
-              </div>
-              <div>
-                <p className="text-[12px] font-black" style={{color:'rgba(220,248,215,0.97)'}}>리포트 열람</p>
-                <p className="text-[9px]" style={{color:'rgba(160,220,155,0.65)'}}>일간·월간 현황</p>
-              </div>
-              <ArrowRight strokeWidth={2} size={12} style={{color:'rgba(180,230,175,0.7)'}} className="absolute bottom-3 right-3" />
-            </Link>
+          {/* 리포트 | 선생님 — 인스타 하이라이트 스타일 */}
+          <div className="grid grid-cols-2 gap-3 w-full">
 
-            <Link
-              href="/login?role=admin"
-              className="group flex flex-col justify-between p-3.5 rounded-[1.8rem] hover:-translate-y-0.5 transition-all duration-400 h-[70px]"
+            {/* 리포트 열람 — 학부모 전용 */}
+            <Link href="/login/parent"
+              className="group relative flex flex-col gap-3 p-4 rounded-[1.6rem] overflow-hidden hover:-translate-y-1 transition-all duration-400"
               style={{
                 background:'rgba(255,255,255,0.05)',
-                border:'1px solid rgba(255,255,255,0.10)',
-                backdropFilter:'blur(12px)',
+                border:'1px solid rgba(255,255,255,0.08)',
+                backdropFilter:'blur(16px)',
               }}
             >
-              <div className="flex items-center gap-1.5">
-                <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md tracking-widest"
-                  style={{background:'rgba(255,255,255,0.1)',color:'rgba(180,200,255,0.8)',border:'1px solid rgba(255,255,255,0.12)'}}>ADMIN</span>
+              {/* 그라디언트 테두리 링 */}
+              <div style={{
+                position:'absolute', inset:0, borderRadius:'1.6rem', padding:'1px', zIndex:0,
+                background:'linear-gradient(135deg,#43e97b,#38f9d7,#4facfe)',
+                WebkitMask:'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                WebkitMaskComposite:'xor', maskComposite:'exclude',
+              }}/>
+              {/* 배경 발광 */}
+              <div style={{
+                position:'absolute', top:'-30%', right:'-20%', width:'100px', height:'100px',
+                background:'radial-gradient(ellipse,rgba(67,233,123,0.18) 0%,transparent 70%)',
+                filter:'blur(16px)', pointerEvents:'none',
+              }}/>
+              {/* 아이콘 */}
+              <div className="relative z-10 w-10 h-10 rounded-2xl flex items-center justify-center"
+                style={{background:'linear-gradient(135deg,rgba(67,233,123,0.25),rgba(79,172,254,0.2))', border:'1px solid rgba(67,233,123,0.3)'}}>
+                <BarChart2 size={18} style={{color:'rgba(120,240,180,0.9)'}} strokeWidth={2}/>
               </div>
-              <div>
-                <p className="text-[12px] font-medium text-white/80">선생님 페이지</p>
-                <p className="text-[9px] uppercase tracking-wider" style={{color:'rgba(120,160,255,0.4)'}}>Dashboard</p>
+              {/* 텍스트 */}
+              <div className="relative z-10">
+                <p className="text-[14px] font-black leading-tight" style={{color:'rgba(220,255,235,0.95)'}}>리포트</p>
+                <p className="text-[10px] font-semibold mt-0.5" style={{color:'rgba(120,220,160,0.6)'}}>학부모 확인</p>
               </div>
-              <ArrowRight strokeWidth={1.5} size={12} className="text-white/25 absolute bottom-3 right-3 group-hover:text-white/60 transition-all" />
+              <ArrowRight size={13} strokeWidth={2}
+                style={{color:'rgba(100,220,155,0.5)'}}
+                className="absolute bottom-4 right-4 group-hover:translate-x-0.5 group-hover:opacity-100 transition-all opacity-60 z-10"/>
             </Link>
+
+            {/* 선생님 페이지 */}
+            <Link href="/login?role=admin"
+              className="group relative flex flex-col gap-3 p-4 rounded-[1.6rem] overflow-hidden hover:-translate-y-1 transition-all duration-400"
+              style={{
+                background:'rgba(255,255,255,0.05)',
+                border:'1px solid rgba(255,255,255,0.08)',
+                backdropFilter:'blur(16px)',
+              }}
+            >
+              {/* 그라디언트 테두리 링 */}
+              <div style={{
+                position:'absolute', inset:0, borderRadius:'1.6rem', padding:'1px', zIndex:0,
+                background:'linear-gradient(135deg,#405DE6,#833AB4,#C13584)',
+                WebkitMask:'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                WebkitMaskComposite:'xor', maskComposite:'exclude',
+                opacity: 0.5,
+              }}/>
+              {/* 배경 발광 */}
+              <div style={{
+                position:'absolute', top:'-30%', right:'-20%', width:'100px', height:'100px',
+                background:'radial-gradient(ellipse,rgba(131,58,180,0.18) 0%,transparent 70%)',
+                filter:'blur(16px)', pointerEvents:'none',
+              }}/>
+              {/* 아이콘 */}
+              <div className="relative z-10 w-10 h-10 rounded-2xl flex items-center justify-center"
+                style={{background:'rgba(64,93,230,0.18)', border:'1px solid rgba(100,120,255,0.25)'}}>
+                <Briefcase size={17} style={{color:'rgba(160,180,255,0.85)'}} strokeWidth={1.8}/>
+              </div>
+              {/* 텍스트 */}
+              <div className="relative z-10">
+                <p className="text-[14px] font-black leading-tight text-white/85">선생님</p>
+                <p className="text-[10px] font-semibold mt-0.5 uppercase tracking-wider" style={{color:'rgba(130,150,255,0.5)'}}>Teacher</p>
+              </div>
+              <ArrowRight size={13} strokeWidth={1.8}
+                style={{color:'rgba(130,150,255,0.4)'}}
+                className="absolute bottom-4 right-4 group-hover:translate-x-0.5 group-hover:opacity-100 transition-all opacity-50 z-10"/>
+            </Link>
+
           </div>
         </div>
 
