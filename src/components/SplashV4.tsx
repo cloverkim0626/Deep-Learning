@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 
-/* ── 뉴런 노드 12개 (정팔면체 + 내부) ── */
+/* ?�?� ?�런 ?�드 12�?(?�팔면체 + ?��?) ?�?� */
 const V: number[][] = [
   [ 0,    1.15,  0   ],
   [ 0,   -1.15,  0   ],
@@ -17,7 +17,7 @@ const V: number[][] = [
   [-0.48,-0.52,  0.48],
 ];
 
-/* ── 시냅스 31개 ── */
+/* ?�?� ?�냅??31�??�?� */
 const E: number[][] = [
   [0,2],[0,3],[0,4],[0,5],
   [1,2],[1,3],[1,4],[1,5],
@@ -60,7 +60,8 @@ export default function SplashV4() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const cvs = canvas; // TypeScript null-safe ref
+    const cvs = canvas;
+    const c2d = ctx as CanvasRenderingContext2D; // null-safe
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let W = 0, H = 0, cx = 0, cy = 0, sc = 0;
@@ -70,7 +71,7 @@ export default function SplashV4() {
       W = window.innerWidth; H = window.innerHeight;
       cvs.width = W * dpr; cvs.height = H * dpr;
       cvs.style.width = W + 'px'; cvs.style.height = H + 'px';
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c2d.setTransform(dpr, 0, 0, dpr, 0, 0);
       cx = W / 2; cy = H / 2 - 16;
       sc = Math.min(W, H) * 0.26;
     }
@@ -92,23 +93,23 @@ export default function SplashV4() {
     function drawDot(px: number, py: number, s: number, a: number) {
       const r  = Math.max(2.2, 3.5 * s);
       const gr = r * 4.5;
-      const g  = ctx.createRadialGradient(px, py, 0, px, py, gr);
+      const g  = c2d.createRadialGradient(px, py, 0, px, py, gr);
       g.addColorStop(0,   `rgba(165,175,255,${0.55 * a})`);
       g.addColorStop(0.3, `rgba(125,140,255,${0.14 * a})`);
       g.addColorStop(1,   'rgba(100,120,255,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(px, py, gr, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = `rgba(228,232,255,${a})`;
-      ctx.beginPath(); ctx.arc(px, py, r,  0, Math.PI*2); ctx.fill();
+      c2d.fillStyle = g;
+      c2d.beginPath(); c2d.arc(px, py, gr, 0, Math.PI*2); c2d.fill();
+      c2d.fillStyle = `rgba(228,232,255,${a})`;
+      c2d.beginPath(); c2d.arc(px, py, r,  0, Math.PI*2); c2d.fill();
     }
 
     function drawLine(a: Pt, b: Pt, prog: number, alpha: number) {
       const mx = a.x + (b.x - a.x) * prog;
       const my = a.y + (b.y - a.y) * prog;
       const bright = 0.3 + 0.25 * ((1 - (a.z + b.z) / 2) / 2);
-      ctx.strokeStyle = `rgba(130,148,255,${bright * alpha})`;
-      ctx.lineWidth   = 0.7;
-      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(mx, my); ctx.stroke();
+      c2d.strokeStyle = `rgba(130,148,255,${bright * alpha})`;
+      c2d.lineWidth   = 0.7;
+      c2d.beginPath(); c2d.moveTo(a.x, a.y); c2d.lineTo(mx, my); c2d.stroke();
     }
 
     function frame(now: number) {
@@ -136,10 +137,10 @@ export default function SplashV4() {
         rX =  0.4 + Math.sin(t * 0.0007) * 0.13;
       }
 
-      ctx.clearRect(0, 0, W, H);
+      c2d.clearRect(0, 0, W, H);
       const P = V.map(v => proj(v, rY, rX));
 
-      /* 선 (z-sort 뒤→앞) */
+      /* ??(z-sort ?�→?? */
       if (ms > T_LS) {
         const lms = ms - T_LS;
         if (!txtShown) { setShowText(true); txtShown = true; }
@@ -156,7 +157,7 @@ export default function SplashV4() {
         }
       }
 
-      /* 점 (z-sort) */
+      /* ??(z-sort) */
       const sd = P.map((p, i) => ({ p, i })).sort((a, b) => b.p.z - a.p.z);
       for (const { p, i } of sd) {
         const t = ms - dDot[i];
@@ -176,7 +177,7 @@ export default function SplashV4() {
     };
   }, []);
 
-  /* 타이핑 효과 */
+  /* ?�?�핑 ?�과 */
   useEffect(() => {
     if (!showText) return;
     let i = 0;
@@ -207,7 +208,7 @@ export default function SplashV4() {
       }}>
         <canvas ref={canvasRef} style={{ display:'block', width:'100%', height:'100%' }} />
 
-        {/* 텍스트 오버레이 */}
+        {/* ?�스???�버?�이 */}
         <div style={{
           position:'absolute', bottom:'26%', left:0, width:'100%',
           textAlign:'center', pointerEvents:'none',
