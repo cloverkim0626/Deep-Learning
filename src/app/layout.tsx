@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Serif_KR, Gaegu, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import SplashScreen from "@/components/SplashScreen";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -50,6 +51,7 @@ export default function RootLayout({
       className={`${inter.variable} ${jakarta.variable} ${notoSerifKR.variable} ${gaegu.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground transition-colors duration-700">
+        <SplashScreen />
         <div className="fixed inset-0 pointer-events-none z-[-1] opacity-40 dark:opacity-20 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent-light via-transparent to-transparent"></div>
         {children}
       </body>
