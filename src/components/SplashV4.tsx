@@ -2,42 +2,54 @@
 import { useEffect, useState } from 'react';
 
 /*
-  실제 3D 옥타헤드론을 2D로 투영
-  Y축 30° + X축 20° 회전 → "옆에서 비스듬히 보는" 시점
+  피라미드 투시 (Perspective Pyramid)
+  viewBox 0 0 320 480
 
-  3D 꼭지점:
-    Top    (0, 1, 0)
-    Bottom (0,-1, 0)
-    Front  (0, 0, 1)   ← 가장 가까운 면
-    Back   (0, 0,-1)   ← 가장 먼 면
-    Left   (-1,0, 0)
-    Right  (1, 0, 0)
-
-  Center: (160, 265), Scale: 140
+  P1 = apex (꼭대기)
+  P2 = front-left base  (가깝고 왼쪽, 낮음)
+  P3 = front-right base (가깝고 오른쪽, 낮음)
+  P4 = back-right base  (멀고 오른쪽, 높음)
+  P5 = back-left base   (멀고 왼쪽, 높음)
+  P6~P9 = 그림자/바닥 윤곽
 */
 const NODES = [
-  { cx: 160, cy: 134 }, // 0 Top
-  { cx: 160, cy: 396 }, // 1 Bottom
-  { cx: 90,  cy: 224 }, // 2 Front  (가깝고 왼쪽, 낮음)
-  { cx: 230, cy: 306 }, // 3 Back   (멀고 오른쪽, 높음)
-  { cx: 42,  cy: 288 }, // 4 Left
-  { cx: 278, cy: 242 }, // 5 Right
+  { cx: 160, cy: 58,  fill: '#dde7ff',              r: 3.5 }, // 0 P1 apex
+  { cx: 82,  cy: 375, fill: '#dde7ff',              r: 3.5 }, // 1 P2 front-left
+  { cx: 240, cy: 375, fill: '#dde7ff',              r: 3.5 }, // 2 P3 front-right
+  { cx: 255, cy: 258, fill: 'rgba(165,180,252,.7)', r: 3   }, // 3 P4 back-right
+  { cx: 125, cy: 258, fill: 'rgba(165,180,252,.7)', r: 3   }, // 4 P5 back-left
+  { cx: 62,  cy: 415, fill: 'rgba(129,140,248,.3)', r: 2   }, // 5 P6 shadow
+  { cx: 258, cy: 415, fill: 'rgba(129,140,248,.3)', r: 2   }, // 6 P7 shadow
+  { cx: 285, cy: 242, fill: 'rgba(129,140,248,.3)', r: 2   }, // 7 P8 shadow
+  { cx: 95,  cy: 242, fill: 'rgba(129,140,248,.3)', r: 2   }, // 8 P9 shadow
 ];
 
-/* 무작위 등장 */
-const ND = [0.5, 0.85, 0.1, 0.7, 0.3, 0.92];
+/* 무작위 등장 — base 노드 먼저, apex 중간, shadow 마지막 */
+const ND = [0.45, 0.05, 0.18, 0.72, 0.88, 1.05, 0.95, 0.82, 0.65];
 
 /*
-  옥타헤드론 12 엣지 — 외곽 골격 → 앞면 → 뒷면 순으로 그려져
-  입체가 살아나는 순간 연출
+  엣지 순서:
+  1단계: 바닥면 (깊이감 형성)
+  2단계: 앞기둥 → 뒤기둥 (입체 완성, 뒤는 opacity 낮춤)
+  3단계: 그림자 (바닥에 놓인 느낌)
 */
-const EDGES: [number, number][] = [
-  // 1. 외곽 세로 골격 (Top-Left, Top-Right, Bot-Left, Bot-Right)
-  [0,4],[0,5],[1,4],[1,5],
-  // 2. 앞면 (Front face: Front↔Left, Front↔Right)
-  [0,2],[2,4],[2,5],[1,2],
-  // 3. 뒷면 (Back face: Back↔Left, Back↔Right)
-  [0,3],[3,4],[3,5],[1,3],
+const EDGES = [
+  // Phase 1: Base rhombus — P2→P3→P4→P5→P2
+  { a:1, b:2, op:'rgba(129,140,248,.50)', d:0    }, // 앞 엣지 (가장 밝음)
+  { a:2, b:3, op:'rgba(129,140,248,.38)', d:0.18 }, // 오른쪽
+  { a:3, b:4, op:'rgba(129,140,248,.25)', d:0.36 }, // 뒤 엣지 (가장 어두움)
+  { a:4, b:1, op:'rgba(129,140,248,.38)', d:0.54 }, // 왼쪽
+  // Phase 2: 앞 기둥 (밝음)
+  { a:1, b:0, op:'rgba(129,140,248,.60)', d:0.80 }, // P2→P1
+  { a:2, b:0, op:'rgba(129,140,248,.60)', d:0.95 }, // P3→P1
+  // Phase 2: 뒤 기둥 (dim — 뒤에 숨겨진 느낌)
+  { a:3, b:0, op:'rgba(129,140,248,.22)', d:1.10 }, // P4→P1 (비침)
+  { a:4, b:0, op:'rgba(129,140,248,.22)', d:1.25 }, // P5→P1 (비침)
+  // Phase 3: 그림자 윤곽 (very subtle)
+  { a:5, b:6, op:'rgba(129,140,248,.13)', d:1.45 },
+  { a:5, b:8, op:'rgba(129,140,248,.11)', d:1.55 },
+  { a:6, b:7, op:'rgba(129,140,248,.11)', d:1.65 },
+  { a:7, b:8, op:'rgba(129,140,248,.09)', d:1.75 },
 ];
 
 const FULL = 'Connecting the Dots';
@@ -53,9 +65,9 @@ export default function SplashV4() {
     if (sessionStorage.getItem('splashShown')) { setHidden(true); return; }
     sessionStorage.setItem('splashShown', '1');
 
-    const t1 = setTimeout(() => setLinesOn(true), 1600);
-    const t2 = setTimeout(() => setFading(true),  6800);
-    const t3 = setTimeout(() => setHidden(true),  7600);
+    const t1 = setTimeout(() => setLinesOn(true), 1700); // 노드 다 뜬 후
+    const t2 = setTimeout(() => setFading(true),  7200);
+    const t3 = setTimeout(() => setHidden(true),  8000);
     return () => [t1, t2, t3].forEach(clearTimeout);
   }, []);
 
@@ -77,12 +89,13 @@ export default function SplashV4() {
       <style>{`
         @keyframes nFade { from{opacity:0} to{opacity:1} }
         @keyframes lDraw {
-          from { stroke-dashoffset: 1; opacity: 0; }
-          to   { stroke-dashoffset: 0; opacity: 1; }
+          0%   { stroke-dashoffset:1; opacity:0 }
+          15%  { opacity:1 }
+          100% { stroke-dashoffset:0 }
         }
         @keyframes sOut  { from{opacity:1} to{opacity:0} }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-        @keyframes dlIn  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes dlIn  { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
 
       <div style={{
@@ -92,55 +105,54 @@ export default function SplashV4() {
         animation: fading ? 'sOut .9s ease forwards' : undefined,
       }}>
 
-        {/* ── 옥타헤드론 SVG ── */}
-        <svg width="300" height="460" viewBox="0 0 320 530"
-          style={{ marginTop: -20 }}>
+        <svg width="300" height="420" viewBox="0 0 320 460"
+          style={{ marginTop: -30 }}>
 
-          {/* 연결선: 순서대로 → 입체 완성 */}
-          {linesOn && EDGES.map(([a, b], i) => {
-            const s = NODES[a], e = NODES[b];
-            const len = Math.hypot(e.cx - s.cx, e.cy - s.cy);
+          {/* 연결선 — 바닥부터 위로 */}
+          {linesOn && EDGES.map((e, i) => {
+            const s = NODES[e.a], t = NODES[e.b];
+            const len = Math.hypot(t.cx - s.cx, t.cy - s.cy);
             return (
               <line key={i}
-                x1={s.cx} y1={s.cy} x2={e.cx} y2={e.cy}
-                stroke="rgba(129,140,248,.40)" strokeWidth="1.2"
+                x1={s.cx} y1={s.cy} x2={t.cx} y2={t.cy}
+                stroke={e.op} strokeWidth="1.2"
                 strokeDasharray={len} strokeDashoffset={len}
-                style={{ animation:`lDraw .5s ease ${i * 0.1}s forwards`, opacity:0 }}
+                style={{ animation:`lDraw .6s ease ${e.d}s forwards`, opacity:0 }}
               />
             );
           })}
 
-          {/* 노드: 글로우 레이어 (필터 없이) */}
+          {/* 노드 — 깊이별 밝기 차등 */}
           {NODES.map((n, i) => (
-            <g key={i} style={{ opacity:0, animation:`nFade .45s ease ${ND[i]}s forwards` }}>
-              <circle cx={n.cx} cy={n.cy} r={16} fill="rgba(129,140,248,.06)"/>
-              <circle cx={n.cx} cy={n.cy} r={9}  fill="rgba(165,180,252,.16)"/>
-              <circle cx={n.cx} cy={n.cy} r={3.5} fill="#dde7ff"/>
+            <g key={i} style={{ opacity:0, animation:`nFade .4s ease ${ND[i]}s forwards` }}>
+              {i < 5 && (
+                <circle cx={n.cx} cy={n.cy} r={n.r * 3.5}
+                  fill={i < 3 ? 'rgba(129,140,248,.08)' : 'rgba(129,140,248,.04)'}/>
+              )}
+              <circle cx={n.cx} cy={n.cy} r={n.r} fill={n.fill}/>
             </g>
           ))}
         </svg>
 
-        {/* ── 텍스트 ── */}
-        <div style={{ textAlign:'center', marginTop:20 }}>
-
+        {/* 텍스트 */}
+        <div style={{ textAlign:'center', marginTop: 24 }}>
           {linesOn && (
             <div style={{
               fontFamily:'var(--font-inter), sans-serif',
               fontWeight:300, fontSize:12, letterSpacing:'.16em',
-              color:'rgba(255,255,255,.4)', marginBottom:14, minHeight:18,
+              color:'rgba(255,255,255,.38)', marginBottom:14, minHeight:18,
             }}>
               {typed}
               {typed.length < FULL.length && (
                 <span style={{
                   display:'inline-block', width:1.5, height:'0.8em',
-                  background:'rgba(255,255,255,.38)',
+                  background:'rgba(255,255,255,.35)',
                   marginLeft:2, verticalAlign:'middle',
                   animation:'blink .55s ease infinite',
                 }}/>
               )}
             </div>
           )}
-
           {showDL && (
             <div style={{
               fontFamily:'var(--font-inter), sans-serif',
