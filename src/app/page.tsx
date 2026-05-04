@@ -144,30 +144,10 @@ export default function Home() {
 
         {/* Hero */}
         <div className="text-center space-y-5">
-          {/* 돋보기 로고 — 깊이 있는 학습의 상징 */}
-          <div className="w-14 h-14 rounded-[1.4rem] flex items-center justify-center mx-auto hover:rotate-12 transition-transform duration-500 cursor-default relative"
-            style={{
-              background:'rgba(255,255,255,0.10)',
-              backdropFilter:'blur(12px)',
-              color:'rgba(220,240,255,0.95)',
-            }}>
-            {/* IG 스타일 ring */}
-            <div style={{
-              position:'absolute', inset:'-3px',
-              borderRadius:'calc(1.4rem + 3px)',
-              background:'linear-gradient(135deg,#405DE6,#833AB4,#E1306C,#F77737)',
-              zIndex:-1, padding:'2px',
-            }}>
-              <div style={{
-                background:'#050d1a', borderRadius:'calc(1.4rem + 1px)', width:'100%', height:'100%',
-              }}/>
-            </div>
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="11.5" cy="11.5" r="8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <circle cx="11.5" cy="11.5" r="4.5" stroke="currentColor" strokeWidth="1" strokeOpacity="0.4" strokeLinecap="round" />
-              <line x1="17.5" y1="17.5" x2="24" y2="24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" fillOpacity="0.25" />
-            </svg>
+          {/* 앱 아이콘 로고 */}
+          <div className="w-16 h-16 rounded-[1.4rem] mx-auto hover:scale-110 transition-transform duration-500 cursor-default overflow-hidden shadow-2xl"
+            style={{ boxShadow:'0 0 0 2px rgba(249,83,198,0.5), 0 8px 30px rgba(185,29,115,0.4)' }}>
+            <img src="/app-icon.jpg" alt="Deep Learning" className="w-full h-full object-cover" />
           </div>
           <div className="space-y-2">
             <h1 className="text-[42px] md:text-[52px] text-white serif leading-[0.9] tracking-[-0.03em] font-light">
