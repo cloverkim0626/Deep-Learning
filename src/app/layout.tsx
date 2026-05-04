@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Serif_KR, Gaegu, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import SplashScreen from "@/components/SplashScreen";
+import SplashScreen from "@/components/SplashV1";
 
 const inter = Inter({
   variable: "--font-inter",
