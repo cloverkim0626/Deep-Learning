@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 
-/* ?Ä?Ä ?¥Îü∞ ?∏Îìú 12Í∞?(?ïÌåîÎ©¥Ï≤¥ + ?¥Î?) ?Ä?Ä */
 const V: number[][] = [
   [ 0,    1.15,  0   ],
   [ 0,   -1.15,  0   ],
@@ -17,7 +16,6 @@ const V: number[][] = [
   [-0.48,-0.52,  0.48],
 ];
 
-/* ?Ä?Ä ?úÎÉÖ??31Í∞??Ä?Ä */
 const E: number[][] = [
   [0,2],[0,3],[0,4],[0,5],
   [1,2],[1,3],[1,4],[1,5],
@@ -36,12 +34,9 @@ const T_LD   = 1800;
 const T_IDLE = T_LS + T_LD;
 const T_FADE = 5500;
 const T_END  = 7000;
-
 const dDot  = V.map((_, i) => (i / V.length) * T_DOT);
 const dLine = E.map((_, i) => (i / E.length) * T_LD);
-
 const FULL = 'Connecting the Dots';
-
 type Pt = { x: number; y: number; z: number; s: number };
 
 export default function SplashV4() {
@@ -55,23 +50,19 @@ export default function SplashV4() {
   useEffect(() => {
     if (sessionStorage.getItem('splashShown')) { setHidden(true); return; }
     sessionStorage.setItem('splashShown', '1');
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const el = canvasRef.current;
+    if (!el) return;
+    const ctx = el.getContext('2d');
     if (!ctx) return;
-    const cvs = canvas;
-    const c2d = ctx as CanvasRenderingContext2D; // null-safe
-
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let W = 0, H = 0, cx = 0, cy = 0, sc = 0;
     let rafId = 0, t0: number | null = null, ended = false, txtShown = false;
 
     function resize() {
       W = window.innerWidth; H = window.innerHeight;
-      cvs.width = W * dpr; cvs.height = H * dpr;
-      cvs.style.width = W + 'px'; cvs.style.height = H + 'px';
-      c2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+      el.width = W * dpr; el.height = H * dpr;
+      el.style.width = W + 'px'; el.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       cx = W / 2; cy = H / 2 - 16;
       sc = Math.min(W, H) * 0.26;
     }
@@ -91,64 +82,51 @@ export default function SplashV4() {
     function easeOut(t: number) { return 1 - (1-t)*(1-t)*(1-t); }
 
     function drawDot(px: number, py: number, s: number, a: number) {
-      const r  = Math.max(2.2, 3.5 * s);
+      const r = Math.max(2.2, 3.5 * s);
       const gr = r * 4.5;
-      const g  = c2d.createRadialGradient(px, py, 0, px, py, gr);
+      const g = ctx.createRadialGradient(px, py, 0, px, py, gr);
       g.addColorStop(0,   `rgba(165,175,255,${0.55 * a})`);
       g.addColorStop(0.3, `rgba(125,140,255,${0.14 * a})`);
       g.addColorStop(1,   'rgba(100,120,255,0)');
-      c2d.fillStyle = g;
-      c2d.beginPath(); c2d.arc(px, py, gr, 0, Math.PI*2); c2d.fill();
-      c2d.fillStyle = `rgba(228,232,255,${a})`;
-      c2d.beginPath(); c2d.arc(px, py, r,  0, Math.PI*2); c2d.fill();
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(px, py, gr, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = `rgba(228,232,255,${a})`;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
     }
 
     function drawLine(a: Pt, b: Pt, prog: number, alpha: number) {
       const mx = a.x + (b.x - a.x) * prog;
       const my = a.y + (b.y - a.y) * prog;
       const bright = 0.3 + 0.25 * ((1 - (a.z + b.z) / 2) / 2);
-      c2d.strokeStyle = `rgba(130,148,255,${bright * alpha})`;
-      c2d.lineWidth   = 0.7;
-      c2d.beginPath(); c2d.moveTo(a.x, a.y); c2d.lineTo(mx, my); c2d.stroke();
+      ctx.strokeStyle = `rgba(130,148,255,${bright * alpha})`;
+      ctx.lineWidth = 0.7;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(mx, my); ctx.stroke();
     }
 
     function frame(now: number) {
       if (ended) return;
       if (!t0) t0 = now;
       const ms = now - t0;
-
       if (ms >= T_END) {
-        ended = true;
-        setFading(true);
+        ended = true; setFading(true);
         setTimeout(() => setHidden(true), 900);
         return;
       }
-
       const ma = ms > T_FADE ? 1 - (ms - T_FADE) / (T_END - T_FADE) : 1;
-
       let rY: number, rX: number;
       if (ms < T_IDLE) {
         const p = ms / T_IDLE;
-        rY = -0.35 + p * 0.25;
-        rX =  0.28 + p * 0.12;
+        rY = -0.35 + p * 0.25; rX = 0.28 + p * 0.12;
       } else {
         const t = ms - T_IDLE;
-        rY = -0.1 + t * 0.00035;
-        rX =  0.4 + Math.sin(t * 0.0007) * 0.13;
+        rY = -0.1 + t * 0.00035; rX = 0.4 + Math.sin(t * 0.0007) * 0.13;
       }
-
-      c2d.clearRect(0, 0, W, H);
+      ctx.clearRect(0, 0, W, H);
       const P = V.map(v => proj(v, rY, rX));
-
-      /* ??(z-sort ?§‚Üí?? */
       if (ms > T_LS) {
         const lms = ms - T_LS;
         if (!txtShown) { setShowText(true); txtShown = true; }
-
-        const sorted = E.map((e, i) => ({
-          e, i, z: (P[e[0]].z + P[e[1]].z) / 2,
-        })).sort((a, b) => b.z - a.z);
-
+        const sorted = E.map((e, i) => ({ e, i, z: (P[e[0]].z + P[e[1]].z) / 2 })).sort((a, b) => b.z - a.z);
         for (const { e, i } of sorted) {
           const t = lms - dLine[i];
           if (t <= 0) continue;
@@ -156,8 +134,6 @@ export default function SplashV4() {
           drawLine(P[e[0]], P[e[1]], prog, ma);
         }
       }
-
-      /* ??(z-sort) */
       const sd = P.map((p, i) => ({ p, i })).sort((a, b) => b.p.z - a.p.z);
       for (const { p, i } of sd) {
         const t = ms - dDot[i];
@@ -166,34 +142,23 @@ export default function SplashV4() {
         if (ms > T_IDLE) ap *= 0.82 + 0.18 * Math.sin((ms - T_IDLE) * 0.003 + i * 0.65);
         drawDot(p.x, p.y, p.s, ap * ma);
       }
-
       rafId = requestAnimationFrame(frame);
     }
-
     rafId = requestAnimationFrame(frame);
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener('resize', resize);
-    };
+    return () => { cancelAnimationFrame(rafId); window.removeEventListener('resize', resize); };
   }, []);
 
-  /* ?Ä?¥Ìïë ?®Í≥º */
   useEffect(() => {
     if (!showText) return;
     let i = 0;
     const iv = setInterval(() => {
-      i++;
-      setTyped(FULL.slice(0, i));
-      if (i >= FULL.length) {
-        clearInterval(iv);
-        setTimeout(() => setShowDL(true), 450);
-      }
+      i++; setTyped(FULL.slice(0, i));
+      if (i >= FULL.length) { clearInterval(iv); setTimeout(() => setShowDL(true), 450); }
     }, 68);
     return () => clearInterval(iv);
   }, [showText]);
 
   if (hidden) return null;
-
   return (
     <>
       <style>{`
@@ -201,45 +166,17 @@ export default function SplashV4() {
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
         @keyframes dlIn  { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
-
-      <div style={{
-        position:'fixed', inset:0, zIndex:9999, background:'#000',
-        animation: fading ? 'sOut .9s ease forwards' : undefined,
-      }}>
+      <div style={{ position:'fixed', inset:0, zIndex:9999, background:'#000', animation: fading ? 'sOut .9s ease forwards' : undefined }}>
         <canvas ref={canvasRef} style={{ display:'block', width:'100%', height:'100%' }} />
-
-        {/* ?çÏä§???§Î≤Ñ?àÏù¥ */}
-        <div style={{
-          position:'absolute', bottom:'26%', left:0, width:'100%',
-          textAlign:'center', pointerEvents:'none',
-        }}>
+        <div style={{ position:'absolute', bottom:'26%', left:0, width:'100%', textAlign:'center', pointerEvents:'none' }}>
           {showText && (
-            <div style={{
-              fontFamily:'var(--font-inter), -apple-system, sans-serif',
-              fontSize:12, letterSpacing:'5.5px',
-              textTransform:'uppercase',
-              color:'rgba(175,185,255,0.88)',
-              fontWeight:300, marginBottom:14,
-            }}>
+            <div style={{ fontFamily:'var(--font-inter), -apple-system, sans-serif', fontSize:12, letterSpacing:'5.5px', textTransform:'uppercase', color:'rgba(175,185,255,0.88)', fontWeight:300, marginBottom:14 }}>
               {typed}
-              {typed.length < FULL.length && (
-                <span style={{
-                  display:'inline-block', width:1.5, height:'0.8em',
-                  background:'rgba(175,185,255,0.6)',
-                  marginLeft:2, verticalAlign:'middle',
-                  animation:'blink .5s ease infinite',
-                }}/>
-              )}
+              {typed.length < FULL.length && <span style={{ display:'inline-block', width:1.5, height:'0.8em', background:'rgba(175,185,255,0.6)', marginLeft:2, verticalAlign:'middle', animation:'blink .5s ease infinite' }}/>}
             </div>
           )}
-
           {showDL && (
-            <div style={{
-              fontFamily:'var(--font-inter), sans-serif',
-              fontWeight:600, fontSize:18, letterSpacing:'.16em',
-              textTransform:'uppercase', color:'rgba(255,255,255,.88)',
-              animation:'dlIn .7s ease forwards', opacity:0,
-            }}>
+            <div style={{ fontFamily:'var(--font-inter), sans-serif', fontWeight:600, fontSize:18, letterSpacing:'.16em', textTransform:'uppercase', color:'rgba(255,255,255,.88)', animation:'dlIn .7s ease forwards', opacity:0 }}>
               Deep Learning
             </div>
           )}
