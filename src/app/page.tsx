@@ -278,143 +278,105 @@ export default function Home() {
             </div>
           </button>
 
-          {/* 리포트 | 선생님 — 오브젝트 카드 */}
+          {/* 리포트 | 선생님 — 미니 카드 */}
           <div className="grid grid-cols-2 gap-3 w-full">
 
-            {/* ── 편지 카드 (리포트/학부모) ── */}
+            {/* ── 리포트 카드 — 성취도 게이지 ── */}
             <Link href="/login/parent"
-              className="group relative overflow-hidden hover:scale-[1.02] transition-all duration-300"
+              className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
               style={{
-                borderRadius: '4px',
-                height: '110px',
-                display: 'block',
-                background: `
-                  repeating-linear-gradient(0deg, transparent, transparent 11px, rgba(160,120,40,0.06) 11px, rgba(160,120,40,0.06) 12px),
-                  linear-gradient(160deg,#241808 0%,#1c1308 40%,#211608 70%,#1a1208 100%)
-                `,
-                border: '1px solid rgba(180,140,60,0.30)',
-                boxShadow: 'inset 0 0 40px rgba(0,0,0,0.4), 2px 2px 8px rgba(0,0,0,0.5)',
+                borderRadius:'1.4rem', height:'88px', display:'block',
+                background:'rgba(255,255,255,0.04)',
+                border:'1px solid rgba(255,255,255,0.07)',
+                backdropFilter:'blur(16px)',
+                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)',
               }}>
-
-              {/* 종이 얼룩/낡은 느낌 */}
-              <div style={{ position:'absolute', inset:0, pointerEvents:'none',
-                background: 'radial-gradient(ellipse at 30% 70%, rgba(200,150,50,0.05) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(100,60,10,0.08) 0%, transparent 50%)',
+              {/* 상단 그린 액센트 라인 */}
+              <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:'1.5px',
+                background:'linear-gradient(90deg,transparent,rgba(67,233,123,0.7),rgba(56,249,215,0.7),transparent)',
               }}/>
-
-              {/* 봉투 SVG — 왼쪽 */}
-              <div style={{ position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)' }}>
-                <svg width="32" height="24" viewBox="0 0 32 24" fill="none">
-                  <rect x="1" y="1" width="30" height="22" rx="1"
-                    stroke="rgba(220,175,80,0.55)" strokeWidth="1.2" fill="rgba(200,150,50,0.06)"/>
-                  <polyline points="1,1 16,14 31,1"
-                    stroke="rgba(220,175,80,0.50)" strokeWidth="1.2" fill="none"/>
-                  <line x1="1" y1="23" x2="12" y2="13" stroke="rgba(220,175,80,0.30)" strokeWidth="0.8"/>
-                  <line x1="31" y1="23" x2="20" y2="13" stroke="rgba(220,175,80,0.30)" strokeWidth="0.8"/>
-                </svg>
-              </div>
-
-              {/* 우표 — 오른쪽 위 */}
-              <div style={{ position:'absolute', top:'10px', right:'10px',
-                width:'22px', height:'26px',
-                border: '1.5px dashed rgba(200,160,70,0.45)',
-                borderRadius: '1px',
-                background: 'rgba(200,150,40,0.07)',
-                display: 'flex', alignItems:'center', justifyContent:'center',
-              }}>
-                <div style={{ width:'14px', height:'18px', borderRadius:'1px',
-                  background:'linear-gradient(135deg,rgba(220,175,80,0.25),rgba(160,110,30,0.15))',
-                  border:'0.5px solid rgba(200,160,70,0.3)',
-                }}/>
-              </div>
-              {/* 소인 원 */}
-              <div style={{ position:'absolute', top:'8px', right:'34px',
-                width:'16px', height:'16px', borderRadius:'50%',
-                border:'1px solid rgba(180,130,50,0.25)',
-              }}>
-                <div style={{ position:'absolute', top:'50%', left:'2px', right:'2px', height:'0.5px',
-                  background:'rgba(180,130,50,0.3)',
-                }}/>
-              </div>
-
-              {/* 텍스트 */}
-              <div style={{ position:'absolute', bottom:'12px', left:'54px' }}>
-                <p style={{ fontSize:13, fontWeight:800, lineHeight:1,
-                  color:'rgba(235,200,120,0.92)', letterSpacing:'0.02em',
-                }}>리포트 열람</p>
-                <p style={{ fontSize:8, marginTop:4, fontWeight:500,
-                  color:'rgba(180,140,60,0.55)', letterSpacing:'0.05em',
+              {/* 왼쪽: 레이블 */}
+              <div style={{ position:'absolute', left:'14px', top:'50%', transform:'translateY(-50%)' }}>
+                <p style={{ fontSize:12, fontWeight:800, lineHeight:1, letterSpacing:'0.01em',
+                  color:'rgba(200,255,225,0.88)',
+                }}>리포트</p>
+                <p style={{ fontSize:8, marginTop:5, fontWeight:500, letterSpacing:'0.04em',
+                  color:'rgba(80,200,155,0.50)',
                 }}>학부모 확인</p>
+              </div>
+              {/* 오른쪽: 성취도 게이지 3개 */}
+              <div style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)', width:'68px' }}>
+                {[
+                  { label:'어휘', val:0.84, c1:'#43e97b', c2:'#38f9d7' },
+                  { label:'독해', val:0.68, c1:'#38f9d7', c2:'#4facfe' },
+                  { label:'문법', val:0.91, c1:'#4facfe', c2:'#a18fff' },
+                ].map((b, i) => (
+                  <div key={i} style={{ marginBottom: i<2 ? '7px' : 0 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'3px' }}>
+                      <span style={{ fontSize:7, color:'rgba(120,210,170,0.55)', fontWeight:600, letterSpacing:'0.04em' }}>{b.label}</span>
+                      <span style={{ fontSize:7, color:'rgba(120,210,170,0.55)', fontWeight:600 }}>{Math.round(b.val*100)}</span>
+                    </div>
+                    <div style={{ height:'3px', borderRadius:'3px', background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
+                      <div style={{ height:'100%', width:`${b.val*100}%`, borderRadius:'3px',
+                        background:`linear-gradient(90deg,${b.c1},${b.c2})`,
+                        boxShadow:`0 0 4px ${b.c1}60`,
+                      }}/>
+                    </div>
+                  </div>
+                ))}
               </div>
             </Link>
 
-            {/* ── 애플 실버 카드 (선생님) ── */}
+            {/* ── 선생님 카드 — Apple 실버 ── */}
             <Link href="/login?role=admin"
-              className="group relative overflow-hidden hover:scale-[1.02] transition-all duration-300"
+              className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
               style={{
-                borderRadius: '18px',
-                height: '110px',
-                display: 'block',
-                background: 'linear-gradient(145deg,#3a3a3c 0%,#2c2c2e 35%,#242426 60%,#1c1c1e 100%)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 16px rgba(0,0,0,0.6)',
+                borderRadius:'1.4rem', height:'88px', display:'block',
+                background:'rgba(255,255,255,0.04)',
+                border:'1px solid rgba(255,255,255,0.07)',
+                backdropFilter:'blur(16px)',
+                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)',
               }}>
-
-              {/* 알루미늄 하이라이트 */}
-              <div style={{ position:'absolute', top:0, left:0, right:0, height:'50%',
-                background:'linear-gradient(180deg,rgba(255,255,255,0.04) 0%,transparent 100%)',
-                borderRadius:'18px 18px 0 0', pointerEvents:'none',
+              {/* 상단 퍼플 액센트 라인 */}
+              <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:'1.5px',
+                background:'linear-gradient(90deg,transparent,rgba(131,58,180,0.65),rgba(193,53,132,0.65),transparent)',
               }}/>
-
-              {/* 애플 파먹은 사과 로고 — 왼쪽 */}
-              <div style={{ position:'absolute', left:'16px', top:'50%', transform:'translateY(-52%)' }}>
-                <svg width="30" height="36" viewBox="0 0 56 68" fill="none">
+              {/* 파먹은 사과 로고 */}
+              <div style={{ position:'absolute', left:'16px', top:'50%', transform:'translateY(-54%)' }}>
+                <svg width="20" height="24" viewBox="0 0 56 68" fill="none">
                   <defs>
-                    <linearGradient id="sl" x1="0" y1="0" x2="0.6" y2="1">
-                      <stop offset="0%" stopColor="#e8e8e8" stopOpacity="0.9"/>
-                      <stop offset="45%" stopColor="#b0b0b0" stopOpacity="0.75"/>
-                      <stop offset="100%" stopColor="#888888" stopOpacity="0.55"/>
+                    <linearGradient id="sg2" x1="0" y1="0" x2="0.5" y2="1">
+                      <stop offset="0%" stopColor="#e0e0e0" stopOpacity="0.85"/>
+                      <stop offset="55%" stopColor="#a8a8a8" stopOpacity="0.70"/>
+                      <stop offset="100%" stopColor="#787878" stopOpacity="0.50"/>
                     </linearGradient>
                   </defs>
-                  {/* Leaf */}
-                  <path d="M28 14 C28 14 36 3 46 6 C46 6 40 13 28 14 Z" fill="url(#sl)"/>
-                  {/* Body with bite taken from upper-right */}
-                  <path d="
-                    M 18 18
-                    C 8 18 2 30 2 42
-                    C 2 56 10 68 20 68
-                    C 24 68 27 66 30 66
-                    C 33 66 36 68 40 68
-                    C 50 68 54 56 54 42
-                    C 54 34 50 24 44 20
-                    A 11 11 0 0 0 32 24
-                    C 29 24 26 22 22 20
-                    C 20.5 18.5 18 18 18 18 Z
-                  " fill="url(#sl)"/>
+                  <path d="M28 14 C28 14 36 3 46 6 C46 6 40 13 28 14 Z" fill="url(#sg2)"/>
+                  <path d="M18 18 C8 18 2 30 2 42 C2 56 10 68 20 68 C24 68 27 66 30 66 C33 66 36 68 40 68 C50 68 54 56 54 42 C54 34 50 24 44 20 A11 11 0 0 0 32 24 C29 24 26 22 22 20 C20.5 18.5 18 18 18 18 Z" fill="url(#sg2)"/>
                 </svg>
               </div>
-
-              {/* 텍스트 — 오른쪽 절반 */}
-              <div style={{ position:'absolute', right:'14px', top:'50%', transform:'translateY(-50%)',
-                textAlign:'right',
-              }}>
-                <p style={{ fontSize:14, fontWeight:600, letterSpacing:'0.01em',
-                  color:'rgba(235,235,240,0.90)',
+              {/* 텍스트 */}
+              <div style={{ position:'absolute', left:'44px', top:'50%', transform:'translateY(-50%)' }}>
+                <p style={{ fontSize:12, fontWeight:700, lineHeight:1, letterSpacing:'0.01em',
+                  color:'rgba(230,230,238,0.88)',
                 }}>선생님 페이지</p>
-                <p style={{ fontSize:8, fontWeight:400, textTransform:'uppercase',
-                  letterSpacing:'0.12em', color:'rgba(180,180,185,0.40)', marginTop:3,
-                }}>Teacher Portal</p>
+                <p style={{ fontSize:7.5, marginTop:5, fontWeight:400, textTransform:'uppercase',
+                  letterSpacing:'0.12em', color:'rgba(170,170,180,0.38)',
+                }}>Teacher</p>
               </div>
-
-              {/* 하단 반사 */}
-              <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'30%',
-                background:'linear-gradient(0deg,rgba(0,0,0,0.2) 0%,transparent 100%)',
-                borderRadius:'0 0 18px 18px', pointerEvents:'none',
-              }}/>
+              {/* 우측 화살표 */}
+              <ArrowRight size={11} strokeWidth={1.5}
+                style={{ position:'absolute', bottom:'12px', right:'13px', color:'rgba(180,180,190,0.25)' }}
+                className="group-hover:translate-x-0.5 group-hover:opacity-60 transition-all opacity-0"/>
             </Link>
 
           </div>
 
+
+
         </div>
+
+
 
         <p className="text-[10px] font-medium tracking-[0.3em] uppercase select-none" style={{color:'rgba(80,140,200,0.35)'}}>
           © 2026 Team Parallax
