@@ -295,10 +295,10 @@ export default function Home() {
               }}/>
               <span style={{ fontSize:'28px', flexShrink:0, lineHeight:1 }}>📬</span>
               <div style={{ minWidth:0 }}>
-                <p style={{ fontFamily:"var(--font-playfair),Georgia,serif", fontSize:18, fontWeight:400, fontStyle:'italic',
-                  lineHeight:1.1, color:'rgba(200,255,228,0.88)', letterSpacing:'0.03em' }}>Report</p>
-                <p style={{ fontSize:10, marginTop:5, fontWeight:300, color:'rgba(80,200,155,0.48)',
-                  letterSpacing:'0.08em', textTransform:'uppercase' }}>학부모 전용</p>
+                <p style={{ fontFamily:"var(--font-jakarta),sans-serif", fontSize:15, fontWeight:500,
+                  lineHeight:1, color:'rgba(220,255,235,0.92)', letterSpacing:'0.02em' }}>Report</p>
+                <p style={{ fontFamily:"var(--font-jakarta),sans-serif", fontSize:10, marginTop:6, fontWeight:300,
+                  color:'rgba(80,200,155,0.50)', letterSpacing:'0.12em', textTransform:'uppercase' }}>학부모 전용</p>
               </div>
             </Link>
 
@@ -318,10 +318,10 @@ export default function Home() {
               }}/>
               <span style={{ fontSize:'26px', flexShrink:0, lineHeight:1 }}>🖋️</span>
               <div style={{ minWidth:0 }}>
-                <p style={{ fontFamily:"var(--font-playfair),Georgia,serif", fontSize:18, fontWeight:400, fontStyle:'italic',
-                  lineHeight:1.1, color:'rgba(230,228,240,0.88)', letterSpacing:'0.03em' }}>Teacher</p>
-                <p style={{ fontSize:10, marginTop:5, fontWeight:300, color:'rgba(170,160,190,0.45)',
-                  letterSpacing:'0.08em', textTransform:'uppercase' }}>대시보드</p>
+                <p style={{ fontFamily:"var(--font-jakarta),sans-serif", fontSize:15, fontWeight:500,
+                  lineHeight:1, color:'rgba(230,228,245,0.92)', letterSpacing:'0.02em' }}>Teacher</p>
+                <p style={{ fontFamily:"var(--font-jakarta),sans-serif", fontSize:10, marginTop:6, fontWeight:300,
+                  color:'rgba(170,155,200,0.48)', letterSpacing:'0.12em', textTransform:'uppercase' }}>대시보드</p>
               </div>
             </Link>
 
