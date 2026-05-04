@@ -277,97 +277,54 @@ export default function Home() {
               <ArrowRight size={13} className="text-white/50 group-hover:text-white/90 group-hover:translate-x-0.5 transition-all" />
             </div>
           </button>
-          {/* === mini-cards === */}
-          <style>{`
-            @keyframes mxFall {
-              0%   { transform: translateY(-100%); }
-              100% { transform: translateY(160px); }
-            }
-          `}</style>
           <div className="grid grid-cols-2 gap-3 w-full">
 
-            {/* REPORT — matrix bg */}
+            {/* Report */}
             <Link href="/login/parent"
               className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
               style={{
-                borderRadius:'1.4rem', height:'80px', display:'flex',
-                alignItems:'center', padding:'0 16px',
-                background:'linear-gradient(180deg,#000b00 0%,#000f00 100%)',
-                border:'1px solid rgba(0,255,70,0.16)',
-                boxShadow:'inset 0 1px 0 rgba(0,255,70,0.07)',
-              }}>
-              {/* matrix columns */}
-              {[
-                {l:'3%',  d:'0s',   spd:'1.6s', chars:'1001100'},
-                {l:'16%', d:'0.4s', spd:'2.0s', chars:'0110010'},
-                {l:'29%', d:'1.1s', spd:'1.4s', chars:'1100101'},
-                {l:'42%', d:'0.2s', spd:'2.2s', chars:'0011011'},
-                {l:'55%', d:'0.8s', spd:'1.8s', chars:'1010110'},
-                {l:'68%', d:'1.5s', spd:'1.5s', chars:'0101001'},
-                {l:'80%', d:'0.6s', spd:'1.9s', chars:'1001010'},
-                {l:'91%', d:'1.2s', spd:'2.1s', chars:'0110100'},
-              ].map((col, i) => (
-                <div key={i} style={{
-                  position:'absolute', left:col.l, top:0, width:'10px',
-                  display:'flex', flexDirection:'column',
-                  fontFamily:'monospace', fontSize:'7.5px', lineHeight:'10px',
-                  animation:`mxFall ${col.spd} linear infinite`,
-                  animationDelay: col.d,
-                  pointerEvents:'none',
-                }}>
-                  {col.chars.split('').map((c, j) => (
-                    <span key={j} style={{
-                      color: j===0 ? 'rgba(0,255,70,0.90)' : `rgba(0,255,70,${0.22 - j*0.02})`,
-                      textShadow: j===0 ? '0 0 6px rgba(0,255,70,0.8)' : 'none',
-                    }}>{c}</span>
-                  ))}
-                </div>
-              ))}
-              {/* top accent */}
-              <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(0,255,70,0.5),rgba(56,249,215,0.5),transparent)',
-              }}/>
-              {/* text */}
-              <div style={{ position:'relative', zIndex:10 }}>
-                <p style={{ fontSize:15, fontWeight:800, lineHeight:1.1, color:'rgba(180,255,200,0.94)', letterSpacing:'0.01em' }}>리포트 페이지</p>
-                <p style={{ fontSize:11.5, marginTop:5, fontWeight:400, color:'rgba(0,200,70,0.55)', fontStyle:'italic' }}>To. 학부모님</p>
-              </div>
-            </Link>
-
-            {/* TEACHER — apple silver */}
-            <Link href="/login?role=admin"
-              className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
-              style={{
-                borderRadius:'1.4rem', height:'80px', display:'flex',
-                alignItems:'center', gap:'12px', padding:'0 16px',
+                borderRadius:'1.4rem', height:'82px', display:'flex',
+                alignItems:'center', gap:'13px', padding:'0 16px',
                 background:'rgba(255,255,255,0.04)',
                 border:'1px solid rgba(255,255,255,0.07)',
-                backdropFilter:'blur(16px)',
+                backdropFilter:'blur(14px)',
                 boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)',
               }}>
               <div style={{ position:'absolute', top:0, left:'15%', right:'15%', height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(131,58,180,0.6),rgba(193,53,132,0.6),transparent)',
+                background:'linear-gradient(90deg,transparent,rgba(67,233,123,0.55),rgba(56,249,215,0.55),transparent)',
               }}/>
-              <svg width="20" height="24" viewBox="0 0 56 68" fill="none" style={{ flexShrink:0 }}>
-                <defs>
-                  <linearGradient id="apg2" x1="0" y1="0" x2="0.5" y2="1">
-                    <stop offset="0%" stopColor="#e0e0e0" stopOpacity="0.88"/>
-                    <stop offset="55%" stopColor="#aaaaaa" stopOpacity="0.70"/>
-                    <stop offset="100%" stopColor="#787878" stopOpacity="0.50"/>
-                  </linearGradient>
-                </defs>
-                <path d="M28 14 C28 14 36 3 46 6 C46 6 40 13 28 14 Z" fill="url(#apg2)"/>
-                <path d="M18 18 C8 18 2 30 2 42 C2 56 10 68 20 68 C24 68 27 66 30 66 C33 66 36 68 40 68 C50 68 54 56 54 42 C54 34 50 24 44 20 A11 11 0 0 0 32 24 C29 24 26 22 22 20 C20.5 18.5 18 18 18 18 Z" fill="url(#apg2)"/>
-              </svg>
+              <span style={{ fontSize:'30px', flexShrink:0, lineHeight:1 }}>📬</span>
               <div style={{ minWidth:0 }}>
-                <p style={{ fontSize:15, fontWeight:700, lineHeight:1.1, color:'rgba(230,230,238,0.90)' }}>선생님 페이지</p>
-                <p style={{ fontSize:11.5, marginTop:5, fontWeight:400, letterSpacing:'0.06em', textTransform:'uppercase', color:'rgba(170,170,182,0.42)' }}>대시보드</p>
+                <p style={{ fontSize:15, fontWeight:700, lineHeight:1.1, color:'rgba(200,255,225,0.90)', letterSpacing:'0.01em' }}>리포트 페이지</p>
+                <p style={{ fontSize:11, marginTop:5, fontWeight:400, color:'rgba(80,200,155,0.50)', fontStyle:'italic' }}>To. 학부모님</p>
+              </div>
+            </Link>
+
+            {/* Teacher */}
+            <Link href="/login?role=admin"
+              className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
+              style={{
+                borderRadius:'1.4rem', height:'82px', display:'flex',
+                alignItems:'center', gap:'13px', padding:'0 16px',
+                background:'rgba(255,255,255,0.04)',
+                border:'1px solid rgba(255,255,255,0.07)',
+                backdropFilter:'blur(14px)',
+                boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)',
+              }}>
+              <div style={{ position:'absolute', top:0, left:'15%', right:'15%', height:'1px',
+                background:'linear-gradient(90deg,transparent,rgba(131,58,180,0.55),rgba(193,53,132,0.55),transparent)',
+              }}/>
+              <span style={{ fontSize:'28px', flexShrink:0, lineHeight:1 }}>🖋️</span>
+              <div style={{ minWidth:0 }}>
+                <p style={{ fontSize:15, fontWeight:700, lineHeight:1.1, color:'rgba(230,230,238,0.90)', letterSpacing:'0.01em' }}>선생님 페이지</p>
+                <p style={{ fontSize:11, marginTop:5, fontWeight:400, letterSpacing:'0.05em', textTransform:'uppercase', color:'rgba(170,170,182,0.42)' }}>대시보드</p>
               </div>
             </Link>
 
           </div>
 
         </div>
+
 
 
 
