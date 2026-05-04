@@ -205,6 +205,32 @@ export default function Home() {
               70%{box-shadow:0 0 0 8px rgba(225,48,108,0)}
               100%{box-shadow:0 0 0 0 rgba(225,48,108,0)}
             }
+            @keyframes cardShimmer1 {
+              0%   { transform: translateX(-120%) skewX(-15deg); opacity:0; }
+              8%   { opacity:1; }
+              92%  { opacity:1; }
+              100% { transform: translateX(520%) skewX(-15deg); opacity:0; }
+            }
+            @keyframes cardShimmer2 {
+              0%   { transform: translateX(-120%) skewX(-15deg); opacity:0; }
+              8%   { opacity:1; }
+              92%  { opacity:1; }
+              100% { transform: translateX(520%) skewX(-15deg); opacity:0; }
+            }
+            @keyframes emojiFloat1 {
+              0%,100%{ transform: translateY(0px) scale(1); }
+              50%    { transform: translateY(-3px) scale(1.06); }
+            }
+            @keyframes emojiFloat2 {
+              0%,100%{ transform: translateY(0px) scale(1); }
+              45%    { transform: translateY(-2.5px) scale(1.05); }
+            }
+            @keyframes accentPulse1 {
+              0%,100%{ opacity:0.55; } 50%{ opacity:1; }
+            }
+            @keyframes accentPulse2 {
+              0%,100%{ opacity:0.55; } 60%{ opacity:1; }
+            }
           `}</style>
           <Link
             href="/login?role=student"
@@ -281,7 +307,7 @@ export default function Home() {
 
             {/* Report */}
             <Link href="/login/parent"
-              className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
+              className="group relative overflow-hidden"
               style={{
                 borderRadius:'1.4rem', height:'80px', display:'flex',
                 alignItems:'center', gap:'13px', padding:'0 16px',
@@ -289,22 +315,36 @@ export default function Home() {
                 border:'1px solid rgba(255,255,255,0.07)',
                 backdropFilter:'blur(14px)',
                 boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)',
+                transition:'box-shadow 0.3s',
               }}>
+              {/* 상단 accent — 숨쉬듯 pulse */}
               <div style={{ position:'absolute', top:0, left:'15%', right:'15%', height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(67,233,123,0.55),rgba(56,249,215,0.55),transparent)',
+                background:'linear-gradient(90deg,transparent,rgba(67,233,123,0.7),rgba(56,249,215,0.7),transparent)',
+                animation:'accentPulse1 3.5s ease-in-out infinite',
               }}/>
-              <span style={{ fontSize:'28px', flexShrink:0, lineHeight:1 }}>📬</span>
+              {/* shimmer sweep */}
+              <div style={{ position:'absolute', inset:0, pointerEvents:'none', overflow:'hidden', borderRadius:'1.4rem' }}>
+                <div style={{ position:'absolute', top:0, left:0, width:'28%', height:'100%',
+                  background:'linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.055) 50%,transparent 70%)',
+                  animation:'cardShimmer1 6s ease-in-out infinite',
+                  animationDelay:'1s',
+                }}/>
+              </div>
+              {/* emoji float */}
+              <span style={{ fontSize:'28px', flexShrink:0, lineHeight:1,
+                display:'inline-block', animation:'emojiFloat1 4s ease-in-out infinite',
+              }}>📬</span>
               <div style={{ minWidth:0 }}>
-                <p style={{ fontFamily:"var(--font-jakarta),sans-serif", fontSize:15, fontWeight:500,
+                <p style={{ fontFamily:"var(--font-noto-serif),serif", fontSize:15, fontWeight:400,
                   lineHeight:1, color:'rgba(220,255,235,0.92)', letterSpacing:'0.02em' }}>Report</p>
-                <p style={{ fontFamily:"var(--font-jakarta),sans-serif", fontSize:10, marginTop:6, fontWeight:300,
+                <p style={{ fontSize:10, marginTop:6, fontWeight:300,
                   color:'rgba(80,200,155,0.50)', letterSpacing:'0.12em', textTransform:'uppercase' }}>학부모 전용</p>
               </div>
             </Link>
 
             {/* Teacher */}
             <Link href="/login?role=admin"
-              className="group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
+              className="group relative overflow-hidden"
               style={{
                 borderRadius:'1.4rem', height:'80px', display:'flex',
                 alignItems:'center', gap:'13px', padding:'0 16px',
@@ -312,20 +352,35 @@ export default function Home() {
                 border:'1px solid rgba(255,255,255,0.07)',
                 backdropFilter:'blur(14px)',
                 boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)',
+                transition:'box-shadow 0.3s',
               }}>
+              {/* 상단 accent — pulse */}
               <div style={{ position:'absolute', top:0, left:'15%', right:'15%', height:'1px',
-                background:'linear-gradient(90deg,transparent,rgba(131,58,180,0.55),rgba(193,53,132,0.55),transparent)',
+                background:'linear-gradient(90deg,transparent,rgba(131,58,180,0.7),rgba(193,53,132,0.7),transparent)',
+                animation:'accentPulse2 4s ease-in-out infinite',
               }}/>
-              <span style={{ fontSize:'26px', flexShrink:0, lineHeight:1 }}>🖋️</span>
+              {/* shimmer sweep */}
+              <div style={{ position:'absolute', inset:0, pointerEvents:'none', overflow:'hidden', borderRadius:'1.4rem' }}>
+                <div style={{ position:'absolute', top:0, left:0, width:'28%', height:'100%',
+                  background:'linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.05) 50%,transparent 70%)',
+                  animation:'cardShimmer2 6s ease-in-out infinite',
+                  animationDelay:'3.2s',
+                }}/>
+              </div>
+              {/* emoji float */}
+              <span style={{ fontSize:'26px', flexShrink:0, lineHeight:1,
+                display:'inline-block', animation:'emojiFloat2 4.8s ease-in-out infinite',
+              }}>🖋️</span>
               <div style={{ minWidth:0 }}>
-                <p style={{ fontFamily:"var(--font-jakarta),sans-serif", fontSize:15, fontWeight:500,
+                <p style={{ fontFamily:"var(--font-noto-serif),serif", fontSize:15, fontWeight:400,
                   lineHeight:1, color:'rgba(230,228,245,0.92)', letterSpacing:'0.02em' }}>Teacher</p>
-                <p style={{ fontFamily:"var(--font-jakarta),sans-serif", fontSize:10, marginTop:6, fontWeight:300,
+                <p style={{ fontSize:10, marginTop:6, fontWeight:300,
                   color:'rgba(170,155,200,0.48)', letterSpacing:'0.12em', textTransform:'uppercase' }}>대시보드</p>
               </div>
             </Link>
 
           </div>
+
 
         </div>
 
