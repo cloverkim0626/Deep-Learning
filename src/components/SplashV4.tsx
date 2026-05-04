@@ -2,52 +2,50 @@
 import { useEffect, useState } from 'react';
 
 /*
-  1-2-3-2-1 diamond (neural / octahedron)
-  viewBox 0 0 320 620
+  이미지 그대로: 옥타헤드론 9-node
+  viewBox 0 0 320 530
 
-  Layer 0 (top)   : node 0
-  Layer 1         : node 1, 2
-  Layer 2 (wide)  : node 3, 4, 5
-  Layer 3         : node 6, 7
-  Layer 4 (bottom): node 8
+       0          ← top apex
+      1   2       ← upper row
+    3   4   5     ← widest row
+      6   7       ← lower row
+        8         ← bottom apex
 */
 const NODES = [
-  { cx: 160, cy: 72  }, // 0 top apex
-  { cx: 100, cy: 188 }, // 1 upper-left
-  { cx: 222, cy: 168 }, // 2 upper-right
-  { cx: 32,  cy: 298 }, // 3 far-left
-  { cx: 158, cy: 278 }, // 4 center
-  { cx: 282, cy: 290 }, // 5 far-right
-  { cx: 96,  cy: 398 }, // 6 lower-left
-  { cx: 215, cy: 388 }, // 7 lower-right
-  { cx: 158, cy: 510 }, // 8 bottom apex
+  { cx: 160, cy: 68  }, // 0 top
+  { cx: 105, cy: 188 }, // 1 upper-left
+  { cx: 215, cy: 165 }, // 2 upper-right
+  { cx: 28,  cy: 290 }, // 3 far-left
+  { cx: 158, cy: 272 }, // 4 center
+  { cx: 285, cy: 282 }, // 5 far-right
+  { cx: 92,  cy: 390 }, // 6 lower-left
+  { cx: 208, cy: 378 }, // 7 lower-right
+  { cx: 153, cy: 488 }, // 8 bottom
 ];
+
+/* 무작위 등장 순서 */
+const ND = [0.4, 0.08, 0.72, 0.52, 0.88, 0.18, 0.62, 0.32, 0.78];
 
 /*
-  Lines drawn in order → reveals diamond 3D shape
-  Outer frame first, then inner connections
+  엣지: 외곽 다이아몬드 → 상단 → 중단 → 하단 순으로 그려져
+  점들이 입체 형태로 완성되는 "aha" 순간 연출
 */
 const EDGES: [number, number][] = [
-  // outer diamond spine
+  // 1. 외곽 다이아몬드 프레임
   [0, 3], [3, 8], [8, 5], [5, 0],
-  // inner layer-by-layer
-  [0, 1], [0, 2],
-  [1, 3], [2, 5],
-  [1, 4], [2, 4],
-  [3, 6], [5, 7],
-  [4, 6], [4, 7],
+  // 2. 상단 삼각
+  [0, 1], [0, 2], [1, 2],
+  // 3. 상단 → 중간
+  [1, 3], [2, 5], [1, 4], [2, 4],
+  // 4. 중간 교차
+  [3, 4], [4, 5],
+  // 5. 중간 → 하단
+  [3, 6], [5, 7], [4, 6], [4, 7], [6, 7],
+  // 6. 하단 삼각
   [6, 8], [7, 8],
-  // cross diagonals — 입체감
-  [1, 7], [2, 6],
 ];
 
-/* 
-  Stagger delays — nodes appear as if "scattered" before connection
-  (not in layer order, feels random)
-*/
-const NODE_DELAYS = [0.6, 0.1, 0.85, 0.4, 0.95, 0.2, 0.7, 0.35, 0.55];
-
-const FULL_TEXT = 'Connecting the Dots';
+const FULL = 'Connecting the Dots';
 
 export default function SplashV4() {
   const [linesOn, setLinesOn] = useState(false);
@@ -60,25 +58,20 @@ export default function SplashV4() {
     if (sessionStorage.getItem('splashShown')) { setHidden(true); return; }
     sessionStorage.setItem('splashShown', '1');
 
-    // 모든 노드 등장 후 (~1.2s) 선 시작
-    const t1 = setTimeout(() => setLinesOn(true), 1800);
-    const t2 = setTimeout(() => setFading(true),  6500);
-    const t3 = setTimeout(() => setHidden(true),  7300);
+    const t1 = setTimeout(() => setLinesOn(true), 1600);
+    const t2 = setTimeout(() => setFading(true),  6800);
+    const t3 = setTimeout(() => setHidden(true),  7600);
     return () => [t1, t2, t3].forEach(clearTimeout);
   }, []);
 
-  // 타이핑: 선 시작과 동시에
   useEffect(() => {
     if (!linesOn) return;
     let i = 0;
     const iv = setInterval(() => {
       i++;
-      setTyped(FULL_TEXT.slice(0, i));
-      if (i >= FULL_TEXT.length) {
-        clearInterval(iv);
-        setTimeout(() => setShowDL(true), 400);
-      }
-    }, 72);
+      setTyped(FULL.slice(0, i));
+      if (i >= FULL.length) { clearInterval(iv); setTimeout(() => setShowDL(true), 400); }
+    }, 70);
     return () => clearInterval(iv);
   }, [linesOn]);
 
@@ -94,64 +87,58 @@ export default function SplashV4() {
         }
         @keyframes sOut  { from{opacity:1} to{opacity:0} }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-        @keyframes dlIn  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+        @keyframes dlIn  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
 
       <div style={{
         position:'fixed', inset:0, zIndex:9999, background:'#07070e',
-        display:'flex', alignItems:'center', justifyContent:'center',
-        flexDirection:'column',
+        display:'flex', flexDirection:'column',
+        alignItems:'center', justifyContent:'center',
         animation: fading ? 'sOut .9s ease forwards' : undefined,
       }}>
 
-        {/* SVG 다이아몬드 네트워크 */}
-        <svg width="280" height="480" viewBox="0 0 320 600"
-          style={{ marginTop: -40 }}>
-          <defs>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="3.5" result="b"/>
-              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
+        {/* ── 옥타헤드론 SVG ── */}
+        <svg width="300" height="460" viewBox="0 0 320 530"
+          style={{ marginTop: -20 }}>
 
-          {/* 연결선: 순서대로 그려져 입체 완성 */}
+          {/* 연결선: 순서대로 → 입체 완성 */}
           {linesOn && EDGES.map(([a, b], i) => {
             const s = NODES[a], e = NODES[b];
             const len = Math.hypot(e.cx - s.cx, e.cy - s.cy);
             return (
-              <line key={i} x1={s.cx} y1={s.cy} x2={e.cx} y2={e.cy}
-                stroke="rgba(129,140,248,.35)" strokeWidth="1.2"
+              <line key={i}
+                x1={s.cx} y1={s.cy} x2={e.cx} y2={e.cy}
+                stroke="rgba(129,140,248,.40)" strokeWidth="1.2"
                 strokeDasharray={len} strokeDashoffset={len}
-                style={{ animation:`lDraw .55s ease ${i * 0.11}s forwards`, opacity:0 }}
+                style={{ animation:`lDraw .5s ease ${i * 0.1}s forwards`, opacity:0 }}
               />
             );
           })}
 
-          {/* 노드: 무작위 순서로 먼저 등장 */}
+          {/* 노드: 글로우 레이어 (필터 없이) */}
           {NODES.map((n, i) => (
-            <g key={i} filter="url(#glow)"
-              style={{ opacity:0, animation:`nFade .5s ease ${NODE_DELAYS[i]}s forwards` }}>
-              <circle cx={n.cx} cy={n.cy} r={12} fill="rgba(165,180,252,.08)"/>
-              <circle cx={n.cx} cy={n.cy} r={5}  fill="rgba(199,210,254,.25)"/>
-              <circle cx={n.cx} cy={n.cy} r={2.8} fill="#e0e7ff"/>
+            <g key={i} style={{ opacity:0, animation:`nFade .45s ease ${ND[i]}s forwards` }}>
+              <circle cx={n.cx} cy={n.cy} r={16} fill="rgba(129,140,248,.06)"/>
+              <circle cx={n.cx} cy={n.cy} r={9}  fill="rgba(165,180,252,.16)"/>
+              <circle cx={n.cx} cy={n.cy} r={3.5} fill="#dde7ff"/>
             </g>
           ))}
         </svg>
 
-        {/* 하단 텍스트 */}
-        <div style={{ textAlign:'center', marginTop: 28 }}>
-          {/* Connecting the Dots 타이핑 */}
+        {/* ── 텍스트 ── */}
+        <div style={{ textAlign:'center', marginTop:20 }}>
+
           {linesOn && (
             <div style={{
               fontFamily:'var(--font-inter), sans-serif',
-              fontWeight:300, fontSize:13, letterSpacing:'.14em',
-              color:'rgba(255,255,255,.42)', marginBottom:12, minHeight:20,
+              fontWeight:300, fontSize:12, letterSpacing:'.16em',
+              color:'rgba(255,255,255,.4)', marginBottom:14, minHeight:18,
             }}>
               {typed}
-              {typed.length < FULL_TEXT.length && (
+              {typed.length < FULL.length && (
                 <span style={{
                   display:'inline-block', width:1.5, height:'0.8em',
-                  background:'rgba(255,255,255,.4)',
+                  background:'rgba(255,255,255,.38)',
                   marginLeft:2, verticalAlign:'middle',
                   animation:'blink .55s ease infinite',
                 }}/>
@@ -159,12 +146,11 @@ export default function SplashV4() {
             </div>
           )}
 
-          {/* Deep Learning */}
           {showDL && (
             <div style={{
               fontFamily:'var(--font-inter), sans-serif',
-              fontWeight:300, fontSize:18, letterSpacing:'.18em',
-              textTransform:'uppercase', color:'rgba(255,255,255,.75)',
+              fontWeight:600, fontSize:18, letterSpacing:'.16em',
+              textTransform:'uppercase', color:'rgba(255,255,255,.88)',
               animation:'dlIn .7s ease forwards', opacity:0,
             }}>
               Deep Learning
