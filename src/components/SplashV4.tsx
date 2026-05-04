@@ -102,16 +102,22 @@ export default function SplashV4() {
         {/* SVG: full-screen, pixel coordinates */}
         <svg style={{ position:'absolute', inset:0, width:'100%', height:'100%', overflow:'visible' }}>
 
-          {/* lines */}
+          {/* lines — SVG SMIL animate: from=len(숨김) → to=0(완성) */}
           {linesOn && EDGES.map((e, i) => {
             const s = pts[e.a], t = pts[e.b];
             const len = Math.hypot(t.cx-s.cx, t.cy-s.cy);
             return (
               <line key={i} x1={s.cx} y1={s.cy} x2={t.cx} y2={t.cy}
-                strokeWidth={e.op > 0.3 ? 1.3 : 0.9}
-                strokeDasharray={len} strokeDashoffset={len}
-                style={{ animation:`lDraw .65s ease ${e.d}s forwards`, opacity:0 }}
-              />
+                stroke="#00E5FF" strokeWidth={e.op > 0.3 ? 1.3 : 0.9}
+                strokeOpacity={0} strokeDasharray={len} strokeDashoffset={len}>
+                <animate attributeName="stroke-dashoffset"
+                  from={len} to={0} dur="0.7s" begin={`${e.d}s`} fill="freeze"/>
+                <animate attributeName="stroke-opacity"
+                  from={0} to={e.op} dur="0.25s" begin={`${e.d}s`} fill="freeze"/>
+                <animate attributeName="stroke"
+                  values="#00E5FF;rgba(255,255,255,0.65)"
+                  keyTimes="0;1" dur="0.7s" begin={`${e.d + 0.3}s`} fill="freeze"/>
+              </line>
             );
           })}
 

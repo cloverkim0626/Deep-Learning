@@ -125,7 +125,7 @@ export default function Home() {
 
 
 
-      <div className="z-10 w-full max-w-sm mx-auto flex flex-col items-center gap-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+      <div className="z-10 w-full max-w-sm mx-auto flex flex-col items-center gap-5 animate-in fade-in slide-in-from-bottom-6 duration-1000">
 
         {/* D-DAY Badge */}
         {dday !== null && (
@@ -169,7 +169,7 @@ export default function Home() {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-3 w-full">
+        <div className="grid grid-cols-3 gap-2 w-full">
           {[
             { icon: <Search size={14} />, label: "등록 지문", value: passageCount !== null ? `${passageCount}개` : '...' },
             { icon: <Brain size={14} />, label: "AI 선생님", value: "친절한" },
@@ -208,7 +208,7 @@ export default function Home() {
           `}</style>
           <Link
             href="/login?role=student"
-            className="group relative flex flex-col items-start w-full p-5 rounded-[2rem] overflow-hidden hover:-translate-y-1 transition-all duration-500"
+            className="group relative flex flex-col items-start w-full p-4 rounded-[2rem] overflow-hidden hover:-translate-y-1 transition-all duration-500"
             style={{
               background:'linear-gradient(145deg,#071e38 0%,#0a2d50 45%,#082440 100%)',
               boxShadow:'0 8px 32px rgba(64,93,230,0.30), 0 2px 8px rgba(0,0,0,0.5)',
@@ -295,10 +295,10 @@ export default function Home() {
             </div>
           </Link>
 
-
+          {/* 기능 안내 — 학습공간 바로 아래 */}
           <button
             onClick={() => setShowGuide(true)}
-            className="group relative flex items-center justify-between w-full h-[64px] px-5 rounded-[2rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
+            className="group relative flex items-center justify-between w-full h-[56px] px-5 rounded-[2rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
             style={{
               background:'linear-gradient(135deg,rgba(64,93,230,0.15) 0%,rgba(131,58,180,0.12) 50%,rgba(225,48,108,0.10) 100%)',
               border:'1px solid transparent',
@@ -306,51 +306,69 @@ export default function Home() {
             }}
           >
             <div className="flex items-center gap-3 relative z-10">
-              <div className="relative">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300"
-                  style={{background:'linear-gradient(135deg,#405DE6,#833AB4,#E1306C)'}}>
-                  <Sparkles size={16} className="text-white" strokeWidth={2.5} />
-                </div>
-                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 flex items-center justify-center" style={{borderColor:'#050d1a'}}>
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                </span>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300"
+                style={{background:'linear-gradient(135deg,#405DE6,#833AB4,#E1306C)'}}>
+                <Sparkles size={14} className="text-white" strokeWidth={2.5} />
               </div>
               <div className="text-left">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] font-black text-white leading-tight">기능 안내 &amp; 체험 계정</span>
-                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md tracking-wider text-white"
+                  <span className="text-[12px] font-black text-white leading-tight">기능 안내 &amp; 체험 계정</span>
+                  <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md tracking-wider text-white"
                     style={{background:'linear-gradient(90deg,#405DE6,#E1306C)'}}>CHECK</span>
                 </div>
-                <span className="text-[10px] font-bold" style={{color:'rgba(160,180,255,0.55)'}}>사용법 · 장학 혜택 · 홈화면 설치</span>
+                <span className="text-[9px] font-bold" style={{color:'rgba(160,180,255,0.55)'}}>사용법 · 장학 혜택 · 홈화면 설치</span>
               </div>
             </div>
-            <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 relative z-10"
+            <div className="w-7 h-7 rounded-full flex items-center justify-center relative z-10"
               style={{background:'rgba(255,255,255,0.08)'}}>
-              <ArrowRight size={14} className="text-white/50 group-hover:text-white/90 group-hover:translate-x-0.5 transition-all" />
+              <ArrowRight size={13} className="text-white/50 group-hover:text-white/90 group-hover:translate-x-0.5 transition-all" />
             </div>
           </button>
 
-          <Link
-            href="/login?role=admin"
-            className="group flex items-center justify-between w-full h-[64px] px-6 rounded-[2rem] hover:-translate-y-0.5 transition-all duration-400"
-            style={{
-              background:'rgba(255,255,255,0.04)',
-              border:'1px solid rgba(255,255,255,0.10)',
-              backdropFilter:'blur(12px)',
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-400"
-                style={{background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.12)'}}>
-                <Briefcase strokeWidth={1.5} size={16} className="text-white/60" />
+          {/* 리포트 | 선생님 — 좌우 배치 */}
+          <div className="grid grid-cols-2 gap-2 w-full">
+            <Link
+              href="/login/parent"
+              className="group relative flex flex-col justify-between p-3.5 rounded-[1.8rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-500 h-[70px]"
+              style={{
+                background:'rgba(235,248,232,0.15)',
+                backdropFilter:'blur(18px)',
+                WebkitBackdropFilter:'blur(18px)',
+                boxShadow:'0 4px 24px rgba(60,120,60,0.15), inset 0 1px 0 rgba(255,255,255,0.25)',
+                border:'1px solid rgba(160,210,155,0.28)',
+              }}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md tracking-widest"
+                  style={{background:'rgba(255,255,255,0.2)',color:'rgba(50,100,45,0.9)',border:'1px solid rgba(160,210,155,0.35)'}}>REPORT</span>
               </div>
               <div>
-                <span className="text-[13px] font-medium block leading-tight text-white/80">선생님 페이지</span>
-                <span className="text-[10px] font-normal uppercase tracking-wider" style={{color:'rgba(120,160,255,0.4)'}}>Teacher Dashboard</span>
+                <p className="text-[12px] font-black" style={{color:'rgba(220,248,215,0.97)'}}>리포트 열람</p>
+                <p className="text-[9px]" style={{color:'rgba(160,220,155,0.65)'}}>일간·월간 현황</p>
               </div>
-            </div>
-            <ArrowRight strokeWidth={1.5} size={16} className="text-white/20 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all" />
-          </Link>
+              <ArrowRight strokeWidth={2} size={12} style={{color:'rgba(180,230,175,0.7)'}} className="absolute bottom-3 right-3" />
+            </Link>
+
+            <Link
+              href="/login?role=admin"
+              className="group flex flex-col justify-between p-3.5 rounded-[1.8rem] hover:-translate-y-0.5 transition-all duration-400 h-[70px]"
+              style={{
+                background:'rgba(255,255,255,0.05)',
+                border:'1px solid rgba(255,255,255,0.10)',
+                backdropFilter:'blur(12px)',
+              }}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md tracking-widest"
+                  style={{background:'rgba(255,255,255,0.1)',color:'rgba(180,200,255,0.8)',border:'1px solid rgba(255,255,255,0.12)'}}>ADMIN</span>
+              </div>
+              <div>
+                <p className="text-[12px] font-medium text-white/80">선생님 페이지</p>
+                <p className="text-[9px] uppercase tracking-wider" style={{color:'rgba(120,160,255,0.4)'}}>Dashboard</p>
+              </div>
+              <ArrowRight strokeWidth={1.5} size={12} className="text-white/25 absolute bottom-3 right-3 group-hover:text-white/60 transition-all" />
+            </Link>
+          </div>
         </div>
 
         <p className="text-[10px] font-medium tracking-[0.3em] uppercase select-none" style={{color:'rgba(80,140,200,0.35)'}}>
