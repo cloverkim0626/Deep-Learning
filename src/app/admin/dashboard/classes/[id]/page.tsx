@@ -43,6 +43,16 @@ const ATT_SHORT: Record<AttendanceStatus, string> = {
   present: "출석", late: "지각", absent: "결석", 'n/a': "N/A",
 };
 
+// 수업 시간 분 차이 계산 ("19:30", "21:30" -> 120)
+function calcDurationMins(start?: string, end?: string): number | null {
+  if (!start || !end) return null;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  if (isNaN(sh) || isNaN(eh)) return null;
+  const diff = (eh * 60 + em) - (sh * 60 + sm);
+  return diff > 0 ? diff : null;
+}
+
 // 과제 종류 (테스트는 테스트 버튼으로 별도 처리)
 const HW_TYPES: { value: HwType; label: string }[] = [
   { value: 'general',      label: '문제풀이' },
@@ -1961,7 +1971,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                               {today && !isCancelled && <span style={{fontSize:'9px',background:'#0071e3',color:'#fff',padding:'1px 5px',borderRadius:'4px',fontWeight:500}}>오늘</span>}
                               {isCancelled && <span style={{fontSize:'9px',background:'#fecdd3',color:'#be123c',padding:'1px 5px',borderRadius:'4px',fontWeight:700}}>휴강</span>}
                             </p>
-                            <p className="col-time">{col.time}{col.end_time ? ` ~ ${col.end_time}` : ''}</p>
+                            <p className="col-time">{col.time}{col.end_time ? ` ~ ${col.end_time}` : ''}{(() => { const m = calcDurationMins(col.time, col.end_time); return m ? <span style={{fontSize:'9px',color:'#94a3b8',marginLeft:'3px'}}>({m}분)</span> : null; })()}</p>
                           </div>
                           {/* 세션 액션 버튼들 */}
                           {isCancelled ? (

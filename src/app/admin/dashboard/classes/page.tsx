@@ -27,6 +27,16 @@ const COLOR_LABELS: Record<ClassColor, string> = {
   indigo: "인디고", rose: "로즈", teal: "틸", amber: "앰버", violet: "바이올렛"
 };
 
+// 수업 시간 분 차이 계산
+function calcDurationMins(start?: string, end?: string): number | null {
+  if (!start || !end) return null;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  if (isNaN(sh) || isNaN(eh)) return null;
+  const diff = (eh * 60 + em) - (sh * 60 + sm);
+  return diff > 0 ? diff : null;
+}
+
 // ─── 시간표 입력 컴포넌트 ──────────────────────────────────────────────────────
 function ScheduleBuilder({
   label, schedule, onChange
@@ -275,13 +285,16 @@ function ClassCard({
             <div className="flex items-start gap-2">
               <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest pt-0.5 w-10 shrink-0">수업</span>
               <div className="flex gap-1.5 flex-wrap">
-                {cls.schedule.map(s => (
-                  <span key={s.day}
-                    className="px-2 py-0.5 rounded-md text-[10px] font-semibold"
-                    style={{ background: cm.light, color: cm.accent }}>
-                    {s.day} {s.time}{s.end_time ? `~${s.end_time}` : ''}
-                  </span>
-                ))}
+                {cls.schedule.map(s => {
+                  const mins = calcDurationMins(s.time, s.end_time);
+                  return (
+                    <span key={s.day}
+                      className="px-2 py-0.5 rounded-md text-[10px] font-semibold"
+                      style={{ background: cm.light, color: cm.accent }}>
+                      {s.day} {s.time}{s.end_time ? `~${s.end_time}` : ''}{mins ? <span style={{opacity:0.6,marginLeft:'3px'}}>({mins}분)</span> : null}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -289,11 +302,14 @@ function ClassCard({
             <div className="flex items-start gap-2">
               <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest pt-0.5 w-10 shrink-0">클리닉</span>
               <div className="flex gap-1.5 flex-wrap">
-                {cls.clinic_schedule.map(s => (
-                  <span key={s.day} className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-teal-50 text-teal-700">
-                    {s.day} {s.time}{s.end_time ? `~${s.end_time}` : ''}
-                  </span>
-                ))}
+                {cls.clinic_schedule.map(s => {
+                  const mins = calcDurationMins(s.time, s.end_time);
+                  return (
+                    <span key={s.day} className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-teal-50 text-teal-700">
+                      {s.day} {s.time}{s.end_time ? `~${s.end_time}` : ''}{mins ? <span style={{opacity:0.6,marginLeft:'3px'}}>({mins}분)</span> : null}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
