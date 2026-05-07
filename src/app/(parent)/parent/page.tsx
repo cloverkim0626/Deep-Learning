@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, X, BookOpen, Stethoscope } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { ChevronLeft, ChevronRight, X, BookOpen, Check, List, MessageCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 const DAY_KO = ['일','월','화','수','목','금','토'];
@@ -20,6 +20,10 @@ export default function ParentReportPage() {
   const [loading, setLoading] = useState(true);
   const [viewMonth, setViewMonth] = useState<{ year: number; month: number }>({ year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
   const [activeReport, setActiveReport] = useState<ReportRow | null>(null);
+  // 학부모 확인 완료 ID 세트 (localStorage 기반)
+  const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
+  const [showKakaoToast, setShowKakaoToast] = useState(false);
+  const kakaoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("parentSession");
@@ -46,6 +50,28 @@ export default function ParentReportPage() {
       setViewMonth({ year: d.getFullYear(), month: d.getMonth() + 1 });
     }
     setLoading(false);
+  };
+
+  // 확인 완료 목록 불러오기
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('report_confirmed_ids');
+      if (raw) setConfirmedIds(new Set(JSON.parse(raw)));
+    } catch {}
+  }, []);
+
+  const handleConfirm = (reportId: string) => {
+    setConfirmedIds(prev => {
+      const next = new Set(prev).add(reportId);
+      localStorage.setItem('report_confirmed_ids', JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  const handleKakao = () => {
+    if (kakaoTimerRef.current) clearTimeout(kakaoTimerRef.current);
+    setShowKakaoToast(true);
+    kakaoTimerRef.current = setTimeout(() => setShowKakaoToast(false), 2500);
   };
 
   // 현재 보는 달의 리포트들
@@ -195,9 +221,12 @@ export default function ParentReportPage() {
                           {isLatest && (
                             <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-rose-50 text-rose-500">NEW</span>
                           )}
+                         {confirmedIds.has(r.id) && (
+                            <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-50 text-emerald-600">✓ 확인</span>
+                          )}
                         </div>
                         <p className="text-[11px]" style={{ color: 'rgba(74,112,85,0.6)' }}>
-                          {r.teacher_comment ? '✏️ 강사 코멘트 있음' : '리포트 보기 →'}
+                          {confirmedIds.has(r.id) ? '확인 완료' : r.teacher_comment ? '✏️ 강사 코멘트 있음' : '리포트 보기 →'}
                         </p>
                       </div>
 
@@ -267,6 +296,47 @@ export default function ParentReportPage() {
               title={`리포트 ${activeReport.session_date}`}
             />
           </div>
+
+          {/* 하단 액션 바 */}
+          <div className="shrink-0 border-t border-slate-100 px-4 py-3 flex items-center gap-2"
+            style={{ background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(10px)' }}>
+            {/* 확인했습니다 */}
+            <button
+              onClick={() => handleConfirm(activeReport.id)}
+              className={`flex items-center gap-1.5 h-10 px-4 rounded-xl text-[12px] font-bold transition-all ${
+                confirmedIds.has(activeReport.id)
+                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                  : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200 hover:border-emerald-200'
+              }`}>
+              <Check size={14} />
+              {confirmedIds.has(activeReport.id) ? '확인 완료' : '확인했습니다'}
+            </button>
+
+            {/* 목록으로 */}
+            <button
+              onClick={() => setActiveReport(null)}
+              className="flex items-center gap-1.5 h-10 px-4 rounded-xl text-[12px] font-bold bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all">
+              <List size={14} />
+              목록으로
+            </button>
+
+            {/* 카카오 연락 */}
+            <button
+              onClick={handleKakao}
+              className="flex items-center gap-1.5 h-10 px-4 rounded-xl text-[12px] font-bold border transition-all ml-auto"
+              style={{ background: '#FEE500', borderColor: '#E5CE00', color: '#3A1D1D' }}>
+              <MessageCircle size={14} />
+              카카오
+            </button>
+          </div>
+
+          {/* 카카오 준비중 토스트 */}
+          {showKakaoToast && (
+            <div className="absolute bottom-20 right-4 z-10 px-4 py-2.5 rounded-xl text-[12px] font-bold text-white shadow-lg animate-in slide-in-from-bottom-2 duration-200"
+              style={{ background: '#3A1D1D' }}>
+              🔜 카카오톡 연동 준비중입니다
+            </div>
+          )}
         </div>
       )}
     </div>
