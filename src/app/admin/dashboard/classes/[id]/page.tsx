@@ -277,11 +277,13 @@ type HwDraft = {
   test_range: string; max_score: string; pass_score: string; is_pf: boolean;
 };
 
-function AddHomeworkModal({ session, allStudents, onClose, onAdded }: {
+function AddHomeworkModal({ session, allStudents, existingSlots, onClose, onAdded, onDeleted }: {
   session: ClassSession;
   allStudents: ClassStudent[];
+  existingSlots: HomeworkSlot[];
   onClose: () => void;
   onAdded: (slots: HomeworkSlot[]) => void;
+  onDeleted: (slotId: string) => void;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [items, setItems] = useState<HwDraft[]>([{
@@ -290,6 +292,7 @@ function AddHomeworkModal({ session, allStudents, onClose, onAdded }: {
   const [targetAll, setTargetAll] = useState(true);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const nextId = useRef(2);
 
   const addItem = () => {
@@ -299,6 +302,16 @@ function AddHomeworkModal({ session, allStudents, onClose, onAdded }: {
   const removeItem = (id: number) => setItems(prev => prev.filter(i => i.id !== id));
   const updateItem = (id: number, patch: Partial<HwDraft>) => setItems(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i));
   const toggleStudent = (name: string) => setSelectedStudents(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
+
+  const handleDelete = async (slotId: string, title: string) => {
+    if (!confirm(`"${title}" 항목을 삭제하시겠습니까?`)) return;
+    setDeletingId(slotId);
+    try {
+      await deleteHomeworkSlot(slotId);
+      onDeleted(slotId);
+    } catch (e) { alert((e as Error).message); }
+    finally { setDeletingId(null); }
+  };
 
   const handleSave = async () => {
     const valid = items.filter(i => i.title.trim());
@@ -316,107 +329,170 @@ function AddHomeworkModal({ session, allStudents, onClose, onAdded }: {
       if (!targetAll && selectedStudents.length > 0)
         await Promise.all(slots.map(slot => setSlotStudents(slot.id, selectedStudents)));
       onAdded(slots);
+      // 새 항목 폼 초기화
+      setItems([{ id: nextId.current++, title: '', hw_type: 'general', assigned_at: today, due_date: '', test_range: '', max_score: '', pass_score: '', is_pf: false }]);
     } catch (e) { alert((e as Error).message); }
     finally { setSaving(false); }
   };
 
   const HW_COLORS: Record<string, string> = {
-    general: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
-    passage_read: 'bg-teal-500/15 text-teal-300 border-teal-500/30',
-    test_prep: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-    other: 'bg-slate-500/15 text-slate-300 border-slate-500/30',
+    general: 'bg-blue-50 text-blue-700 border-blue-200',
+    passage_read: 'bg-teal-50 text-teal-700 border-teal-200',
+    test_prep: 'bg-amber-50 text-amber-700 border-amber-200',
+    vocab_test: 'bg-rose-50 text-rose-700 border-rose-200',
+    other: 'bg-slate-50 text-slate-500 border-slate-200',
   };
 
+  const ALL_HW_TYPES: { value: HwType; label: string }[] = [
+    { value: 'general',      label: '문제풀이' },
+    { value: 'passage_read', label: '워크북' },
+    { value: 'test_prep',    label: '테스트준비' },
+    { value: 'vocab_test',   label: '단어테스트' },
+    { value: 'other',        label: '기타' },
+  ];
+
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[350] flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="glass w-full max-w-2xl max-h-[92vh] rounded-3xl border border-foreground/10 shadow-2xl flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-foreground/8 shrink-0">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[350] flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-xl max-h-[92vh] rounded-2xl border border-slate-200 shadow-2xl flex flex-col">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <div>
-            <h3 className="text-[15px] font-black text-foreground">📝 과제 배당</h3>
-            <p className="text-[11px] text-accent mt-0.5">{session.session_date} · 한 번에 여러 과제 등록</p>
+            <h3 className="text-[15px] font-black text-slate-800">📋 과제 / 테스트 관리</h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">{session.session_date}</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-foreground/8 text-accent"><X size={15} /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-300 hover:text-slate-500"><X size={16} /></button>
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
-          {items.map((item, idx) => (
-            <div key={item.id} className="rounded-2xl border border-foreground/10 bg-foreground/2 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-accent uppercase tracking-widest">과제 {idx + 1}</span>
-                {items.length > 1 && <button onClick={() => removeItem(item.id)} className="ml-auto p-1 text-red-300 hover:text-red-500"><X size={12} /></button>}
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-5">
+
+          {/* ── 기존 항목 목록 ── */}
+          {existingSlots.length > 0 && (
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">등록된 항목</p>
+              <div className="space-y-1.5">
+                {existingSlots.map(slot => {
+                  const colorClass = HW_COLORS[slot.hw_type] || HW_COLORS.other;
+                  const isDel = deletingId === slot.id;
+                  return (
+                    <div key={slot.id}
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border ${colorClass} ${isDel ? 'opacity-40' : ''}`}>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold truncate">{slot.title}</p>
+                        <p className="text-[10px] opacity-60">
+                          {HW_TYPE_LABEL[slot.hw_type]}
+                          {slot.due_date && ` · 검사일 ${slot.due_date.slice(5).replace('-', '/')}`}
+                          {slot.test_range && ` · 범위: ${slot.test_range}`}
+                        </p>
+                      </div>
+                      <button onClick={() => handleDelete(slot.id, slot.title)} disabled={isDel}
+                        className="p-1 text-current opacity-30 hover:opacity-70 transition-opacity shrink-0">
+                        <X size={13} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-              <input value={item.title} onChange={e => updateItem(item.id, { title: e.target.value })} placeholder="과제 제목" autoFocus={idx === 0}
-                className="w-full h-10 px-3 rounded-xl border border-foreground/10 bg-transparent text-[13px] font-bold outline-none focus:border-foreground/30" />
-              <div className="flex gap-1.5 flex-wrap">
-                {HW_TYPES.map(({ value: t, label }) => (
-                  <button key={t} onClick={() => updateItem(item.id, { hw_type: t })}
-                    className={`px-2.5 py-1 rounded-xl text-[11px] font-black border-2 transition-all ${item.hw_type === t ? 'bg-foreground text-background border-foreground' : `${HW_COLORS[t] ?? 'bg-foreground/8 text-foreground/50'} border-transparent`}`}>{label}</button>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[9px] font-black text-accent uppercase tracking-widest block mb-1">배당일</label>
-                  <input type="date" value={item.assigned_at} onChange={e => updateItem(item.id, { assigned_at: e.target.value })}
-                    className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none focus:border-foreground/30" />
-                </div>
-                <div>
-                  <label className="text-[9px] font-black text-accent uppercase tracking-widest block mb-1">과제검사일 (다음 수업일)</label>
-                  <input type="date" value={item.due_date} onChange={e => updateItem(item.id, { due_date: e.target.value })}
-                    className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none focus:border-foreground/30" />
-                </div>
-              </div>
-              {item.hw_type === 'vocab_test' && (
-                <div className="rounded-xl bg-amber-50/60 border border-amber-100 p-3 space-y-2">
-                  <label className="text-[9px] font-black text-amber-700 uppercase tracking-widest block">🎯 단어테스트 설정</label>
-                  <input value={item.test_range} onChange={e => updateItem(item.id, { test_range: e.target.value })}
-                    placeholder="범위 (예: L1-5 동의어)" className="w-full h-9 px-3 rounded-xl border border-amber-200 bg-white text-[12px] outline-none" />
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={item.is_pf} onChange={e => updateItem(item.id, { is_pf: e.target.checked, pass_score: '' })} className="rounded" />
-                    <span className="text-[11px] font-bold text-amber-700">P/F 방식 활성화 (점수 입력 → 자동 합격 판정)</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <input type="number" value={item.max_score} onChange={e => updateItem(item.id, { max_score: e.target.value })}
-                      placeholder="만점" className="flex-1 h-9 px-3 rounded-xl border border-amber-200 bg-white text-[12px] outline-none" />
-                    {item.is_pf && <input type="number" value={item.pass_score} onChange={e => updateItem(item.id, { pass_score: e.target.value })}
-                      placeholder="합격기준점" className="flex-1 h-9 px-3 rounded-xl border border-amber-300 bg-amber-50 text-[12px] outline-none font-bold" />}
-                  </div>
-                </div>
-              )}
             </div>
-          ))}
-          <button onClick={addItem} className="w-full h-10 rounded-2xl border-2 border-dashed border-foreground/15 text-[12px] font-black text-accent hover:border-foreground/30 hover:text-foreground transition-all flex items-center justify-center gap-1.5">
-            <Plus size={13} /> 과제 항목 추가
-          </button>
-          <div className="rounded-2xl border border-foreground/10 bg-foreground/2 p-4">
-            <p className="text-[10px] font-black text-accent uppercase tracking-widest mb-3">📌 배당 학생</p>
+          )}
+
+          {/* 구분선 */}
+          <div className="border-t border-dashed border-slate-200" />
+
+          {/* ── 새 항목 추가 폼 ── */}
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">새 항목 추가</p>
+            <div className="space-y-4">
+              {items.map((item, idx) => (
+                <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase">항목 {idx + 1}</span>
+                    {items.length > 1 && <button onClick={() => removeItem(item.id)} className="ml-auto p-1 text-rose-300 hover:text-rose-500"><X size={12} /></button>}
+                  </div>
+                  <input value={item.title} onChange={e => updateItem(item.id, { title: e.target.value })} placeholder="항목명"
+                    autoFocus={idx === 0}
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-[13px] font-semibold outline-none focus:border-slate-400 text-slate-800" />
+                  {/* 타입 선택 */}
+                  <div className="flex gap-1.5 flex-wrap">
+                    {ALL_HW_TYPES.map(({ value: t, label }) => (
+                      <button key={t} onClick={() => updateItem(item.id, { hw_type: t })}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all ${item.hw_type === t ? (HW_COLORS[t] || 'bg-slate-100 text-slate-700 border-slate-300') : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* 날짜 */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">배당일</label>
+                      <input type="date" value={item.assigned_at} onChange={e => updateItem(item.id, { assigned_at: e.target.value })}
+                        className="w-full h-9 px-3 rounded-xl border border-slate-200 bg-white text-[12px] outline-none focus:border-slate-400" />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">검사일 (다음 수업일)</label>
+                      <input type="date" value={item.due_date} onChange={e => updateItem(item.id, { due_date: e.target.value })}
+                        className="w-full h-9 px-3 rounded-xl border border-slate-200 bg-white text-[12px] outline-none focus:border-slate-400" />
+                    </div>
+                  </div>
+                  {/* 단어테스트 설정 */}
+                  {item.hw_type === 'vocab_test' && (
+                    <div className="rounded-xl bg-rose-50 border border-rose-100 p-3 space-y-2">
+                      <label className="text-[9px] font-black text-rose-600 uppercase tracking-widest block">🎯 단어테스트 설정</label>
+                      <input value={item.test_range} onChange={e => updateItem(item.id, { test_range: e.target.value })}
+                        placeholder="범위 (예: L1-5 동의어)"
+                        className="w-full h-9 px-3 rounded-xl border border-rose-200 bg-white text-[12px] outline-none" />
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={item.is_pf} onChange={e => updateItem(item.id, { is_pf: e.target.checked, pass_score: '' })} className="rounded" />
+                        <span className="text-[11px] font-semibold text-rose-700">P/F 방식 활성화</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <input type="number" value={item.max_score} onChange={e => updateItem(item.id, { max_score: e.target.value })}
+                          placeholder="만점" className="flex-1 h-9 px-3 rounded-xl border border-rose-200 bg-white text-[12px] outline-none" />
+                        {item.is_pf && <input type="number" value={item.pass_score} onChange={e => updateItem(item.id, { pass_score: e.target.value })}
+                          placeholder="합격기준" className="flex-1 h-9 px-3 rounded-xl border border-rose-300 bg-rose-50 text-[12px] outline-none font-bold" />}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              <button onClick={addItem}
+                className="w-full h-10 rounded-xl border-2 border-dashed border-slate-200 text-[12px] font-semibold text-slate-400 hover:border-slate-300 hover:text-slate-500 transition-all flex items-center justify-center gap-1.5">
+                <Plus size={13} /> 항목 추가
+              </button>
+            </div>
+          </div>
+
+          {/* 배당 학생 */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">📌 배당 학생</p>
             <label className="flex items-center gap-2 mb-3 cursor-pointer">
               <input type="checkbox" checked={targetAll} onChange={e => { setTargetAll(e.target.checked); if (e.target.checked) setSelectedStudents([]); }} className="w-4 h-4 rounded" />
-              <span className="text-[13px] font-black text-foreground">전체 학생 ({allStudents.length}명)</span>
+              <span className="text-[13px] font-semibold text-slate-700">전체 학생 ({allStudents.length}명)</span>
             </label>
             {!targetAll && (
-              <div className="space-y-1.5 max-h-[160px] overflow-y-auto custom-scrollbar">
+              <div className="space-y-1.5 max-h-[140px] overflow-y-auto custom-scrollbar">
                 {allStudents.map(s => (
-                  <label key={s.student_name} className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-xl hover:bg-foreground/5">
+                  <label key={s.student_name} className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-xl hover:bg-white">
                     <input type="checkbox" checked={selectedStudents.includes(s.student_name)} onChange={() => toggleStudent(s.student_name)} className="w-4 h-4 rounded" />
-                    <span className="text-[12px] font-bold text-foreground">{s.student_name}</span>
+                    <span className="text-[12px] font-semibold text-slate-700">{s.student_name}</span>
                   </label>
                 ))}
               </div>
             )}
           </div>
         </div>
-        <div className="px-5 py-4 border-t border-foreground/8 flex gap-3 shrink-0">
-          <button onClick={onClose} className="flex-1 h-11 rounded-xl border border-foreground/10 text-[13px] font-black text-accent">취소</button>
+
+        {/* 하단 버튼 */}
+        <div className="px-5 py-4 border-t border-slate-100 flex gap-3 shrink-0">
+          <button onClick={onClose} className="flex-1 h-11 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-500 hover:bg-slate-50">닫기</button>
           <button onClick={handleSave} disabled={items.every(i => !i.title.trim()) || saving}
-            className="flex-1 h-11 rounded-xl bg-foreground text-background text-[13px] font-black hover:-translate-y-0.5 transition-all disabled:opacity-30">
-            {saving ? '저장 중...' : `과제 ${items.filter(i => i.title.trim()).length}개 등록`}
+            className="flex-1 h-11 rounded-xl bg-slate-800 text-white text-[13px] font-black hover:-translate-y-0.5 transition-all disabled:opacity-30">
+            {saving ? '저장 중...' : `${items.filter(i => i.title.trim()).length}개 등록`}
           </button>
         </div>
       </div>
     </div>
   );
 }
-
-
 // ─── 학생 추가 모달 ───────────────────────────────────────────────────────────
 function AddStudentModal({ classId, className, existingNames, onClose, onAdded }: {
   classId: string;
@@ -850,12 +926,17 @@ type TestConfig = { id: string; name: string; range: string; maxScore: string; p
 function mkConfig(n = 1): TestConfig {
   return { id: crypto.randomUUID(), name: n === 1 ? '단어테스트' : '', range: '', maxScore: '', passScore: '', isPF: false };
 }
+const REASON_TO_CODE: Record<string, string> = {
+  '결석': 'absent', '지각': 'late', '미응시': 'unattempted', '미암기재시': 'unmemorized_retry',
+  '구두재시후귀가': 'verbal_retest', '재응시후귀가': 'verbal_retest', '추후재응시': 'fail_retry',
+  '지각결석미응시': 'unattempted',
+};
 function mkEntryFromCheck(chk: HomeworkCheck | undefined, slot: HomeworkSlot): TestEntry {
   if (!chk) return { included: true, score: '', resultCode: '', retryDate: '', pfResult: '' };
   return {
     included: chk.status !== 'skipped',
     score: chk.score != null ? String(chk.score) : '',
-    resultCode: chk.delay_reason || (chk.status === 'skipped' ? 'absent' : ''),
+    resultCode: REASON_TO_CODE[chk.delay_reason || ''] || (chk.status === 'skipped' ? 'absent' : ''),
     retryDate: chk.rollover_date || '',
     pfResult: slot.is_pf ? (chk.is_pass === true ? 'pass' : chk.is_pass === false ? 'fail' : '') : '',
   };
@@ -897,6 +978,7 @@ function TestSessionModal({ session, students, existingSlots, existingChecks, on
   const [activeTest, setActiveTest] = useState(0);
   const [allEntries, setAllEntries] = useState<Record<number, Record<string, TestEntry>>>(() => initEntries(initConfigs()));
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [deletingSlot, setDeletingSlot] = useState<string | null>(null);
 
   const entries = allEntries[activeTest] || {};
@@ -956,6 +1038,18 @@ function TestSessionModal({ session, students, existingSlots, existingChecks, on
       for (let ti = 0; ti < tests.length; ti++) {
         const c = tests[ti];
         const ents = allEntries[ti] || {};
+        const allExcluded = students.every(s => !ents[s.student_name]?.included);
+
+        // 모두 해제된 경우: 슬롯 + 코스 삭제
+        if (allExcluded && c.existingSlotId) {
+          const { supabase } = await import('@/lib/supabase');
+          await (supabase as any).from('homework_checks').delete().eq('slot_id', c.existingSlotId);
+          await (supabase as any).from('homework_slots').delete().eq('id', c.existingSlotId);
+          onSlotDeleted?.(c.existingSlotId);
+          continue;
+        }
+        if (allExcluded) continue; // 신규 슬롯이었는데 모두 해제면 그냥 스킵
+
         let slot: HomeworkSlot;
         if (c.existingSlotId) {
           const { supabase } = await import('@/lib/supabase');
@@ -1003,7 +1097,8 @@ function TestSessionModal({ session, students, existingSlots, existingChecks, on
         }));
         onSaved(slot, newChecks);
       }
-      onClose();
+      setSaveSuccess(true);
+      setTimeout(() => { setSaveSuccess(false); onClose(); }, 900);
     } catch (err) { alert((err as Error).message); }
     finally { setSaving(false); }
   };
@@ -1039,6 +1134,8 @@ function TestSessionModal({ session, students, existingSlots, existingChecks, on
           <div className="flex items-center gap-3">
             {avg != null && <span className="text-[12px] font-bold px-3 py-1.5 rounded-full" style={{ background: '#eef2ff', color: '#4338ca' }}>평균 {avg}점</span>}
             {cfg?.isPF && passCount != null && <span className="text-[12px] font-bold px-3 py-1.5 rounded-full" style={{ background: '#f0fdf4', color: '#15803d' }}>합격 {passCount}명</span>}
+            <button onClick={() => setAllEntries(prev => ({ ...prev, [activeTest]: Object.fromEntries(Object.keys(prev[activeTest] || {}).map(n => [n, { ...prev[activeTest][n], included: false }])) }))}
+              className="text-[11px] font-bold px-3 py-1.5 rounded-lg" style={{ background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' }}>전체해제</button>
             <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#f1f5f9', color: '#64748b' }}><X size={15} /></button>
           </div>
         </div>
@@ -1122,15 +1219,15 @@ function TestSessionModal({ session, students, existingSlots, existingChecks, on
             const nonPfIsPass = !cfg?.isPF && scoreNum !== null && passNum !== null && scoreNum >= passNum;
             const isAbsent = isManualAbsent;
 
-            // 배경색: PASS=초록, FAIL=빨강, 결석=노랑, 기본=흰
+            // 배경색: PASS=초록, FAIL=빨강, 결석=슬레이트, 기본=흰
             const rowBg = !e.included ? '#f8fafc'
               : (autoIsPass || nonPfIsPass) ? '#f0fdf4'
               : (autoIsFail || nonPfIsFail) ? '#fef2f2'
-              : isAbsent ? '#fffbeb' : '#fff';
+              : isAbsent ? '#f8fafc' : '#fff';
             const rowBorder = !e.included ? '1.5px solid #f1f5f9'
               : (autoIsPass || nonPfIsPass) ? '1.5px solid #bbf7d0'
               : (autoIsFail || nonPfIsFail) ? '1.5px solid #fecaca'
-              : isAbsent ? '1.5px solid #fde68a' : '1.5px solid #f1f5f9';
+              : isAbsent ? '1.5px solid #cbd5e1' : '1.5px solid #f1f5f9';
 
             // 득점 퍼센티지
             const pct = scoreNum !== null && maxNum ? Math.round(scoreNum / maxNum * 100) : null;
@@ -1149,9 +1246,9 @@ function TestSessionModal({ session, students, existingSlots, existingChecks, on
                 {/* 학생명 + 부가정보 */}
                 <div>
                   <p className="text-[13px] font-black truncate" style={{ color: e.included ? '#1e293b' : '#94a3b8' }}>{stu.student_name}</p>
-                  {e.included && (autoIsPass || nonPfIsPass) && <p className="text-[10px] font-black" style={{ color: '#15803d' }}>✅ PASS {pct != null ? `· ${pct}%` : ''}</p>}
-                  {e.included && (autoIsFail || nonPfIsFail) && <p className="text-[10px] font-black" style={{ color: '#dc2626' }}>❌ FAIL {pct != null ? `· ${pct}%` : ''}</p>}
-                  {e.included && !cfg?.isPF && rank != null && !nonPfIsFail && !nonPfIsPass && <p className="text-[10px] font-bold" style={{ color: '#6366f1' }}>#{rank} · {pct}%</p>}
+                  {e.included && (autoIsPass || nonPfIsPass) && <p className="text-[10px] font-black" style={{ color: '#15803d' }}>✅ PASS {pct != null ? ` · ${pct}%` : ''}{rank != null ? ` · ${rank}등` : ''}</p>}
+                  {e.included && (autoIsFail || nonPfIsFail) && <p className="text-[10px] font-black" style={{ color: '#dc2626' }}>❌ FAIL {pct != null ? ` · ${pct}%` : ''}{rank != null ? ` · ${rank}등` : ''}</p>}
+                  {e.included && !cfg?.isPF && scoreNum !== null && !autoIsPass && !autoIsFail && !nonPfIsPass && !nonPfIsFail && pct != null && <p className="text-[10px] font-bold" style={{ color: '#6366f1' }}>{pct}%{rank != null ? ` · ${rank}등` : ''}{avg != null ? ` · 평균${avg}` : ''}</p>}
                 </div>
 
                 {/* 점수 입력 — P/F 모드에서도 항상 표시 */}
@@ -1209,7 +1306,7 @@ function TestSessionModal({ session, students, existingSlots, existingChecks, on
                       <select value={e.resultCode}
                         onChange={ev => upd(stu.student_name, { resultCode: ev.target.value, score: '' })}
                         className="w-full h-9 px-2 rounded-xl text-[11px] font-bold outline-none cursor-pointer"
-                        style={{ background: '#fffbeb', border: '1.5px solid #fde68a', color: '#92400e' }}>
+                        style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', color: '#475569' }}>
                         <option value="">— 정상응시</option>
                         <option value="absent">결석 (추후재응시)</option>
                         <option value="late">지각 (추후재응시)</option>
@@ -1235,10 +1332,10 @@ function TestSessionModal({ session, students, existingSlots, existingChecks, on
         {/* 저장 */}
         <div className="px-5 py-4 flex gap-3 shrink-0" style={{ borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
           <button onClick={onClose} className="flex-1 h-11 rounded-xl text-[13px] font-black" style={{ border: '1.5px solid #e2e8f0', color: '#64748b' }}>닫기</button>
-          <button onClick={handleSave} disabled={saving}
-            className="h-11 px-8 rounded-xl text-[13px] font-black disabled:opacity-30 transition-all"
-            style={{ background: 'linear-gradient(135deg,#6366f1,#4338ca)', color: '#fff', flex: 2 }}>
-            {saving ? '저장 중...' : `💾 저장 (${tests.length}개)`}
+          <button onClick={handleSave} disabled={saving || saveSuccess}
+            className="h-11 px-8 rounded-xl text-[13px] font-black transition-all"
+            style={{ background: saveSuccess ? '#16a34a' : 'linear-gradient(135deg,#6366f1,#4338ca)', color: '#fff', flex: 2, opacity: saving ? 0.6 : 1 }}>
+            {saveSuccess ? '✅ 저장 완료!' : saving ? '저장 중...' : `💾 저장 (${tests.length}개)`}
           </button>
         </div>
       </div>
@@ -1483,6 +1580,31 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   const [attDetailModal, setAttDetailModal] = useState<{ status: AttendanceStatus; lateTime?: string; reason?: string; makeupType?: string; makeupDate?: string } | null>(null);
   // 과제 완료 모달: 등원 후 완료 / 완료 후 등원
   const [hwCompleteModal, setHwCompleteModal] = useState<{ slotId: string; studentName: string; slotTitle: string; existingCheck: HomeworkCheck | null } | null>(null);
+  // 휴강 사유 모달
+  const [cancelReasonModal, setCancelReasonModal] = useState<WeekColumn | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  // 수업일자 추가
+  const [extraDates, setExtraDates] = useState<string[]>([]);
+  const [extraDateInput, setExtraDateInput] = useState('');
+  const [showExtraDatePicker, setShowExtraDatePicker] = useState(false);
+
+  // 추가 수업일자를 WeekColumn으로 변환하여 기존 컬럼에 merge
+  const DAY_NAMES_KO = ['일','월','화','수','목','금','토'];
+  const allCols: WeekColumn[] = weekData ? (() => {
+    const extra = extraDates
+      .filter(d => !weekData.columns.some(c => c.date === d))
+      .map(d => ({
+        date: d, dayName: DAY_NAMES_KO[new Date(d).getDay()],
+        time: '', end_time: '', is_clinic: false, is_extra: true, session: null,
+      } as WeekColumn));
+    return [...weekData.columns, ...extra].sort((a, b) => a.date.localeCompare(b.date));
+  })() : [];
+  const _nCancelled = allCols.filter(c => c.session?.session_type === 'cancelled').length;
+  const _nActive = allCols.length - _nCancelled;
+  const _totalW = _nActive * 2 + _nCancelled;
+  const _unit = _totalW > 0 ? parseFloat(((100 - 7) / _totalW).toFixed(2)) : 15;
+  const colWidthActive = (_unit * 2).toFixed(1) + '%';
+  const colWidthCancelled = _unit.toFixed(1) + '%';
 
   // ── 초기 로드 ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1693,6 +1815,28 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
               className="flex items-center gap-1.5 h-8 px-3 rounded-xl border border-foreground/10 text-[11px] font-black text-accent hover:text-foreground hover:border-foreground/30 transition-all">
               <Users size={12} /> {students.length}명
             </button>
+            {tab === 'weekly' && (
+              <button
+                onClick={async () => {
+                  if (!weekData) return;
+                  const sessionIds = weekData.columns.map(c => c.session?.id).filter(Boolean) as string[];
+                  const saveBtn = document.getElementById('weekly-save-btn');
+                  if (saveBtn) { saveBtn.textContent = '저장 중...'; (saveBtn as HTMLButtonElement).disabled = true; }
+                  try {
+                    await Promise.all(sessionIds.map(sid => {
+                      const note = weekData.lessonNotes[sid];
+                      if (note != null) return upsertLessonNote(sid, note);
+                    }));
+                    if (saveBtn) { saveBtn.textContent = '✓ 저장됨'; (saveBtn as HTMLButtonElement).style.background = '#16a34a'; }
+                    setTimeout(() => { if (saveBtn) { saveBtn.textContent = '💾 저장'; (saveBtn as HTMLButtonElement).style.background = ''; (saveBtn as HTMLButtonElement).disabled = false; } }, 1500);
+                  } catch (e) { alert((e as Error).message); if (saveBtn) { saveBtn.textContent = '💾 저장'; (saveBtn as HTMLButtonElement).disabled = false; } }
+                }}
+                id="weekly-save-btn"
+                className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-[11px] font-black text-white transition-all"
+                style={{ background: '#6366f1' }}>
+                💾 저장
+              </button>
+            )}
           </div>
         </div>
 
@@ -1731,6 +1875,39 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                 className="h-8 px-3 rounded-xl border border-foreground/10 text-[11px] font-black text-accent hover:text-foreground transition-all">
                 이번 주
               </button>
+              {/* 수업일자 추가 */}
+              <div className="relative">
+                <button onClick={() => setShowExtraDatePicker(p => !p)}
+                  className="flex items-center gap-1 h-8 px-3 rounded-xl border border-violet-200 bg-violet-50 text-[11px] font-black text-violet-600 hover:bg-violet-100 transition-all">
+                  <Plus size={11} /> 수업일자 추가
+                </button>
+                {showExtraDatePicker && (
+                  <div className="absolute right-0 top-10 z-50 bg-white rounded-xl border border-slate-200 shadow-xl p-3 flex flex-col gap-2 min-w-[200px]">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">추가 수업일 선택</p>
+                    <input type="date" value={extraDateInput} onChange={e => setExtraDateInput(e.target.value)}
+                      className="h-9 px-3 rounded-lg border border-slate-200 text-[13px] font-semibold outline-none focus:border-violet-400 w-full" />
+                    <button onClick={() => {
+                      if (!extraDateInput) return;
+                      if (extraDates.includes(extraDateInput)) { setShowExtraDatePicker(false); return; }
+                      setExtraDates(prev => [...prev, extraDateInput]);
+                      setExtraDateInput('');
+                      setShowExtraDatePicker(false);
+                    }} className="h-8 rounded-lg bg-violet-600 text-white text-[12px] font-black hover:bg-violet-700 transition-all">
+                      추가
+                    </button>
+                    {extraDates.length > 0 && (
+                      <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                        {extraDates.map(d => (
+                          <div key={d} className="flex items-center justify-between text-[11px] text-slate-600 px-1">
+                            <span>{d}</span>
+                            <button onClick={() => setExtraDates(prev => prev.filter(x => x !== d))} className="text-rose-400 hover:text-rose-600"><X size={11}/></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <button onClick={() => setWeekStart(d => addDays(d, 7))}
                 className="flex items-center gap-1 h-8 px-3 rounded-xl border border-foreground/10 text-[12px] font-black text-accent hover:text-foreground hover:border-foreground/30 transition-all">
                 다음 주 <ChevronRight size={14} />
@@ -1752,34 +1929,48 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
           ) : (
             /* ── 주간 그리드 ── */
             <div className="flex-1 overflow-auto custom-scrollbar apple-table" style={{background: '#f8fafc'}}>
-              <table className="min-w-full border-separate border-spacing-0">
+              <table className="w-full border-separate border-spacing-0" style={{tableLayout:'fixed'}}>
+                <colgroup>
+                  <col style={{width: '7%'}} />
+                  {allCols.map(col => (
+                    <col key={col.date} style={{width: col.session?.session_type === 'cancelled' ? colWidthCancelled : colWidthActive}} />
+                  ))}
+                </colgroup>
                 <thead className="sticky top-0 z-20" style={{background: '#f8fafc'}}>
                   <tr>
                     {/* 학생 컬럼 헤더 */}
-                    <th className="sticky left-0 z-30 border-b border-r px-1.5 py-2 text-left min-w-[60px] max-w-[70px]" style={{background: '#f8fafc', borderColor: '#e2e8f0'}}>
+                    <th className="sticky left-0 z-30 border-b border-r px-1.5 py-2 text-left" style={{background: '#f8fafc', borderColor: '#e2e8f0', width:'80px', minWidth:'80px', maxWidth:'80px'}}>
                       <p style={{fontSize:'10px',fontWeight:500,color:'#86868b',letterSpacing:'0.04em',textTransform:'uppercase'}}>학생</p>
                       <p style={{fontSize:'10px',color:'#aeaeb2'}}>{students.length}명</p>
                     </th>
                     {/* 날짜별 컬럼 헤더 */}
-                    {weekData.columns.map(col => {
+                    {allCols.map(col => {
                       const today = isToday(col.date);
-                      const hasSes = !!col.session;
+                      const isCancelled = col.session?.session_type === 'cancelled';
+                      const hasSes = !!col.session && !isCancelled;
                       const colColor = col.is_clinic ? 'text-teal-600' : c.text;
                       return (
                         <th key={col.date}
-                          className="border-b border-r px-2 py-2 min-w-[140px]" style={{background: today ? '#eef2ff' : '#f8fafc', borderColor: '#e2e8f0'}}>
+                          className="border-b border-r px-2 py-2" style={{background: isCancelled ? '#fff1f2' : today ? '#eef2ff' : '#f8fafc', borderColor: '#e2e8f0'}}>
                           {/* 날짜 제목 */}
                           <div className="flex flex-col items-center mb-1.5">
-                            <p className={`col-date flex items-center gap-1 ${today ? colColor : ''}`}
-                              style={{color: today ? undefined : '#1d1d1f'}}>
+                            <p className={`col-date flex items-center gap-1 ${today && !isCancelled ? colColor : ''}`}
+                              style={{color: isCancelled ? '#f87171' : today ? undefined : '#1d1d1f'}}>
                               {col.dayName} {col.date.slice(5).replace('-', '/')}
                               {col.is_clinic && <span style={{fontSize:'9px',background:'#ccfbf1',color:'#0f766e',padding:'1px 5px',borderRadius:'4px',fontWeight:500}}>클리닉</span>}
-                              {today && <span style={{fontSize:'9px',background:'#0071e3',color:'#fff',padding:'1px 5px',borderRadius:'4px',fontWeight:500}}>오늘</span>}
+                              {today && !isCancelled && <span style={{fontSize:'9px',background:'#0071e3',color:'#fff',padding:'1px 5px',borderRadius:'4px',fontWeight:500}}>오늘</span>}
+                              {isCancelled && <span style={{fontSize:'9px',background:'#fecdd3',color:'#be123c',padding:'1px 5px',borderRadius:'4px',fontWeight:700}}>휴강</span>}
                             </p>
                             <p className="col-time">{col.time}{col.end_time ? ` ~ ${col.end_time}` : ''}</p>
                           </div>
                           {/* 세션 액션 버튼들 */}
-                          {hasSes ? (
+                          {isCancelled ? (
+                            <div className="flex flex-col items-center gap-1">
+                              {col.session?.note && <p style={{fontSize:'10px',color:'#f87171',textAlign:'center',padding:'2px 4px'}}>{col.session.note}</p>}
+                              <button onClick={async () => { await deleteSession(col.session!.id); setWeekData(prev => prev ? { ...prev, columns: prev.columns.map(cc => cc.date === col.date ? { ...cc, session: null } : cc) } : null); }}
+                                className="h-6 px-2 text-rose-400 border border-rose-200 rounded-lg text-[10px] font-semibold hover:bg-rose-50 transition-all">휴강 취소</button>
+                            </div>
+                          ) : hasSes ? (
                             <div className="flex gap-1 flex-wrap justify-center">
                               <button onClick={() => setAttBoardModal(col)}
                                 className="flex items-center gap-1 h-6 px-2 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-[10px] font-semibold hover:bg-slate-200 transition-all">
@@ -1804,7 +1995,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                 className="h-7 px-3 bg-indigo-500 text-white rounded-lg text-[11px] font-semibold hover:bg-indigo-600 transition-all shadow-sm">
                                 수업 시작
                               </button>
-                              <button onClick={() => handleCreateSession(col, true)}
+                              <button onClick={() => setCancelReasonModal(col)}
                                 className="h-7 px-3 bg-rose-100 text-rose-500 border border-rose-200 rounded-lg text-[11px] font-semibold hover:bg-rose-200 transition-all">
                                 휴강
                               </button>
@@ -1833,7 +2024,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         <td className="sticky left-0 border-b border-r px-1.5 py-1.5 z-10" style={{ background: '#eef2ff', borderColor: '#e2e8f0' }}>
                           <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">📝 수업내용</p>
                         </td>
-                        {weekData.columns.map(col => (
+                        {allCols.map(col => (
                           <td key={col.date} className="border-b border-r px-1.5 py-1.5 align-top" style={{ background: '#eef2ff', borderColor: '#e2e8f0', minWidth: '140px' }}>
                             {col.session ? (
                               <textarea
@@ -1856,8 +2047,8 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                       {students.map((stu, si) => (
                         <tr key={stu.student_name} className={si % 2 === 0 ? '' : 'bg-foreground/1.5'}>
                       {/* 학생 이름 셀 */}
-                      <td className="sticky left-0 border-b border-r px-2 py-2 z-10 min-w-[72px] max-w-[90px]"
-                        style={{ background: si % 2 === 0 ? '#ffffff' : '#f8fafc', borderColor: '#e2e8f0' }}>
+                      <td className="sticky left-0 border-b border-r px-2 py-2 z-10"
+                        style={{ background: si % 2 === 0 ? '#ffffff' : '#f8fafc', borderColor: '#e2e8f0', width:'80px', minWidth:'80px', maxWidth:'80px' }}>
                         <div className="flex items-center justify-between group">
                           <p className="cell-name leading-tight truncate">{stu.student_name}</p>
                           <button onClick={() => setRemoveConfirm(stu.student_name)}
@@ -1868,7 +2059,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                       </td>
 
                       {/* 날짜별 셀 */}
-                      {weekData.columns.map(col => {
+                      {allCols.map(col => {
                         const att = col.session ? weekData.attMap[col.date]?.[stu.student_name] : undefined;
                         // 이 날 수업의 슬롯 (테스트용)
                         const sessionSlots = col.session ? (weekData.slots[col.session.id] || []) : [];
@@ -1883,13 +2074,17 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         const checkSlots = allWeekSlots.filter(s => {
                           const assigned = weekData.slotStudents[s.id];
                           const isForMe = !assigned || assigned.length === 0 || assigned.includes(stu.student_name);
-                          return isForMe && s.due_date === col.date && s.hw_type !== 'vocab_test' && s.hw_type !== 'test_prep';
+                          return isForMe && s.due_date === col.date;
                         });
+
+                        const isCancelledCell = col.session?.session_type === 'cancelled';
 
                         return (
                         <td key={col.date}
-                          className="border-b border-r align-top" style={{borderColor: '#e2e8f0', background: isToday(col.date) ? '#eef2ff' : (si % 2 === 0 ? '#ffffff' : '#f8fafc')}}>
-                          {col.session ? (
+                          className="border-b border-r align-top" style={{borderColor: '#e2e8f0', background: isCancelledCell ? '#fff5f5' : isToday(col.date) ? '#eef2ff' : (si % 2 === 0 ? '#ffffff' : '#f8fafc')}}>
+                          {isCancelledCell ? (
+                            <div className="text-center text-[10px] text-rose-300 py-3">휴강</div>
+                          ) : col.session ? (
                             <div className="flex min-w-[160px]">
 
                               {/* 왼쪽: 출결 + 태도 */}
@@ -1947,6 +2142,19 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                   const isDonePartial = chk?.status === 'done_partial';
                                   const isDelayed = chk?.status === 'delayed';
                                   const isAnyDone = isDone || isDonePartial;
+
+                                  // vocab_test / test_prep → 비클릭 표시 배지 (점검사항 없음)
+                                  if (slot.hw_type === 'vocab_test' || slot.hw_type === 'test_prep') {
+                                    return (
+                                      <div key={slot.id}
+                                        style={{fontSize:'10px',padding:'2px 6px',borderRadius:'6px',background: slot.hw_type==='vocab_test'?'#fff1f2':'#fffbeb', border:`1px solid ${slot.hw_type==='vocab_test'?'#fecdd3':'#fde68a'}`, color: slot.hw_type==='vocab_test'?'#be123c':'#92400e', lineHeight:'1.4', wordBreak:'break-all'}}
+                                        title={slot.hw_type==='vocab_test'?'단어테스트 (점검없음)':'테스트준비 (점검없음)'}>
+                                        {slot.hw_type==='vocab_test'?'🎯':'📖'} {slot.title}
+                                        <span style={{marginLeft:'4px',opacity:0.5,fontStyle:'italic'}}>·점검없음</span>
+                                      </div>
+                                    );
+                                  }
+
                                   return (
                                     <div key={slot.id} className="flex items-center gap-0.5">
                                       <button
@@ -1958,7 +2166,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                             setHwCompleteModal({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk||null });
                                           }
                                         }}
-                                        className={`hw-item flex-1 text-left truncate ${
+                                        className={`hw-item flex-1 text-left break-words whitespace-normal ${
                                           isDone        ? 'done'    :
                                           isDonePartial ? 'partial' :
                                           isDelayed     ? 'delayed' : ''
@@ -1980,6 +2188,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                     </div>
                                   );
                                 })}
+
 
                                 {/* 이월과제: 완료해도 줄긋기로 유지 */}
                                 {(weekData.rolloverChecks[col.date]||[]).filter(rc=>rc.student_name===stu.student_name).map(rc=>{
@@ -2005,44 +2214,6 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                   );
                                 })}
 
-                                {/* 테스트 - 세부 정보 표시 */}
-                                {myTests.map(slot=>{
-                                  const chk=weekData.checks[slot.id]?.[stu.student_name];
-                                  const pct = chk?.score != null && slot.max_score ? Math.round(chk.score/slot.max_score*100) : null;
-                                  return(
-                                    <div key={slot.id} className="mt-0.5">
-                                      <div className={`px-1.5 py-1 rounded-lg border text-[11px] ${
-                                        chk?.score!=null||chk?.is_pass!=null ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-200'
-                                      }`}>
-                                        <div className="flex items-center justify-between">
-                                          <span style={{fontWeight:500,color:'#3730a3',fontSize:'11px'}}>테스트</span>
-                                          <button onClick={()=>setTestResultPopup({slot,studentName:stu.student_name,existingCheck:chk||null})}
-                                            style={{fontSize:'10px',color:'#6366f1',padding:'0 4px',borderRadius:'4px',background:'#eef2ff'}}>✎</button>
-                                        </div>
-                                        <div style={{fontSize:'11px',color:'#1e1b4b',marginTop:'2px',fontWeight:400}}>{slot.title}</div>
-                                        {(chk?.score!=null || chk?.is_pass!=null) && (
-                                          <div style={{display:'flex',gap:'6px',alignItems:'center',marginTop:'3px',flexWrap:'wrap'}}>
-                                            {chk.score!=null && (
-                                              <span style={{fontSize:'13px',fontWeight:500,color:'#4338ca'}}>
-                                                {chk.score}{slot.max_score ? `/${slot.max_score}` : ''}
-                                              </span>
-                                            )}
-                                            {pct!=null && <span style={{fontSize:'10px',color:'#6366f1'}}>({pct}%)</span>}
-                                            {slot.is_pf && chk.is_pass!=null && (
-                                              <span style={{fontSize:'10px',fontWeight:600,padding:'1px 6px',borderRadius:'4px',
-                                                background: chk.is_pass ? '#dcfce7' : '#fee2e2',
-                                                color: chk.is_pass ? '#166534' : '#991b1b'
-                                              }}>
-                                                {chk.is_pass ? 'PASS' : 'FAIL'}
-                                              </span>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              {/* 테스트 영역은 오른쪽에 별도 렌더링 - 여기서는 안 듸 */}
                               </div>
                               {/* 오른쪽 30%: 테스트 영역 */}
                               <div className="border-l border-slate-100 py-1 px-1 space-y-1"
@@ -2063,7 +2234,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                         borderColor: chk?.score!=null||chk?.is_pass!=null ? '#c7d2fe' : '#fde68a',
                                         background: chk?.score!=null||chk?.is_pass!=null ? '#eef2ff' : '#fffbeb',
                                       }}>
-                                      <div style={{fontSize:'9px',fontWeight:500,color:'#6366f1',marginBottom:'1px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{slot.title}</div>
+                                      <div style={{fontSize:'9px',fontWeight:500,color:'#6366f1',marginBottom:'1px',wordBreak:'break-word'}}>{slot.title}</div>
                                       {chk?.score!=null && (
                                         <div style={{fontSize:'12px',fontWeight:400,color:'#3730a3',letterSpacing:'-0.02em'}}>
                                           {chk.score}{slot.max_score?`/${slot.max_score}`:''}
@@ -2085,9 +2256,38 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                 })}
                               </div>
                             </div>
-                          ) : (
-                            <div className="text-center text-[10px] text-slate-200 py-2 min-w-[100px]">—</div>
-                          )}
+                          ) : (() => {
+                            // 세션 없어도 검사일(due_date)이 이 날인 과제는 표시
+                            const dueSlotsNoSession = allWeekSlots.filter(s => {
+                              const assigned = weekData.slotStudents[s.id];
+                              const isForMe = !assigned || assigned.length === 0 || assigned.includes(stu.student_name);
+                              return isForMe && s.due_date === col.date;
+                            });
+                            if (dueSlotsNoSession.length === 0) return <div className="text-center text-[10px] text-slate-200 py-2 min-w-[100px]">—</div>;
+                            return (
+                              <div className="py-1 px-2 min-w-[100px] space-y-0.5">
+                                {dueSlotsNoSession.map(slot => {
+                                  const chk = weekData.checks[slot.id]?.[stu.student_name];
+                                  const isDone = chk?.status === 'done' || chk?.status === 'done_partial';
+                                  return (
+                                    <button key={slot.id}
+                                      onClick={() => {
+                                        if (isDone) {
+                                          upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: 'pending' });
+                                          setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id]||{}), [stu.student_name]: { ...(chk||{}), slot_id: slot.id, student_name: stu.student_name, status: 'pending' } as HomeworkCheck } } } : prev);
+                                        } else {
+                                          setHwCompleteModal({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk||null });
+                                        }
+                                      }}
+                                      className={`hw-item w-full text-left break-words whitespace-normal ${ isDone ? 'done' : '' }`}>
+                                      {isDone ? <span className="line-through">{slot.title}</span> : slot.title}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                          
 
                         </td>
                         );
@@ -2100,7 +2300,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                     <td className="sticky left-0 border-t border-b border-r px-4 py-2 z-10" style={{background: '#f1f5f9', borderColor: '#e2e8f0'}}>
                       <p className="text-[9px] font-black text-accent uppercase tracking-widest">📋 수업내역</p>
                     </td>
-                    {weekData.columns.map(col => {
+                    {allCols.map(col => {
                       const sessionNote = col.session ? (weekData.lessonNotes[col.session.id] || '') : '';
                       const slots = col.session ? (weekData.slots[col.session.id] || []) : [];
                       return (
@@ -2109,7 +2309,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                             <div className="space-y-1.5 min-w-[150px]">
                               {/* 과제 목록 통합 박스 */}
                               {(() => {
-                                const allSlots = slots.filter(s => s.hw_type !== 'test_prep' && s.hw_type !== 'vocab_test');
+                                const allSlots = slots;
                                 const globalSlots = allSlots.filter(s => (weekData.slotStudents[s.id] || []).length === 0);
                                 const indivSlots = allSlots.filter(s => (weekData.slotStudents[s.id] || []).length > 0);
                                 if (allSlots.length === 0) return null;
@@ -2126,7 +2326,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                               {slot.due_date && <span className="text-slate-400 ml-1">{slot.due_date.slice(5).replace('-','/')}</span>}
                                             </p>
                                             <button onClick={async () => {
-                                              if (!confirm(`"${slot.title}" 삭제?`)) return;
+                                              if (!confirm(`"${slot.title}" 과제를 삭제하시겠습니까?`)) return;
                                               await deleteHomeworkSlot(slot.id);
                                               setWeekData(prev => prev && col.session ? { ...prev, slots: { ...prev.slots, [col.session!.id]: (prev.slots[col.session!.id] || []).filter(s => s.id !== slot.id) } } : prev);
                                             }} className="p-0.5 text-slate-300 hover:text-rose-400 transition-colors shrink-0"><X size={8} /></button>
@@ -2145,7 +2345,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                               <span className="text-[8px] text-violet-400 ml-1">({(weekData.slotStudents[slot.id] || []).join(', ')})</span>
                                             </p>
                                             <button onClick={async () => {
-                                              if (!confirm(`"${slot.title}" 삭제?`)) return;
+                                              if (!confirm(`"${slot.title}" 과제를 삭제하시겠습니까?`)) return;
                                               await deleteHomeworkSlot(slot.id);
                                               setWeekData(prev => prev && col.session ? { ...prev, slots: { ...prev.slots, [col.session!.id]: (prev.slots[col.session!.id] || []).filter(s => s.id !== slot.id) } } : prev);
                                             }} className="p-0.5 text-slate-300 hover:text-rose-400 transition-colors shrink-0"><X size={8} /></button>
@@ -2319,6 +2519,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
         <AddHomeworkModal
           session={addHwModal.session}
           allStudents={students}
+          existingSlots={weekData?.slots[addHwModal.session.id] || []}
           onClose={() => setAddHwModal(null)}
           onAdded={slots => {
             setWeekData(prev => {
@@ -2326,7 +2527,14 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
               const sid = addHwModal.session.id;
               return { ...prev, slots: { ...prev.slots, [sid]: [...(prev.slots[sid] || []), ...slots] } };
             });
-            setAddHwModal(null);
+            // 모달은 닫지 않고 유지 (추가 확인 가능)
+          }}
+          onDeleted={slotId => {
+            setWeekData(prev => {
+              if (!prev || !addHwModal.session) return prev;
+              const sid = addHwModal.session.id;
+              return { ...prev, slots: { ...prev.slots, [sid]: (prev.slots[sid] || []).filter(s => s.id !== slotId) } };
+            });
           }}
         />
       )}
@@ -2439,29 +2647,86 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
               <p className="text-[11px] text-slate-400 mt-0.5">{hwCompleteModal.studentName} · 완료 방식 선택</p>
             </div>
             <div className="p-4 space-y-2">
-              <button onClick={async()=>{
-                await upsertHomeworkCheck({slot_id:hwCompleteModal.slotId,student_name:hwCompleteModal.studentName,status:'done'});
-                setWeekData(prev=>prev?{...prev,checks:{...prev.checks,[hwCompleteModal.slotId]:{...(prev.checks[hwCompleteModal.slotId]||{}),[hwCompleteModal.studentName]:{...(hwCompleteModal.existingCheck||{}),slot_id:hwCompleteModal.slotId,student_name:hwCompleteModal.studentName,status:'done'} as HomeworkCheck}}}:prev);
-                setHwCompleteModal(null);
-              }} className="w-full py-3 rounded-xl bg-emerald-500 text-white text-[13px] font-bold hover:bg-emerald-600 transition-all">
+              <button type="button" onClick={async(e)=>{
+                e.stopPropagation();
+                try {
+                  await upsertHomeworkCheck({slot_id:hwCompleteModal.slotId,student_name:hwCompleteModal.studentName,status:'done'});
+                  setWeekData(prev=>prev?{...prev,checks:{...prev.checks,[hwCompleteModal.slotId]:{...(prev.checks[hwCompleteModal.slotId]||{}),[hwCompleteModal.studentName]:{...(hwCompleteModal.existingCheck||{}),slot_id:hwCompleteModal.slotId,student_name:hwCompleteModal.studentName,status:'done'} as HomeworkCheck}}}:prev);
+                  setHwCompleteModal(null);
+                } catch(err) { alert('저장 실패: ' + (err as Error).message); }
+              }} className="w-full py-3 rounded-xl bg-emerald-500 text-white text-[13px] font-bold hover:bg-emerald-600 active:scale-95 transition-all">
                 ✅ 등원 후 완료
               </button>
-              <button onClick={async()=>{
-                await upsertHomeworkCheck({slot_id:hwCompleteModal.slotId,student_name:hwCompleteModal.studentName,status:'done_partial'});
-                setWeekData(prev=>prev?{...prev,checks:{...prev.checks,[hwCompleteModal.slotId]:{...(prev.checks[hwCompleteModal.slotId]||{}),[hwCompleteModal.studentName]:{...(hwCompleteModal.existingCheck||{}),slot_id:hwCompleteModal.slotId,student_name:hwCompleteModal.studentName,status:'done_partial'} as HomeworkCheck}}}:prev);
-                setHwCompleteModal(null);
-              }} className="w-full py-3 rounded-xl bg-sky-500 text-white text-[13px] font-bold hover:bg-sky-600 transition-all">
+              <button type="button" onClick={async(e)=>{
+                e.stopPropagation();
+                try {
+                  await upsertHomeworkCheck({slot_id:hwCompleteModal.slotId,student_name:hwCompleteModal.studentName,status:'done_partial'});
+                  setWeekData(prev=>prev?{...prev,checks:{...prev.checks,[hwCompleteModal.slotId]:{...(prev.checks[hwCompleteModal.slotId]||{}),[hwCompleteModal.studentName]:{...(hwCompleteModal.existingCheck||{}),slot_id:hwCompleteModal.slotId,student_name:hwCompleteModal.studentName,status:'done_partial'} as HomeworkCheck}}}:prev);
+                  setHwCompleteModal(null);
+                } catch(err) { alert('저장 실패: ' + (err as Error).message); }
+              }} className="w-full py-3 rounded-xl bg-sky-500 text-white text-[13px] font-bold hover:bg-sky-600 active:scale-95 transition-all">
                 📋 완료 후 등원
               </button>
             </div>
             <div className="px-4 pb-4">
-              <button onClick={()=>setHwCompleteModal(null)}
+              <button type="button" onClick={()=>setHwCompleteModal(null)}
                 className="w-full py-2 rounded-xl border border-slate-200 text-[12px] text-slate-400 hover:bg-slate-50">취소</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── 휴강 사유 모달 ──────────────────────────────────────────────────────── */}
+      {cancelReasonModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[400] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <p className="text-[15px] font-black text-slate-800">휴강 처리</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">{cancelReasonModal.dayName} {cancelReasonModal.date}</p>
+              </div>
+              <button onClick={() => { setCancelReasonModal(null); setCancelReason(''); }}
+                className="text-slate-300 hover:text-slate-500 p-1">✕</button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">휴강 사유 (선택)</label>
+                <textarea
+                  value={cancelReason}
+                  onChange={e => setCancelReason(e.target.value)}
+                  placeholder="예) 강사 개인 사정, 공휴일, 시험 기간..."
+                  rows={3}
+                  autoFocus
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-[13px] resize-none outline-none focus:border-indigo-400 text-slate-700"
+                />
+              </div>
+              <p className="text-[11px] text-slate-400">사유를 입력하면 열 헤더에 표시됩니다.</p>
+            </div>
+            <div className="px-5 pb-5 flex gap-2">
+              <button onClick={() => { setCancelReasonModal(null); setCancelReason(''); }}
+                className="flex-1 h-10 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-500 hover:bg-slate-50">
+                취소
+              </button>
+              <button onClick={async () => {
+                const col = cancelReasonModal;
+                setCancelReasonModal(null);
+                const reason = cancelReason;
+                setCancelReason('');
+                const ses = await createSession(classId, col.date, 'cancelled', reason || '');
+                setWeekData(prev => prev ? {
+                  ...prev,
+                  columns: prev.columns.map(cc => cc.date === col.date ? { ...cc, session: ses } : cc)
+                } : null);
+              }}
+                className="flex-1 h-10 rounded-xl text-[13px] font-black text-white"
+                style={{ background: '#be123c' }}>
+                휴강 확정
+              </button>
             </div>
           </div>
         </div>
       )}
 
     </div>
+
   );
 }

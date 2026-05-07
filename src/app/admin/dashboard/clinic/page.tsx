@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { CheckCircle, Clock, AlertTriangle, ChevronDown, ChevronUp, RefreshCw, Timer, Trash2, User } from "lucide-react";
+import { CheckCircle, Clock, AlertTriangle, ChevronDown, ChevronUp, RefreshCw, Timer, Trash2, User, Square, CheckSquare } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { TUTORS } from "@/lib/tutors";
 
@@ -22,6 +22,12 @@ export default function AdminClinicPage() {
   const [feedbackModal, setFeedbackModal] = useState<{id:string;student:string}|null>(null);
   const [feedbackText, setFeedbackText] = useState("");
 
+  // ── 다중선택 ─────────────────────────────────────────────────────────────────
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [lastSelectedIdx, setLastSelectedIdx] = useState<number|null>(null);
+
   const load = useCallback(async () => {
     const { data } = await supabase.from("clinic_queue").select("*").order("created_at", { ascending: false });
     setQueue((data||[]) as ClinicEntry[]);
@@ -29,6 +35,34 @@ export default function AdminClinicPage() {
   }, []);
 
   useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t); }, [load]);
+
+  const filtered = queue.filter(q => filter==="all"||q.status===filter);
+  const waiting = queue.filter(q=>q.status==="waiting").length;
+
+  // Shift 다중선택 핸들러
+  const handleSelect = (id: string, idx: number, e: React.MouseEvent) => {
+    if (e.shiftKey && lastSelectedIdx !== null) {
+      const min = Math.min(lastSelectedIdx, idx);
+      const max = Math.max(lastSelectedIdx, idx);
+      const newSel = new Set(selected);
+      filtered.slice(min, max + 1).forEach(item => newSel.add(item.id));
+      setSelected(newSel);
+    } else {
+      const newSel = new Set(selected);
+      if (newSel.has(id)) newSel.delete(id); else newSel.add(id);
+      setSelected(newSel);
+    }
+    setLastSelectedIdx(idx);
+  };
+
+  const bulkDelete = async () => {
+    setBulkDeleting(true);
+    await Promise.all([...selected].map(id => supabase.from("clinic_queue").delete().eq("id", id)));
+    setSelected(new Set());
+    setSelectMode(false);
+    setBulkDeleting(false);
+    load();
+  };
 
   const startWithTutor = async (id: string, tutorName: string) => {
     await supabase.from("clinic_queue").update({ status:"in-progress", tutor_name: tutorName, started_at: new Date().toISOString() }).eq("id", id);
@@ -51,21 +85,45 @@ export default function AdminClinicPage() {
   };
 
   const dur = (s?: string, e?: string) => s&&e ? Math.round((new Date(e).getTime()-new Date(s).getTime())/60000) : null;
-  const filtered = queue.filter(q => filter==="all"||q.status===filter);
-  const waiting = queue.filter(q=>q.status==="waiting").length;
 
   return (
     <div className="p-6 md:p-12 pb-20 max-w-4xl mx-auto overflow-y-auto custom-scrollbar h-full">
-      <div className="flex justify-between items-end mb-10">
+      <div className="flex justify-between items-end mb-8">
         <div>
           <h1 className="text-3xl text-foreground serif font-black">클리닉 대기 관리</h1>
           <p className="text-[14px] text-accent mt-2 font-medium">학생 클리닉 접수 현황 · 15초 자동 갱신</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {waiting>0&&<div className="flex items-center gap-2 text-[13px] font-bold text-error bg-error/5 border border-error/10 px-4 py-2 rounded-xl"><AlertTriangle size={15}/>대기 {waiting}명</div>}
+          {/* 다중선택 모드 토글 */}
+          <button onClick={() => { setSelectMode(p=>!p); setSelected(new Set()); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border text-[12px] font-black transition-all"
+            style={{ borderColor: selectMode ? "#6366f1" : "rgba(0,0,0,0.1)", background: selectMode ? "#eef2ff" : "transparent", color: selectMode ? "#4f46e5" : "#64748b" }}>
+            {selectMode ? <CheckSquare size={14}/> : <Square size={14}/>}
+            {selectMode ? "선택 중" : "다중선택"}
+          </button>
           <button onClick={()=>{setLoading(true);load();}} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-foreground/10 text-[12px] font-black text-accent hover:text-foreground transition-all"><RefreshCw size={14} className={loading?"animate-spin":""}/> 새로고침</button>
         </div>
       </div>
+
+      {/* 다중선택 액션 바 */}
+      {selectMode && (
+        <div className="mb-4 flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "#fef2f2", border: "1px solid #fecaca" }}>
+          <span className="text-[13px] font-black text-slate-700">{selected.size}개 선택됨</span>
+          <button onClick={() => setSelected(new Set(filtered.map(f => f.id)))}
+            className="text-[11px] font-bold text-slate-500 hover:text-slate-700 px-3 py-1 rounded-lg border border-slate-200 bg-white">전체 선택</button>
+          <button onClick={() => setSelected(new Set())}
+            className="text-[11px] font-bold text-slate-500 hover:text-slate-700 px-3 py-1 rounded-lg border border-slate-200 bg-white">선택 해제</button>
+          <div className="flex-1" />
+          {selected.size > 0 && (
+            <button onClick={bulkDelete} disabled={bulkDeleting}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-black text-white transition-all"
+              style={{ background: "#ef4444" }}>
+              <Trash2 size={13}/> {bulkDeleting ? "삭제 중..." : `${selected.size}개 삭제`}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="flex gap-2 mb-6 flex-wrap">
         {(["all","waiting","in-progress","completed"] as const).map(f=>(
@@ -77,62 +135,76 @@ export default function AdminClinicPage() {
 
       {loading ? <div className="py-20 text-center text-accent animate-pulse font-bold">불러오는 중...</div>
       : filtered.length===0 ? <div className="py-20 text-center glass rounded-[2.5rem] border border-foreground/5"><CheckCircle size={32} className="text-success mx-auto mb-3 opacity-40"/><p className="text-accent font-bold opacity-50">해당하는 접수가 없습니다.</p></div>
-      : <div className="flex flex-col gap-4">{filtered.map((item,idx)=>{
-        const d = dur(item.started_at, item.completed_at);
-        const inProg = item.status==="in-progress"&&item.started_at ? Math.round((Date.now()-new Date(item.started_at).getTime())/60000) : null;
-        return (
-          <div key={item.id} className={`glass rounded-[1.5rem] border transition-all ${item.status==="completed"?"border-foreground/5 opacity-60":item.status==="in-progress"?"border-blue-200 shadow-md":"border-amber-200"}`}>
-            <button className="w-full flex items-center justify-between p-6 text-left gap-4" onClick={()=>setExpandedId(expandedId===item.id?null:item.id)}>
-              <div className="flex items-center gap-4">
-                <div className={`w-11 h-11 rounded-[.9rem] flex items-center justify-center shrink-0 font-black text-[14px] ${item.status==="completed"?"bg-success/10 text-success":item.status==="in-progress"?"bg-blue-50 text-blue-600":"bg-amber-50 text-amber-600"}`}>{idx+1}</div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-black text-foreground text-[15px]">{item.student_name}</span>
-                    {item.tutor_name&&<span className="text-[10px] font-bold text-purple-600 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-lg flex items-center gap-1"><User size={10}/>{item.tutor_name}</span>}
-                    {d!==null&&<span className="text-[10px] font-bold text-success bg-success/5 border border-success/10 px-2 py-0.5 rounded-lg flex items-center gap-1"><Timer size={10}/>{d}분</span>}
-                    {inProg!==null&&<span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-lg animate-pulse flex items-center gap-1"><Timer size={10}/>{inProg}분 경과</span>}
-                  </div>
-                  <p className="text-[12px] text-accent mt-0.5 truncate max-w-[200px] md:max-w-sm">{item.topic}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {item.status==="waiting"?<Clock size={16} className="text-amber-500"/>:item.status==="in-progress"?<Clock size={16} className="text-blue-500 animate-pulse"/>:<CheckCircle size={16} className="text-success"/>}
-                {expandedId===item.id?<ChevronUp size={16} className="text-accent"/>:<ChevronDown size={16} className="text-accent"/>}
-              </div>
-            </button>
-            {expandedId===item.id&&(
-              <div className="px-6 pb-6 border-t border-foreground/5 pt-5 space-y-4">
-                <div className="bg-background rounded-2xl px-5 py-4 border border-foreground/5">
-                  <p className="text-[10px] font-bold text-accent uppercase tracking-widest mb-2">사전 질문</p>
-                  <p className="text-[14px] text-foreground font-medium leading-relaxed">{item.topic}</p>
-                </div>
-                {item.session_feedback&&(
-                  <div className="bg-purple-50 rounded-2xl px-5 py-4 border border-purple-100">
-                    <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-2">클리닉 피드백 ({item.tutor_name})</p>
-                    <p className="text-[13px] text-purple-900 font-medium">{item.session_feedback}</p>
-                  </div>
+      : <div className="flex flex-col gap-4">{filtered.map((item, idx)=>{
+          const d = dur(item.started_at, item.completed_at);
+          const inProg = item.status==="in-progress"&&item.started_at ? Math.round((Date.now()-new Date(item.started_at).getTime())/60000) : null;
+          const isSelected = selected.has(item.id);
+          return (
+            <div key={item.id} className={`glass rounded-[1.5rem] border transition-all ${isSelected ? "border-indigo-400 shadow-md" : item.status==="completed"?"border-foreground/5 opacity-60":item.status==="in-progress"?"border-blue-200 shadow-md":"border-amber-200"}`}>
+              <div className="flex items-center">
+                {/* 선택 체크박스 */}
+                {selectMode && (
+                  <button onClick={(e) => handleSelect(item.id, idx, e)}
+                    className="pl-4 pr-2 py-6 flex items-center" title="Shift+클릭으로 범위 선택">
+                    {isSelected
+                      ? <CheckSquare size={18} style={{ color: "#6366f1" }} />
+                      : <Square size={18} className="text-slate-300" />}
+                  </button>
                 )}
-                <div className="flex gap-3 flex-wrap">
-                  {item.status==="waiting"&&(
-                    <button onClick={()=>setTutorModal({id:item.id,student:item.student_name})} disabled={updatingId===item.id}
-                      className="flex-1 h-11 bg-blue-600 text-white text-[13px] font-black rounded-xl shadow hover:-translate-y-0.5 disabled:opacity-40 transition-all">
-                      상담 시작 (튜터 선택)
-                    </button>
-                  )}
-                  {item.status==="in-progress"&&(
-                    <button onClick={()=>{setFeedbackModal({id:item.id,student:item.student_name});setFeedbackText("");}} disabled={updatingId===item.id}
-                      className="flex-1 h-11 bg-success text-white text-[13px] font-black rounded-xl shadow hover:-translate-y-0.5 disabled:opacity-40 transition-all">
-                      클리닉 완료 + 피드백
-                    </button>
-                  )}
-                  {item.status!=="waiting"&&<button onClick={()=>revert(item.id)} className="h-11 px-5 bg-amber-50 text-amber-600 text-[12px] font-black rounded-xl border border-amber-200 hover:bg-amber-100 transition-all">대기로</button>}
-                  <button onClick={()=>setDeleteConfirm({id:item.id,student:item.student_name})} className="h-11 px-4 bg-error/8 text-error text-[12px] font-black rounded-xl border border-error/15 hover:bg-error hover:text-white transition-all flex items-center gap-1.5"><Trash2 size={13}/>삭제</button>
-                </div>
+                {/* 메인 행 */}
+                <button className="flex-1 flex items-center justify-between p-6 text-left gap-4" onClick={()=>!selectMode && setExpandedId(expandedId===item.id?null:item.id)}>
+                  <div className="flex items-center gap-4">
+                    <div className={`w-11 h-11 rounded-[.9rem] flex items-center justify-center shrink-0 font-black text-[14px] ${item.status==="completed"?"bg-success/10 text-success":item.status==="in-progress"?"bg-blue-50 text-blue-600":"bg-amber-50 text-amber-600"}`}>{idx+1}</div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-black text-foreground text-[15px]">{item.student_name}</span>
+                        {item.tutor_name&&<span className="text-[10px] font-bold text-purple-600 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-lg flex items-center gap-1"><User size={10}/>{item.tutor_name}</span>}
+                        {d!==null&&<span className="text-[10px] font-bold text-success bg-success/5 border border-success/10 px-2 py-0.5 rounded-lg flex items-center gap-1"><Timer size={10}/>{d}분</span>}
+                        {inProg!==null&&<span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-lg animate-pulse flex items-center gap-1"><Timer size={10}/>{inProg}분 경과</span>}
+                      </div>
+                      <p className="text-[12px] text-accent mt-0.5 truncate max-w-[200px] md:max-w-sm">{item.topic}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {item.status==="waiting"?<Clock size={16} className="text-amber-500"/>:item.status==="in-progress"?<Clock size={16} className="text-blue-500 animate-pulse"/>:<CheckCircle size={16} className="text-success"/>}
+                    {!selectMode && (expandedId===item.id?<ChevronUp size={16} className="text-accent"/>:<ChevronDown size={16} className="text-accent"/>)}
+                  </div>
+                </button>
               </div>
-            )}
-          </div>
-        );
-      })}</div>}
+
+              {!selectMode && expandedId===item.id&&(
+                <div className="px-6 pb-6 border-t border-foreground/5 pt-5 space-y-4">
+                  <div className="bg-background rounded-2xl px-5 py-4 border border-foreground/5">
+                    <p className="text-[10px] font-bold text-accent uppercase tracking-widest mb-2">사전 질문</p>
+                    <p className="text-[14px] text-foreground font-medium leading-relaxed">{item.topic}</p>
+                  </div>
+                  {item.session_feedback&&(
+                    <div className="bg-purple-50 rounded-2xl px-5 py-4 border border-purple-100">
+                      <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-2">클리닉 피드백 ({item.tutor_name})</p>
+                      <p className="text-[13px] text-purple-900 font-medium">{item.session_feedback}</p>
+                    </div>
+                  )}
+                  <div className="flex gap-3 flex-wrap">
+                    {item.status==="waiting"&&(
+                      <button onClick={()=>setTutorModal({id:item.id,student:item.student_name})} disabled={updatingId===item.id}
+                        className="flex-1 h-11 bg-blue-600 text-white text-[13px] font-black rounded-xl shadow hover:-translate-y-0.5 disabled:opacity-40 transition-all">
+                        상담 시작 (튜터 선택)
+                      </button>
+                    )}
+                    {item.status==="in-progress"&&(
+                      <button onClick={()=>{setFeedbackModal({id:item.id,student:item.student_name});setFeedbackText("");}} disabled={updatingId===item.id}
+                        className="flex-1 h-11 bg-success text-white text-[13px] font-black rounded-xl shadow hover:-translate-y-0.5 disabled:opacity-40 transition-all">
+                        클리닉 완료 + 피드백
+                      </button>
+                    )}
+                    {item.status!=="waiting"&&<button onClick={()=>revert(item.id)} className="h-11 px-5 bg-amber-50 text-amber-600 text-[12px] font-black rounded-xl border border-amber-200 hover:bg-amber-100 transition-all">대기로</button>}
+                    <button onClick={()=>setDeleteConfirm({id:item.id,student:item.student_name})} className="h-11 px-4 bg-error/8 text-error text-[12px] font-black rounded-xl border border-error/15 hover:bg-error hover:text-white transition-all flex items-center gap-1.5"><Trash2 size={13}/>삭제</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}</div>}
 
       {/* 튜터 선택 모달 */}
       {tutorModal&&(
@@ -158,7 +230,7 @@ export default function AdminClinicPage() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center" onClick={()=>setFeedbackModal(null)}>
           <div className="bg-white rounded-t-3xl shadow-2xl p-6 w-full max-w-md" onClick={e=>e.stopPropagation()}>
             <h3 className="text-[17px] font-black text-slate-800 mb-1">클리닉 완료</h3>
-            <p className="text-[13px] text-slate-400 mb-4">{feedbackModal.student} 학생 — 이번 상담에 대한 피드백을 남겨주세요</p>
+            <p className="text-[13px] text-slate-400 mb-4">{feedbackModal.student} 학생 — 피드백을 남겨주세요</p>
             <textarea value={feedbackText} onChange={e=>setFeedbackText(e.target.value)} rows={3} placeholder="예) 빈칸 추론 전략 학습, 문맥 독해 연습 필요..."
               className="w-full p-4 rounded-2xl border border-slate-200 text-[13px] font-medium resize-none focus:border-purple-400 focus:outline-none text-slate-800 placeholder:text-slate-300"/>
             <div className="flex gap-2 mt-3">

@@ -34,7 +34,7 @@ export type ClassSession = {
   id: string;
   class_id: string;
   session_date: string; // "YYYY-MM-DD"
-  session_type: string; // "class" | "clinic"
+  session_type: string; // "class" | "clinic" | "cancelled"
   note: string;
   created_at: string;
 };
@@ -477,6 +477,15 @@ export async function createHomeworkSlotBatch(slots: Parameters<typeof createHom
   return (data || []) as HomeworkSlot[];
 }
 
+export async function deleteHomeworkSlot(slotId: string): Promise<void> {
+  // 관련 체크/학생배당 먼저 삭제 후 슬롯 삭제
+  try { await supabase.from('homework_checks').delete().eq('slot_id', slotId); } catch {}
+  try { await supabase.from('homework_slot_students').delete().eq('slot_id', slotId); } catch {}
+  const { error } = await supabase.from('homework_slots').delete().eq('id', slotId);
+  if (error) throw error;
+}
+
+
 export async function setSlotStudents(slotId: string, studentNames: string[]): Promise<void> {
   // 기존 삭제 후 재삽입
   await supabase.from('homework_slot_students').delete().eq('slot_id', slotId);
@@ -514,10 +523,7 @@ export async function upsertLessonNote(sessionId: string, note: string): Promise
   if (error) throw error;
 }
 
-export async function deleteHomeworkSlot(slotId: string): Promise<void> {
-  const { error } = await supabase.from('homework_slots').delete().eq('id', slotId);
-  if (error) throw error;
-}
+
 
 // ─── Homework Checks ──────────────────────────────────────────────────────────
 
