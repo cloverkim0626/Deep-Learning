@@ -198,14 +198,14 @@ export default function QnAPage() {
 
       {/* 헤더 - sticky */}
       <div className="sticky top-0 z-10 px-5 pt-6 pb-4 flex items-center justify-between"
-        style={{ background: 'linear-gradient(180deg, rgba(10,8,22,0.97) 80%, transparent 100%)', borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        style={{ background: 'linear-gradient(180deg, rgba(3,15,22,0.97) 80%, transparent 100%)', borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <div>
           <h1 className="text-[22px] font-black text-white leading-tight">Q&amp;A</h1>
-          <p className="text-[11px] mt-0.5 font-medium" style={{ color: "rgba(180,160,255,0.6)" }}>궁금한 점을 자유롭게 질문해봐 💬</p>
+          <p className="text-[11px] mt-0.5 font-medium" style={{ color: "rgba(160,210,255,0.65)" }}>궁금한 점을 자유롭게 질문해봐 💬</p>
         </div>
         <button onClick={() => setShowModal(true)}
           className="flex items-center gap-1.5 px-4 py-2 rounded-full font-black text-[12px] text-white hover:scale-105 active:scale-95 transition-all"
-          style={{ background: "linear-gradient(135deg,#405DE6,#833AB4,#E1306C)", boxShadow: "0 4px 16px rgba(225,48,108,0.35)" }}>
+          style={{ background: "linear-gradient(135deg,#14b8a6,#38bdf8,#fb923c)", boxShadow: "0 4px 16px rgba(251,146,60,0.35)" }}>
           <Plus size={14} strokeWidth={3} /> 질문
         </button>
       </div>
@@ -226,15 +226,15 @@ export default function QnAPage() {
 
           return (
             <div key={post.id} className="rounded-[1.4rem] overflow-hidden"
-              style={{ background: "rgba(25,20,45,0.88)", border: "1px solid rgba(255,255,255,0.13)", backdropFilter: "blur(12px)" }}>
+              style={{ background: "rgba(10,25,35,0.88)", border: "1px solid rgba(20,184,166,0.15)", backdropFilter: "blur(12px)" }}>
 
               {/* 포스트 헤더 */}
               <div className="flex items-center gap-3 px-4 py-3"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
                 <div className="p-[2px] rounded-full shrink-0"
-                  style={{ background: isMine ? "linear-gradient(135deg,#405DE6,#E1306C)" : "rgba(255,255,255,0.20)" }}>
+                  style={{ background: isMine ? "linear-gradient(135deg,#14b8a6,#fb923c)" : "rgba(255,255,255,0.20)" }}>
                   <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-black"
-                    style={{ background: "#16122a", color: isMine ? "#c8b4ff" : "rgba(255,255,255,0.85)" }}>
+                    style={{ background: "#061a25", color: isMine ? "#99f6e4" : "rgba(255,255,255,0.85)" }}>
                     {initial}
                   </div>
                 </div>
@@ -242,7 +242,7 @@ export default function QnAPage() {
                   <p className="text-[13px] font-black leading-none" style={{ color: "#ffffff" }}>
                     {isMine ? `${post.author} (나)` : '익명'}
                   </p>
-                  <p className="text-[10px] mt-0.5 truncate" style={{ color: "rgba(180,155,255,0.85)" }}>
+                  <p className="text-[10px] mt-0.5 truncate" style={{ color: "rgba(160,210,255,0.85)" }}>
                     📚 {post.passage}
                   </p>
                 </div>
@@ -328,7 +328,7 @@ export default function QnAPage() {
                       return (
                         <div key={ans.id} className="flex items-start gap-2.5">
                           <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5"
-                            style={{ background: ans.isTeacher ? "linear-gradient(135deg,#f59e0b,#d97706)" : isMe ? "linear-gradient(135deg,#405DE6,#833AB4)" : "rgba(255,255,255,0.12)", color: "#fff" }}>
+                            style={{ background: ans.isTeacher ? "linear-gradient(135deg,#f59e0b,#d97706)" : isMe ? "linear-gradient(135deg,#14b8a6,#38bdf8)" : "rgba(255,255,255,0.12)", color: "#fff" }}>
                             {ans.isTeacher ? "T" : ansInitial}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -394,7 +394,7 @@ export default function QnAPage() {
                     <button onClick={e => { e.stopPropagation(); handlePostComment(post.id); }}
                       disabled={submittingCommentId === post.id}
                       className="w-7 h-7 rounded-full flex items-center justify-center active:scale-95 disabled:opacity-40 transition-all"
-                      style={{ background: "linear-gradient(135deg,#405DE6,#E1306C)" }}>
+                      style={{ background: "linear-gradient(135deg,#14b8a6,#fb923c)" }}>
                       <Send size={12} strokeWidth={2.5} className="text-white" />
                     </button>
                   </div>

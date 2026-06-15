@@ -452,7 +452,7 @@ export default function AITeacherPage() {
               <div className={`flex ${msg.sender === 'ai' ? 'justify-start' : 'justify-end'}`}>
                 {msg.sender === 'ai' && (
                   <div className="p-[2px] rounded-full shrink-0 mr-2 mt-1 self-end"
-                    style={{ background: 'linear-gradient(135deg,#405DE6,#833AB4,#E1306C)' }}>
+                    style={{ background: 'linear-gradient(135deg,#14b8a6,#fb923c)' }}>
                     <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#09090f' }}>
                       <Sparkles size={11} strokeWidth={1.5} className="text-white" />
                     </div>
@@ -465,7 +465,7 @@ export default function AITeacherPage() {
                       : 'rounded-[1.4rem] rounded-br-sm font-medium'
                   }`} style={msg.sender === 'ai'
                     ? { background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', color: '#1a1a2e', boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }
-                    : { background: 'linear-gradient(135deg,#405DE6,#833AB4)', color: '#fff', boxShadow: '0 4px 20px rgba(64,93,230,0.35)' }}>
+                    : { background: 'linear-gradient(135deg,#14b8a6,#38bdf8)', color: '#fff', boxShadow: '0 4px 20px rgba(20,184,166,0.35)' }}>
                     {msg.text}
                   </div>
                 </div>
@@ -477,7 +477,7 @@ export default function AITeacherPage() {
                     <button key={optIdx} onClick={() => handleOptionClick(opt.text)}
                       disabled={isLoading}
                       className="text-left text-[12px] font-bold px-4 py-2.5 rounded-2xl transition-all active:scale-[0.98] disabled:opacity-50 hover:scale-[1.01]"
-                      style={{ background: 'rgba(64,93,230,0.18)', border: '1.5px solid rgba(100,120,255,0.40)', color: 'rgba(220,210,255,0.95)' }}>
+                      style={{ background: 'rgba(20,184,166,0.18)', border: '1.5px solid rgba(20,184,166,0.40)', color: 'rgba(160,240,255,0.95)' }}>
                       {opt.text}
                     </button>
                   ))}
@@ -491,10 +491,10 @@ export default function AITeacherPage() {
           <div className="flex items-center gap-2 ml-10 animate-in fade-in duration-300">
             <div className="flex gap-1">
               {[0, 150, 300].map(delay => (
-                <div key={delay} className="w-2 h-2 rounded-full animate-bounce" style={{ background: 'rgba(160,130,255,0.5)', animationDelay: `${delay}ms` }} />
+                <div key={delay} className="w-2 h-2 rounded-full animate-bounce" style={{ background: 'rgba(20,184,166,0.5)', animationDelay: `${delay}ms` }} />
               ))}
             </div>
-            <span className="text-[11px] font-bold" style={{ color: 'rgba(160,130,255,0.6)' }}>Parallax가 생각 중...</span>
+            <span className="text-[11px] font-bold" style={{ color: 'rgba(20,184,166,0.6)' }}>Parallax가 생각 중...</span>
           </div>
         )}
         <div ref={bottomRef} className="h-4" />
@@ -502,7 +502,7 @@ export default function AITeacherPage() {
 
       {/* IG DM 스타일 입력창 */}
       <div className="fixed bottom-[88px] left-0 right-0 w-full max-w-2xl mx-auto px-4 z-20 pb-4">
-        <div className="pt-3" style={{ background: 'linear-gradient(to top, rgba(9,9,15,1) 80%, transparent)' }}>
+        <div className="pt-3" style={{ background: 'linear-gradient(to top, rgba(3,15,22,1) 80%, transparent)' }}>
           <form id="ai-form" onSubmit={handleSend}
             className="relative flex items-end gap-2 px-4 py-2.5 rounded-[2rem] bg-white"
             style={{ border: '1px solid rgba(0,0,0,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }}>
@@ -510,14 +510,14 @@ export default function AITeacherPage() {
               disabled={isLoading}
               placeholder={selectedSet ? `${selectedSet.label}에 대해 질문해봐...` : '영어에 대해 무엇이든 물어봐...'}
               className="flex-1 bg-transparent outline-none text-[14px] font-medium resize-none min-h-[36px] max-h-[100px] text-foreground placeholder:text-accent/50"
-              style={{ caretColor: '#E1306C' }}
+              style={{ caretColor: '#fb923c' }}
               rows={1}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
               onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }}
             />
             <button type="submit" disabled={!input.trim() || isLoading}
               className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
-              style={{ background: 'linear-gradient(135deg,#405DE6,#E1306C)', boxShadow: '0 4px 14px rgba(225,48,108,0.4)' }}>
+              style={{ background: 'linear-gradient(135deg,#14b8a6,#fb923c)', boxShadow: '0 4px 14px rgba(20,184,166,0.4)' }}>
               {isLoading ? <Loader2 size={15} className="animate-spin text-white" /> : <Send size={15} strokeWidth={2.5} className="text-white" />}
             </button>
           </form>

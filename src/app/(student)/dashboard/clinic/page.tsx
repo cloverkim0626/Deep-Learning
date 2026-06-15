@@ -109,7 +109,7 @@ export default function ClinicPage() {
           {/* IG 스토리 링 아바타 */}
           <div className="relative shrink-0">
             <div className="p-[2.5px] rounded-full" style={{
-              background: 'linear-gradient(135deg,#405DE6,#833AB4,#E1306C,#F77737)',
+              background: 'linear-gradient(135deg,#14b8a6,#38bdf8,#fb923c,#f43f5e)',
               animation: 'igRingPulse 3s ease-in-out infinite',
             }}>
               <div className="w-16 h-16 rounded-full flex items-center justify-center text-[18px] font-black"
@@ -126,7 +126,7 @@ export default function ClinicPage() {
           {/* 이름 + 설명 */}
           <div className="flex-1 min-w-0">
             <p className="text-[16px] font-black leading-tight" style={{ color: '#ffffff' }}>{studentName}</p>
-            <p className="text-[12px] font-bold mt-0.5" style={{ color: 'rgba(200,185,255,0.95)' }}>
+            <p className="text-[12px] font-bold mt-0.5" style={{ color: 'rgba(160,210,255,0.95)' }}>
               클리닉 대기 접수
             </p>
             <div className="flex items-center gap-1.5 mt-1">
@@ -136,7 +136,7 @@ export default function ClinicPage() {
           </div>
           {/* 대기 뱃지 */}
           <div className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-black"
-            style={{ background: 'rgba(64,93,230,0.2)', border: '1px solid rgba(64,93,230,0.4)', color: 'rgba(160,180,255,0.9)' }}>
+            style={{ background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.35)', color: 'rgba(160,240,255,0.9)' }}>
             {queue.length}명 대기
           </div>
         </div>
@@ -153,27 +153,27 @@ export default function ClinicPage() {
             {/* IG 포스트 스타일 카드 */}
             <div className="rounded-[1.6rem] overflow-hidden"
               style={{
-                background: 'rgba(15,15,30,0.85)',
-                border: '1px solid rgba(255,255,255,0.12)',
+                background: 'rgba(10,25,35,0.85)',
+                border: '1px solid rgba(20,184,166,0.15)',
                 backdropFilter: 'blur(16px)',
               }}>
               {/* 카드 상단 — 포스팅 헤더 */}
               <div className="flex items-center gap-3 px-4 py-3.5"
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-black text-white"
-                  style={{ background: 'linear-gradient(135deg,#405DE6,#E1306C)' }}>
+                  style={{ background: 'linear-gradient(135deg,#14b8a6,#fb923c)' }}>
                   {initial}
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-black text-white leading-none">{studentName}</p>
-                  <p className="text-[10px] mt-0.5" style={{ color: 'rgba(160,160,255,0.55)' }}>클리닉 신청서 작성 중</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: 'rgba(160,210,255,0.55)' }}>클리닉 신청서 작성 중</p>
                 </div>
-                <Sparkles size={14} style={{ color: 'rgba(180,130,255,0.6)' }} />
+                <Sparkles size={14} style={{ color: 'rgba(251,146,60,0.7)' }} />
               </div>
 
               {/* 입력 영역 */}
               <div className="px-4 py-4">
-                <p className="text-[11px] font-black uppercase tracking-widest mb-2.5" style={{ color: 'rgba(160,130,255,0.6)' }}>
+                <p className="text-[11px] font-black uppercase tracking-widest mb-2.5" style={{ color: 'rgba(20,184,166,0.7)' }}>
                   질문 내용
                 </p>
                 <textarea
@@ -205,10 +205,10 @@ export default function ClinicPage() {
                   className="w-full h-12 rounded-xl font-black text-[14px] tracking-wide flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 active:translate-y-0.5 disabled:opacity-50"
                   style={{
                     background: isSubmitting
-                      ? 'rgba(100,100,200,0.4)'
-                      : 'linear-gradient(135deg,#405DE6,#833AB4,#E1306C)',
+                      ? 'rgba(20,150,150,0.4)'
+                      : 'linear-gradient(135deg,#14b8a6,#38bdf8,#fb923c)',
                     color: '#fff',
-                    boxShadow: '0 4px 20px rgba(225,48,108,0.35)',
+                    boxShadow: '0 4px 20px rgba(251,146,60,0.35)',
                   }}>
                   {isSubmitting ? (
                     <span className="animate-pulse">접수 중...</span>
@@ -245,8 +245,8 @@ export default function ClinicPage() {
           {/* 섹션 헤더 */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Users size={13} style={{ color: 'rgba(160,130,255,0.7)' }} />
-              <span className="text-[11px] font-black uppercase tracking-[0.18em]" style={{ color: 'rgba(160,130,255,0.7)' }}>
+              <Users size={13} style={{ color: 'rgba(20,184,166,0.7)' }} />
+              <span className="text-[11px] font-black uppercase tracking-[0.18em]" style={{ color: 'rgba(20,184,166,0.7)' }}>
                 실시간 대기
               </span>
             </div>
@@ -257,7 +257,7 @@ export default function ClinicPage() {
           </div>
 
           {isLoading ? (
-            <div className="py-8 text-center text-[12px] animate-pulse" style={{ color: 'rgba(160,130,255,0.5)' }}>
+            <div className="py-8 text-center text-[12px] animate-pulse" style={{ color: 'rgba(20,184,166,0.5)' }}>
               확인 중...
             </div>
           ) : queue.length === 0 ? (
@@ -275,23 +275,20 @@ export default function ClinicPage() {
                     className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all"
                     style={{
                       background: isMe
-                        ? 'linear-gradient(135deg,rgba(64,93,230,0.18),rgba(131,58,180,0.12))'
+                        ? 'linear-gradient(135deg,rgba(20,184,166,0.18),rgba(251,146,60,0.12))'
                         : 'rgba(255,255,255,0.04)',
                       border: isMe
-                        ? '1px solid rgba(64,93,230,0.35)'
+                        ? '1px solid rgba(20,184,166,0.35)'
                         : '1px solid rgba(255,255,255,0.07)',
                     }}>
                     {/* 순서 + 아바타 */}
                     <div className="relative shrink-0">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-black text-white ${
-                        stu.status === 'in-progress'
-                          ? ''
-                          : ''
-                      }`} style={{
-                        background: isMe
-                          ? 'linear-gradient(135deg,#405DE6,#E1306C)'
-                          : 'rgba(255,255,255,0.10)',
-                      }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-black text-white"
+                        style={{
+                          background: isMe
+                            ? 'linear-gradient(135deg,#14b8a6,#fb923c)'
+                            : 'rgba(255,255,255,0.10)',
+                        }}>
                         {stuInitial}
                       </div>
                       <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black text-white"
@@ -306,7 +303,7 @@ export default function ClinicPage() {
                           {stu.name}
                           {isMe && (
                             <span className="ml-1.5 text-[9px] font-black px-1.5 py-0.5 rounded-md"
-                              style={{ background: 'rgba(64,93,230,0.3)', color: 'rgba(160,180,255,0.9)' }}>나</span>
+                              style={{ background: 'rgba(20,184,166,0.3)', color: 'rgba(160,240,255,0.9)' }}>나</span>
                           )}
                         </span>
                         <span className="flex items-center gap-0.5 text-[10px] font-bold" style={{ color: 'rgba(255,255,255,0.25)' }}>

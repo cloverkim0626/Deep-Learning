@@ -206,11 +206,11 @@ function LoginForm() {
                 className="w-full h-16 rounded-3xl font-black tracking-[0.2em] text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-25 disabled:pointer-events-none"
                 style={{
                   background: role === 'student'
-                    ? 'linear-gradient(135deg,#405DE6 0%,#833AB4 40%,#E1306C 75%,#F77737 100%)'
+                    ? 'linear-gradient(135deg,#14b8a6 0%,#38bdf8 40%,#fb923c 75%,#f43f5e 100%)'
                     : 'linear-gradient(135deg,rgba(15,160,210,0.9) 0%,rgba(10,130,185,0.95) 100%)',
                   color:'rgba(255,255,255,0.97)',
                   boxShadow: role === 'student'
-                    ? '0 4px 24px rgba(225,48,108,0.45), 0 2px 8px rgba(64,93,230,0.35)'
+                    ? '0 4px 24px rgba(251,146,60,0.45), 0 2px 8px rgba(20,184,166,0.35)'
                     : '0 4px 24px rgba(10,140,200,0.4)',
                 }}>
                 입장하기 <LogIn size={20} strokeWidth={2.5} />

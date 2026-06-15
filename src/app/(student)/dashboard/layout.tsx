@@ -1458,15 +1458,15 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <div className="absolute inset-0 z-[300] flex items-center justify-center p-6 animate-in fade-in duration-200">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowDmModal(false)} />
           <div className="relative w-full max-w-[280px] rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300"
-            style={{ background: 'linear-gradient(180deg,#1a1a2e 0%,#0d0b1e 100%)', border: '1px solid rgba(255,255,255,0.10)' }}>
+            style={{ background: 'linear-gradient(180deg,#03121b 0%,#052335 100%)', border: '1px solid rgba(20,184,166,0.15)' }}>
             {/* 헤더 */}
             <div className="px-6 pt-6 pb-4 text-center" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3"
-                style={{ background: 'linear-gradient(135deg,#405DE6,#E1306C)' }}>
+                style={{ background: 'linear-gradient(135deg,#14b8a6,#fb923c)' }}>
                 <Send size={18} className="text-white" />
               </div>
               <h3 className="text-[16px] font-black text-white">메시지 보내기</h3>
-              <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>플랫폼을 선택해주세요</p>
+              <p className="text-[11px] mt-1" style={{ color: 'rgba(160,210,255,0.45)' }}>플랫폼을 선택해주세요</p>
             </div>
             {/* 옵션 */}
             <div className="p-4 flex flex-col gap-2.5">
@@ -1485,7 +1485,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               <button
                 onClick={() => { alert('인스타그램 연동은 준비 중이에요!'); setShowDmModal(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all active:scale-[0.98] hover:scale-[1.01] text-white"
-                style={{ background: 'linear-gradient(135deg,#405DE6,#833AB4,#E1306C)', }}>
+                style={{ background: 'linear-gradient(135deg,#14b8a6,#38bdf8,#fb923c)', }}>
                 <span className="text-[22px] leading-none">📸</span>
                 <div className="text-left">
                   <p className="text-[14px] font-black leading-none">인스타그램</p>
