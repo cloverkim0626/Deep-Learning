@@ -539,18 +539,18 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     <div className="flex flex-col h-screen w-full max-w-md mx-auto relative overflow-hidden border-x border-white/5"
       style={{
         background:`
-          radial-gradient(ellipse 70% 60% at 10% 15%, rgba(64,93,230,0.32) 0%, transparent 55%),
-          radial-gradient(ellipse 60% 55% at 90% 85%, rgba(131,58,180,0.26) 0%, transparent 50%),
-          radial-gradient(ellipse 50% 45% at 85% 10%, rgba(225,48,108,0.18) 0%, transparent 55%),
-          radial-gradient(ellipse 40% 40% at 15% 85%, rgba(64,93,230,0.18) 0%, transparent 55%),
-          linear-gradient(145deg, #09090f 0%, #0d0b16 40%, #09090f 100%)
+          radial-gradient(ellipse 70% 60% at 10% 15%, rgba(20,184,166,0.32) 0%, transparent 55%),
+          radial-gradient(ellipse 60% 55% at 90% 85%, rgba(251,146,60,0.16) 0%, transparent 50%),
+          radial-gradient(ellipse 50% 45% at 85% 10%, rgba(244,63,94,0.15) 0%, transparent 55%),
+          radial-gradient(ellipse 40% 40% at 15% 85%, rgba(56,189,248,0.20) 0%, transparent 55%),
+          linear-gradient(145deg, #030f16 0%, #051b27 40%, #030f16 100%)
         `
       }}>
 
       {/* Top Header */}
       <header className="h-20 flex items-center justify-between px-6 border-b z-30 shrink-0 sticky top-0"
         style={{
-          background:'rgba(9,9,15,0.75)',
+          background:'rgba(3,15,22,0.75)',
           borderBottomColor:'rgba(255,255,255,0.07)',
           backdropFilter:'blur(20px)',
           WebkitBackdropFilter:'blur(20px)',
@@ -776,7 +776,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <div className="absolute inset-0 z-50 flex flex-col animate-in fade-in duration-300">
           <div className="absolute inset-0 backdrop-blur-md" style={{ background: 'rgba(0,0,0,0.55)' }} onClick={() => { setShowProfile(false); setShowSettings(false); }} />
           <div className="absolute bottom-0 left-0 right-0 rounded-t-[2.8rem] overflow-y-auto max-h-[92vh] custom-scrollbar animate-in slide-in-from-bottom duration-500"
-            style={{ background: 'linear-gradient(180deg,#0d0d1a 0%,#09090f 100%)', boxShadow: '0 -24px 80px rgba(0,0,0,0.6)' }}>
+            style={{ background: 'linear-gradient(180deg,#051b27 0%,#030f16 100%)', boxShadow: '0 -24px 80px rgba(0,0,0,0.6)' }}>
             {/* 핸들 바 + 닫기 */}
             <div className="flex items-center justify-between px-5 pt-4 pb-1">
               <button
@@ -825,8 +825,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               {/* 아바타 + 스탯 행 */}
               <div className="flex items-center gap-5 mb-3">
                 {/* IG 스토리 링 아바타 */}
-                <div className="p-[3px] rounded-full shrink-0" style={{ background: 'linear-gradient(135deg,#405DE6,#833AB4,#E1306C,#F77737)' }}>
-                  <div className="w-20 h-20 rounded-full flex items-center justify-center text-[26px] font-black" style={{ background: '#09090f', color: '#fff' }}>
+                <div className="p-[3px] rounded-full shrink-0" style={{ background: 'linear-gradient(135deg,#14b8a6,#38bdf8,#fb923c,#f43f5e)' }}>
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center text-[26px] font-black" style={{ background: '#030f16', color: '#fff' }}>
                     {profile.name.slice(-2)}
                   </div>
                 </div>
@@ -1129,8 +1129,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               {/* AI 어드바이스 — IG DM 말풍선 느낌 */}
               <div className="mb-4 px-4 py-4 rounded-[1.4rem]" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}>
                 <div className="flex items-center gap-2 mb-2.5">
-                  <div className="p-[2px] rounded-full" style={{ background: 'linear-gradient(135deg,#405DE6,#E1306C)' }}>
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#09090f' }}>
+                  <div className="p-[2px] rounded-full" style={{ background: 'linear-gradient(135deg,#14b8a6,#fb923c)' }}>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#030f16' }}>
                       <Bot size={12} className="text-white" />
                     </div>
                   </div>
@@ -1140,7 +1140,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               </div>
 
               {/* 스트릭 카드 — IG 인디고/퍼플 감성 */}
-              <div className="mb-5 px-4 py-4 rounded-[1.4rem]" style={{ background: 'linear-gradient(135deg,rgba(64,93,230,0.20),rgba(131,58,180,0.15))', border: '1px solid rgba(100,80,230,0.30)' }}>
+              <div className="mb-5 px-4 py-4 rounded-[1.4rem]" style={{ background: 'linear-gradient(135deg,rgba(20,184,166,0.20),rgba(251,146,60,0.15))', border: '1px solid rgba(20,184,166,0.30)' }}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: 'rgba(180,150,255,0.7)' }}>🔥 STREAK</p>
@@ -1209,7 +1209,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <div className="absolute inset-0 z-[300] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="absolute inset-0 bg-foreground/65 backdrop-blur-sm" onClick={() => { setShowNoticeModal(false); setActiveNotice(null); }} />
           <div className="relative w-full max-w-sm bg-background rounded-[2.5rem] shadow-[0_24px_60px_rgba(0,0,0,0.5)] p-6 animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto flex flex-col"
-            style={{ background: 'linear-gradient(180deg,#131326 0%,#09090f 100%)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            style={{ background: 'linear-gradient(180deg,#051b27 0%,#030f16 100%)', border: '1px solid rgba(255,255,255,0.06)' }}>
             
             {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4 shrink-0">
@@ -1265,7 +1265,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <div className="absolute inset-0 z-[250] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="absolute inset-0 bg-foreground/65 backdrop-blur-sm" onClick={() => setShowNoticeListModal(false)} />
           <div className="relative w-full max-w-sm bg-background rounded-[2.5rem] shadow-[0_24px_60px_rgba(0,0,0,0.5)] p-6 animate-in zoom-in-95 duration-300 h-[80vh] flex flex-col"
-            style={{ background: 'linear-gradient(180deg,#131326 0%,#09090f 100%)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            style={{ background: 'linear-gradient(180deg,#051b27 0%,#030f16 100%)', border: '1px solid rgba(255,255,255,0.06)' }}>
             
             {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4 shrink-0">
@@ -1536,7 +1536,7 @@ function NavButton({ href, icon, label, isActive = false }: { href: string; icon
       </span>
       {isActive && (
         <div className="absolute inset-x-3 bottom-2 h-0.5 rounded-full animate-in zoom-in duration-500"
-          style={{background:'linear-gradient(90deg,#405DE6,#E1306C)'}} />
+          style={{background:'linear-gradient(90deg,#14b8a6,#fb923c)'}} />
       )}
     </Link>
   );

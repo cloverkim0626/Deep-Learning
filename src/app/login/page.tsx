@@ -237,13 +237,13 @@ function LoginPageInner() {
   return (
     <main className="flex justify-center items-center min-h-screen p-6 relative overflow-hidden"
       style={isStudent ? {
-        /* 학생: IG 힙 다크 ambient - 보라/핑크 메인 */
+        /* 학생: 힙 다크 ambient - 딥 오션 & 선셋 코랄 메인 */
         background: `
-          radial-gradient(ellipse 75% 65% at 20% 25%, rgba(64,93,230,0.40) 0%, transparent 58%),
-          radial-gradient(ellipse 65% 60% at 80% 75%, rgba(225,48,108,0.35) 0%, transparent 55%),
-          radial-gradient(ellipse 50% 50% at 60% 10%, rgba(131,58,180,0.30) 0%, transparent 58%),
-          radial-gradient(ellipse 45% 45% at 10% 80%, rgba(247,119,55,0.18) 0%, transparent 55%),
-          linear-gradient(145deg, #08080f 0%, #0d0a18 40%, #08080f 100%)
+          radial-gradient(ellipse 75% 65% at 20% 25%, rgba(20,184,166,0.35) 0%, transparent 58%),
+          radial-gradient(ellipse 65% 60% at 80% 75%, rgba(251,146,60,0.20) 0%, transparent 55%),
+          radial-gradient(ellipse 50% 50% at 60% 10%, rgba(244,63,94,0.18) 0%, transparent 58%),
+          radial-gradient(ellipse 45% 45% at 10% 80%, rgba(56,189,248,0.25) 0%, transparent 55%),
+          linear-gradient(145deg, #030f16 0%, #051b27 40%, #030f16 100%)
         `,
       } : {
         /* 선생님: IG 다크 ambient 배경 */
