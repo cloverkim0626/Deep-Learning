@@ -218,8 +218,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         .eq('id', noticeId)
         .single();
       if (notice) {
-        setActiveNotice(notice);
-        setShowNoticeModal(true);
+        const trimmed = notice.content.trim();
+        const isUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://');
+        
         markNoticeAsRead(noticeId);
         // Refresh notifications unread status
         setNotifs(prev => prev.map(n => {
@@ -228,6 +229,13 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           }
           return n;
         }));
+
+        if (isUrl) {
+          window.open(trimmed, '_blank');
+        } else {
+          setActiveNotice(notice);
+          setShowNoticeModal(true);
+        }
       }
     } catch (err) {
       console.error('Error fetching notice details:', err);

@@ -225,7 +225,7 @@ export default function AdminStudentNoticesPage() {
 
           <div className="mb-3">
             <div className="flex justify-between items-center mb-1">
-              <label className="text-[11px] font-bold text-slate-400 pl-1">공지 내용 (HTML 코드 혹은 일반 텍스트 입력 가능)</label>
+              <label className="text-[11px] font-bold text-slate-400 pl-1">공지 내용 (HTML 코드, 일반 텍스트, 혹은 단독 URL 링크 입력 가능)</label>
               {content.trim() && (
                 <button
                   type="button"
@@ -242,7 +242,7 @@ export default function AdminStudentNoticesPage() {
             <textarea
               value={content}
               onChange={e => setContent(e.target.value)}
-              placeholder="여기에 공지글이나 HTML 코드를 입력하세요..."
+              placeholder="여기에 공지글이나 HTML 코드를 입력하세요. 만약 http:// 또는 https:// 로 시작하는 웹 링크만 입력하면, 학생이 공지 클릭 시 모달창 없이 해당 웹사이트로 바로 연결됩니다."
               rows={10}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[13px] font-mono outline-none focus:border-indigo-400 resize-y text-slate-700 font-medium"
             />
@@ -354,11 +354,15 @@ export default function AdminStudentNoticesPage() {
                               minute: "2-digit",
                             })}
                           </span>
-                          {isHtmlNotice && (
+                          {n.content.trim().startsWith("http://") || n.content.trim().startsWith("https://") ? (
+                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 uppercase">
+                              링크 바로가기
+                            </span>
+                          ) : isHtmlNotice ? (
                             <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase">
                               HTML 포맷
                             </span>
-                          )}
+                          ) : null}
                         </div>
                         <h3 className="text-[16px] font-black text-slate-800">{n.title}</h3>
                       </div>
@@ -399,9 +403,25 @@ export default function AdminStudentNoticesPage() {
 
                     {/* Short Text Snippet */}
                     <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <p className="text-[12px] text-slate-500 font-mono line-clamp-2 overflow-hidden">
-                        {isHtmlNotice ? "[HTML 코드 소스]" : ""} {n.content}
-                      </p>
+                      {n.content.trim().startsWith("http://") || n.content.trim().startsWith("https://") ? (
+                        <div className="flex items-center justify-between">
+                          <p className="text-[12px] text-indigo-600 font-bold font-mono truncate mr-2">
+                            🔗 [링크 연결] {n.content.trim()}
+                          </p>
+                          <a
+                            href={n.content.trim()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] font-bold text-indigo-500 hover:underline shrink-0"
+                          >
+                            링크 열기 →
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-[12px] text-slate-500 font-mono line-clamp-2 overflow-hidden">
+                          {isHtmlNotice ? "[HTML 코드 소스]" : ""} {n.content}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
