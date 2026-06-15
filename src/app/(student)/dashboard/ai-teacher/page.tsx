@@ -300,7 +300,7 @@ export default function AITeacherPage() {
         style={{
           width: '100%',
           background: '#fff',
-          border: '1.5px solid #d1d5db',
+          border: '1.5px solid rgba(0,0,0,0.08)',
           color: '#111',
           fontSize: '11px',
           fontWeight: 700,
@@ -313,7 +313,7 @@ export default function AITeacherPage() {
       >
         {children}
       </select>
-      <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#666' }} />
+      <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
     </div>
   );
 
@@ -321,7 +321,7 @@ export default function AITeacherPage() {
     <div className="flex flex-col h-full max-w-2xl mx-auto w-full relative bg-transparent">
       {/* Header */}
       <div className="flex items-start gap-3 px-5 pt-5 pb-4 shrink-0 z-20 sticky top-0 border-b"
-        style={{ background: 'rgba(245,246,250,0.97)', borderColor: 'rgba(0,0,0,0.08)', backdropFilter: 'blur(12px)' }}>
+        style={{ background: 'rgba(253, 251, 247, 0.97)', borderColor: 'rgba(0,0,0,0.06)', backdropFilter: 'blur(12px)' }}>
         {/* 딥러닝 Parallax 로고 아이콘 */}
         <div className="w-9 h-9 rounded-[0.8rem] overflow-hidden shadow-sm shrink-0 mt-0.5"
           style={{ border: '1px solid rgba(0,0,0,0.10)' }}>
@@ -332,11 +332,11 @@ export default function AITeacherPage() {
             <h1 className="text-[18px]" style={{
               fontFamily: 'var(--font-outfit), "Outfit", "Plus Jakarta Sans", sans-serif',
               fontWeight: 700,
-              color: '#0096c7',
+              color: '#0f766e',
               letterSpacing: '-0.4px',
             }}>Genie</h1>
             <span className="text-[9px] font-black px-2 py-0.5 rounded-md border uppercase tracking-widest"
-              style={{ color: '#555', background: '#eee', borderColor: 'rgba(0,0,0,0.08)' }}>
+              style={{ color: '#475569', background: 'rgba(0,0,0,0.05)', borderColor: 'rgba(0,0,0,0.08)' }}>
               {messages.length > 1 ? `${messages.length}개 대화` : "새 대화"}
             </span>
             {passagesLoading && <span className="text-[9px] font-bold" style={{ color: '#999' }}>지문 로딩 중...</span>}
@@ -360,9 +360,9 @@ export default function AITeacherPage() {
                   }
                 }}
                 className="w-3.5 h-3.5 rounded cursor-pointer"
-                style={{ accentColor: '#a78bfa' }}
+                style={{ accentColor: '#10b981' }}
               />
-              <span className="text-[10px] font-bold transition-colors" style={{ color: '#444' }}>지문 기억</span>
+              <span className="text-[10px] font-bold transition-colors text-slate-500">지문 기억</span>
             </label>
           </div>
 
@@ -370,12 +370,12 @@ export default function AITeacherPage() {
             onClick={() => setSelectorOpen(o => !o)}
             className="flex items-center gap-2 rounded-xl px-3 py-2 transition-all mb-1.5 w-full"
             style={{
-              background: selectorOpen ? '#e8e8f0' : '#eff0f5',
-              border: selectorOpen ? '1.5px solid #a5b4fc' : '1.5px solid #d1d5db',
+              background: selectorOpen ? 'rgba(16,185,129,0.08)' : '#ffffff',
+              border: selectorOpen ? '1.5px solid #10b981' : '1.5px solid rgba(0,0,0,0.08)',
               color: '#111',
             }}
           >
-            <BookOpen size={13} style={{ color: selectorOpen ? '#6366f1' : '#666', flexShrink: 0 }} />
+            <BookOpen size={13} style={{ color: selectorOpen ? '#10b981' : '#64748b', flexShrink: 0 }} />
             <span className="text-[12px] font-black flex-1 text-left truncate" style={{ color: '#111' }}>
               {selectedSetId !== 'none' && !selectorOpen
                 ? (() => { const p = passages.find(x => x.id === selectedSetId); return p ? (p.label || '지문 선택됨') : '지문 선택'; })()
@@ -383,10 +383,9 @@ export default function AITeacherPage() {
               }
             </span>
             {!selectorOpen && selectedSetId === 'none' && (
-              <span className="text-[9px] font-bold" style={{ color: '#999' }}>(탭해서 선택)</span>
+              <span className="text-[9px] font-bold text-slate-400">(탭해서 선택)</span>
             )}
-            <ChevronDown size={12} className={`shrink-0 transition-transform duration-200 ${selectorOpen ? 'rotate-180' : ''}`}
-              style={{ color: '#666' }} />
+            <ChevronDown size={12} className={`shrink-0 transition-transform duration-200 ${selectorOpen ? 'rotate-180' : ''} text-slate-400`} />
           </button>
 
           {/* ── 3단계 필터 (selectorOpen 일 때만 표시) ── */}
@@ -412,7 +411,7 @@ export default function AITeacherPage() {
                 <select
                   value={selectedSetId}
                   onChange={e => selectPassage(e.target.value)}
-                  className="w-full bg-foreground/5 border border-foreground/10 text-foreground text-[11px] font-bold rounded-xl px-3 py-2 appearance-none focus:outline-none cursor-pointer pr-8 hover:border-foreground/20 transition-all"
+                  className="w-full bg-white border border-slate-200 text-slate-800 text-[11px] font-bold rounded-xl px-3 py-2 appearance-none focus:outline-none cursor-pointer pr-8 hover:border-slate-300 transition-all"
                 >
                   <option value="none">지문 없이 자유 질문</option>
                   {filteredPassages.map(a => (
@@ -421,7 +420,7 @@ export default function AITeacherPage() {
                     </option>
                   ))}
                 </select>
-                <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
+                <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
             </div>
           )}
@@ -445,16 +444,16 @@ export default function AITeacherPage() {
           return (
             <div key={msg.id} className="animate-in fade-in slide-in-from-bottom-2 duration-400">
               {idx > 0 && msg.timestamp - messages[idx - 1].timestamp > 3600000 && (
-                <div className="text-center text-[10px] font-bold my-3" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                <div className="text-center text-[10px] font-bold my-3 text-slate-400">
                   {new Date(msg.timestamp).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </div>
               )}
               <div className={`flex ${msg.sender === 'ai' ? 'justify-start' : 'justify-end'}`}>
                 {msg.sender === 'ai' && (
                   <div className="p-[2px] rounded-full shrink-0 mr-2 mt-1 self-end"
-                    style={{ background: 'linear-gradient(135deg,#14b8a6,#38bdf8)' }}>
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#09090f' }}>
-                      <Sparkles size={11} strokeWidth={1.5} className="text-white" />
+                    style={{ background: 'linear-gradient(135deg,#10b981,#fb923c)' }}>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)' }}>
+                      <Sparkles size={11} strokeWidth={1.5} className="text-teal-600" />
                     </div>
                   </div>
                 )}
@@ -465,7 +464,7 @@ export default function AITeacherPage() {
                       : 'rounded-[1.4rem] rounded-br-sm font-medium'
                   }`} style={msg.sender === 'ai'
                     ? { background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', color: '#1a1a2e', boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }
-                    : { background: 'linear-gradient(135deg,#14b8a6,#38bdf8)', color: '#fff', boxShadow: '0 4px 20px rgba(20,184,166,0.35)' }}>
+                    : { background: 'linear-gradient(135deg,#10b981,#fb923c)', color: '#fff', boxShadow: '0 4px 20px rgba(251,146,60,0.25)' }}>
                     {msg.text}
                   </div>
                 </div>
@@ -477,7 +476,7 @@ export default function AITeacherPage() {
                     <button key={optIdx} onClick={() => handleOptionClick(opt.text)}
                       disabled={isLoading}
                       className="text-left text-[12px] font-bold px-4 py-2.5 rounded-2xl transition-all active:scale-[0.98] disabled:opacity-50 hover:scale-[1.01]"
-                      style={{ background: 'rgba(20,184,166,0.18)', border: '1.5px solid rgba(20,184,166,0.40)', color: 'rgba(160,240,255,0.95)' }}>
+                      style={{ background: 'rgba(16,185,129,0.06)', border: '1.5px solid rgba(16,185,129,0.2)', color: '#0f766e' }}>
                       {opt.text}
                     </button>
                   ))}
@@ -491,10 +490,10 @@ export default function AITeacherPage() {
           <div className="flex items-center gap-2 ml-10 animate-in fade-in duration-300">
             <div className="flex gap-1">
               {[0, 150, 300].map(delay => (
-                <div key={delay} className="w-2 h-2 rounded-full animate-bounce" style={{ background: 'rgba(20,184,166,0.5)', animationDelay: `${delay}ms` }} />
+                <div key={delay} className="w-2 h-2 rounded-full animate-bounce" style={{ background: 'rgba(16,185,129,0.5)', animationDelay: `${delay}ms` }} />
               ))}
             </div>
-            <span className="text-[11px] font-bold" style={{ color: 'rgba(20,184,166,0.6)' }}>Parallax가 생각 중...</span>
+            <span className="text-[11px] font-bold text-emerald-600">Parallax가 생각 중...</span>
           </div>
         )}
         <div ref={bottomRef} className="h-4" />
@@ -502,10 +501,10 @@ export default function AITeacherPage() {
 
       {/* IG DM 스타일 입력창 */}
       <div className="fixed bottom-[88px] left-0 right-0 w-full max-w-2xl mx-auto px-4 z-20 pb-4">
-        <div className="pt-3" style={{ background: 'linear-gradient(to top, rgba(3,15,22,1) 80%, transparent)' }}>
+        <div className="pt-3" style={{ background: 'linear-gradient(to top, #fafaf6 80%, transparent)' }}>
           <form id="ai-form" onSubmit={handleSend}
             className="relative flex items-end gap-2 px-4 py-2.5 rounded-[2rem] bg-white"
-            style={{ border: '1px solid rgba(0,0,0,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }}>
+            style={{ border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
             <textarea value={input} onChange={e => setInput(e.target.value)}
               disabled={isLoading}
               placeholder={selectedSet ? `${selectedSet.label}에 대해 질문해봐...` : '영어에 대해 무엇이든 물어봐...'}
@@ -517,7 +516,7 @@ export default function AITeacherPage() {
             />
             <button type="submit" disabled={!input.trim() || isLoading}
               className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
-              style={{ background: 'linear-gradient(135deg,#14b8a6,#38bdf8)', boxShadow: '0 4px 14px rgba(6,182,212,0.4)' }}>
+              style={{ background: 'linear-gradient(135deg,#10b981,#fb923c)', boxShadow: '0 4px 14px rgba(251,146,60,0.25)' }}>
               {isLoading ? <Loader2 size={15} className="animate-spin text-white" /> : <Send size={15} strokeWidth={2.5} className="text-white" />}
             </button>
           </form>

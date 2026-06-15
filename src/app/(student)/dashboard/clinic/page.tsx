@@ -109,40 +109,40 @@ export default function ClinicPage() {
           {/* IG 스토리 링 아바타 */}
           <div className="relative shrink-0">
             <div className="p-[2.5px] rounded-full" style={{
-              background: 'linear-gradient(135deg,#14b8a6,#38bdf8,#06b6d4,#14b8a6)',
+              background: 'linear-gradient(135deg,#10b981,#fb923c)',
               animation: 'igRingPulse 3s ease-in-out infinite',
             }}>
               <div className="w-16 h-16 rounded-full flex items-center justify-center text-[18px] font-black"
-                style={{ background: '#09090f', color: '#fff' }}>
+                style={{ background: '#ffffff', color: '#1e293b', border: '1px solid rgba(0,0,0,0.08)' }}>
                 {initial}
               </div>
             </div>
             {/* 온라인 도트 */}
             <span className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center"
-              style={{ background: '#22c55e', borderColor: '#09090f' }}>
+              style={{ background: '#22c55e', borderColor: '#fafaf6' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-white" />
             </span>
           </div>
           {/* 이름 + 설명 */}
           <div className="flex-1 min-w-0">
-            <p className="text-[16px] font-black leading-tight" style={{ color: '#ffffff' }}>{studentName}</p>
-            <p className="text-[12px] font-bold mt-0.5" style={{ color: 'rgba(160,210,255,0.95)' }}>
+            <p className="text-[16px] font-black leading-tight text-slate-800">{studentName}</p>
+            <p className="text-[12px] font-bold mt-0.5 text-slate-500">
               클리닉 대기 접수
             </p>
             <div className="flex items-center gap-1.5 mt-1">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#22c55e' }} />
-              <span className="text-[10px] font-bold" style={{ color: 'rgba(100,255,150,0.95)' }}>선생님 온라인</span>
+              <span className="text-[10px] font-bold text-emerald-600">선생님 온라인</span>
             </div>
           </div>
           {/* 대기 뱃지 */}
           <div className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-black"
-            style={{ background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.35)', color: 'rgba(160,240,255,0.9)' }}>
+            style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)', color: '#047857' }}>
             {queue.length}명 대기
           </div>
         </div>
 
         {/* IG 스토리 스타일 구분선 */}
-        <div style={{ height: '1px', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.10),transparent)' }} />
+        <div style={{ height: '1px', background: 'linear-gradient(90deg,transparent,rgba(0,0,0,0.06),transparent)' }} />
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 custom-scrollbar flex flex-col gap-5 pb-32 pt-3">
@@ -153,27 +153,28 @@ export default function ClinicPage() {
             {/* IG 포스트 스타일 카드 */}
             <div className="rounded-[1.6rem] overflow-hidden"
               style={{
-                background: 'rgba(8,38,55,0.82)',
-                border: '1px solid rgba(34,211,238,0.20)',
+                background: 'rgba(255,255,255,0.7)',
+                border: '1px solid rgba(0,0,0,0.05)',
                 backdropFilter: 'blur(16px)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.03)',
               }}>
               {/* 카드 상단 — 포스팅 헤더 */}
               <div className="flex items-center gap-3 px-4 py-3.5"
-                style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-black text-white"
-                  style={{ background: 'linear-gradient(135deg,#14b8a6,#38bdf8)' }}>
+                  style={{ background: 'linear-gradient(135deg,#10b981,#fb923c)' }}>
                   {initial}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-black text-white leading-none">{studentName}</p>
-                  <p className="text-[10px] mt-0.5" style={{ color: 'rgba(160,210,255,0.55)' }}>클리닉 신청서 작성 중</p>
+                  <p className="text-[13px] font-black text-slate-800 leading-none">{studentName}</p>
+                  <p className="text-[10px] mt-0.5 text-slate-500">클리닉 신청서 작성 중</p>
                 </div>
-                <Sparkles size={14} style={{ color: 'rgba(34,211,238,0.8)' }} />
+                <Sparkles size={14} style={{ color: '#fb923c' }} />
               </div>
 
               {/* 입력 영역 */}
               <div className="px-4 py-4">
-                <p className="text-[11px] font-black uppercase tracking-widest mb-2.5" style={{ color: 'rgba(20,184,166,0.7)' }}>
+                <p className="text-[11px] font-black uppercase tracking-widest mb-2.5 text-emerald-600">
                   질문 내용
                 </p>
                 <textarea
@@ -184,14 +185,14 @@ export default function ClinicPage() {
                   rows={4}
                   className="w-full rounded-xl text-[14px] font-medium resize-none outline-none leading-relaxed"
                   style={{
-                    background: 'rgba(0,0,0,0.35)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    color: '#ffffff',
+                    background: '#ffffff',
+                    border: '1px solid rgba(0,0,0,0.08)',
+                    color: '#1e293b',
                     padding: '12px 14px',
                   }}
                 />
                 {question.length > 0 && (
-                  <span className="block text-right text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                  <span className="block text-right text-[10px] mt-1 text-slate-400">
                     {question.length}자
                   </span>
                 )}
@@ -205,10 +206,10 @@ export default function ClinicPage() {
                   className="w-full h-12 rounded-xl font-black text-[14px] tracking-wide flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 active:translate-y-0.5 disabled:opacity-50"
                   style={{
                     background: isSubmitting
-                      ? 'rgba(20,150,150,0.4)'
-                      : 'linear-gradient(135deg,#14b8a6,#38bdf8,#06b6d4)',
+                      ? 'rgba(16,185,129,0.4)'
+                      : 'linear-gradient(135deg,#10b981,#fb923c)',
                     color: '#fff',
-                    boxShadow: '0 4px 20px rgba(6,182,212,0.35)',
+                    boxShadow: '0 4px 20px rgba(251,146,60,0.25)',
                   }}>
                   {isSubmitting ? (
                     <span className="animate-pulse">접수 중...</span>
@@ -222,17 +223,17 @@ export default function ClinicPage() {
         ) : (
           <div className="rounded-[1.6rem] overflow-hidden animate-in zoom-in duration-500"
             style={{
-              background: 'linear-gradient(135deg,rgba(34,197,94,0.20),rgba(16,185,129,0.14))',
-              border: '1px solid rgba(34,197,94,0.35)',
+              background: 'linear-gradient(135deg,rgba(16,185,129,0.08),rgba(16,185,129,0.04))',
+              border: '1px solid rgba(16,185,129,0.2)',
             }}>
             <div className="px-5 py-5 flex items-center gap-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: 'linear-gradient(135deg,#22c55e,#16a34a)', boxShadow: '0 0 20px rgba(34,197,94,0.4)' }}>
+                style={{ background: 'linear-gradient(135deg,#10b981,#059669)', boxShadow: '0 0 20px rgba(16,185,129,0.2)' }}>
                 <CheckCircle2 size={22} className="text-white" />
               </div>
               <div>
-                <p className="text-[15px] font-black" style={{ color: '#ffffff' }}>접수 완료! 🎉</p>
-                <p className="text-[12px] font-bold mt-0.5" style={{ color: 'rgba(160,255,180,0.95)' }}>
+                <p className="text-[15px] font-black text-emerald-800">접수 완료! 🎉</p>
+                <p className="text-[12px] font-bold mt-0.5 text-emerald-600">
                   선생님이 부를 때까지 잠깐만 기다려줘
                 </p>
               </div>
@@ -245,25 +246,25 @@ export default function ClinicPage() {
           {/* 섹션 헤더 */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Users size={13} style={{ color: 'rgba(20,184,166,0.7)' }} />
-              <span className="text-[11px] font-black uppercase tracking-[0.18em]" style={{ color: 'rgba(20,184,166,0.7)' }}>
+              <Users size={13} className="text-emerald-600" />
+              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
                 실시간 대기
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#22c55e' }} />
-              <span className="text-[10px] font-bold" style={{ color: 'rgba(100,220,120,0.7)' }}>LIVE</span>
+              <span className="text-[10px] font-bold text-emerald-600">LIVE</span>
             </div>
           </div>
 
           {isLoading ? (
-            <div className="py-8 text-center text-[12px] animate-pulse" style={{ color: 'rgba(20,184,166,0.5)' }}>
+            <div className="py-8 text-center text-[12px] animate-pulse text-slate-400">
               확인 중...
             </div>
           ) : queue.length === 0 ? (
             <div className="py-10 text-center">
-              <AlertCircle size={22} className="mx-auto mb-2" style={{ color: 'rgba(255,255,255,0.15)' }} />
-              <p className="text-[12px] font-bold" style={{ color: 'rgba(255,255,255,0.25)' }}>대기 중인 학생이 없어</p>
+              <AlertCircle size={22} className="mx-auto mb-2 text-slate-300" />
+              <p className="text-[12px] font-bold text-slate-400">대기 중인 학생이 없어</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2.5">
@@ -275,19 +276,20 @@ export default function ClinicPage() {
                     className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all"
                     style={{
                       background: isMe
-                        ? 'linear-gradient(135deg,rgba(20,184,166,0.22),rgba(6,182,212,0.14))'
-                        : 'rgba(255,255,255,0.04)',
+                        ? 'linear-gradient(135deg,rgba(16,185,129,0.08),rgba(251,146,60,0.08))'
+                        : '#ffffff',
                       border: isMe
-                        ? '1px solid rgba(34,211,238,0.25)'
-                        : '1px solid rgba(255,255,255,0.07)',
+                        ? '1px solid rgba(251,146,60,0.25)'
+                        : '1px solid rgba(0,0,0,0.05)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
                     }}>
                     {/* 순서 + 아바타 */}
                     <div className="relative shrink-0">
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-black text-white"
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-black ${isMe ? 'text-white' : 'text-slate-600'}`}
                         style={{
                           background: isMe
-                            ? 'linear-gradient(135deg,#14b8a6,#38bdf8)'
-                            : 'rgba(255,255,255,0.10)',
+                            ? 'linear-gradient(135deg,#10b981,#fb923c)'
+                            : 'rgba(0,0,0,0.06)',
                         }}>
                         {stuInitial}
                       </div>
@@ -299,19 +301,19 @@ export default function ClinicPage() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[14px] font-black text-white">
+                        <span className="text-[14px] font-black text-slate-800">
                           {stu.name}
                           {isMe && (
                             <span className="ml-1.5 text-[9px] font-black px-1.5 py-0.5 rounded-md"
-                              style={{ background: 'rgba(20,184,166,0.3)', color: 'rgba(160,240,255,0.9)' }}>나</span>
+                              style={{ background: 'rgba(16,185,129,0.15)', color: '#047857' }}>나</span>
                           )}
                         </span>
-                        <span className="flex items-center gap-0.5 text-[10px] font-bold" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                        <span className="flex items-center gap-0.5 text-[10px] font-bold text-slate-400">
                           <Clock size={9} /> {stu.fullTime}
                         </span>
                       </div>
                       {stu.question && stu.question !== "질문 없음" && (
-                        <p className="text-[11px] mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                        <p className="text-[11px] mt-0.5 truncate text-slate-600">
                           {stu.question}
                         </p>
                       )}
@@ -320,8 +322,8 @@ export default function ClinicPage() {
                     {/* 상태 뱃지 */}
                     <div className="px-2.5 py-1 rounded-full text-[9px] font-black tracking-widest uppercase shrink-0"
                       style={stu.status === 'in-progress'
-                        ? { background: 'rgba(34,197,94,0.20)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.4)' }
-                        : { background: 'rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.75)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                        ? { background: 'rgba(16,185,129,0.08)', color: '#047857', border: '1px solid rgba(16,185,129,0.15)' }
+                        : { background: 'rgba(0,0,0,0.04)', color: '#64748b', border: '1px solid rgba(0,0,0,0.08)' }}>
                       {stu.status === 'in-progress' ? '상담 중' : '대기'}
                     </div>
                   </div>

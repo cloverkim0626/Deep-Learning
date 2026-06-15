@@ -536,34 +536,34 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   ];
 
   return (
-    <div className="flex flex-col h-screen w-full max-w-md mx-auto relative overflow-hidden border-x border-white/5"
+    <div className="student-theme flex flex-col h-screen w-full max-w-md mx-auto relative overflow-hidden border-x border-white/5"
       style={{
         background:`
-          radial-gradient(ellipse 70% 60% at 10% 15%, rgba(6,182,212,0.35) 0%, transparent 55%),
-          radial-gradient(ellipse 60% 55% at 90% 85%, rgba(20,184,166,0.28) 0%, transparent 50%),
-          radial-gradient(ellipse 50% 45% at 85% 10%, rgba(34,211,238,0.25) 0%, transparent 55%),
-          radial-gradient(ellipse 40% 40% at 15% 85%, rgba(56,189,248,0.22) 0%, transparent 55%),
-          linear-gradient(145deg, #021622 0%, #053c5a 40%, #021622 100%)
+          radial-gradient(ellipse 60% 50% at 10% 10%, rgba(16,185,129,0.08) 0%, transparent 60%),
+          radial-gradient(ellipse 60% 50% at 90% 80%, rgba(251,146,60,0.08) 0%, transparent 60%),
+          radial-gradient(ellipse 50% 40% at 80% 15%, rgba(251,146,60,0.06) 0%, transparent 50%),
+          radial-gradient(ellipse 50% 40% at 20% 85%, rgba(16,185,129,0.06) 0%, transparent 50%),
+          linear-gradient(145deg, #fdfbf7 0%, #faf8f2 50%, #f7f4eb 100%)
         `
       }}>
 
       {/* Top Header */}
       <header className="h-20 flex items-center justify-between px-6 border-b z-30 shrink-0 sticky top-0"
         style={{
-          background:'rgba(3,15,22,0.75)',
-          borderBottomColor:'rgba(255,255,255,0.07)',
+          background:'rgba(253,251,247,0.75)',
+          borderBottomColor:'rgba(0,0,0,0.06)',
           backdropFilter:'blur(20px)',
           WebkitBackdropFilter:'blur(20px)',
         }}>
         <Link href="/dashboard" className="flex flex-col gap-1">
           <span className="text-[18px] serif font-black leading-none tracking-tight"
-            style={{background:'linear-gradient(90deg,#fff 40%,rgba(255,255,255,0.7) 100%)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+            style={{background:'linear-gradient(90deg,#1e293b 40%,#475569 100%)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
             Deep Learning
           </span>
           <div className="flex items-center gap-1.5">
-            <span className="text-[13px] font-black leading-none" style={{color:'rgba(180,160,255,0.9)'}}>{profile.name}</span>
-            <div className="w-1 h-1 rounded-full" style={{background:'rgba(255,255,255,0.2)'}} />
-            <span className="text-[10px] font-bold leading-none" style={{color:'rgba(255,255,255,0.35)'}}>{profile.class}</span>
+            <span className="text-[13px] font-black leading-none" style={{color:'#f97316'}}>{profile.name}</span>
+            <div className="w-1 h-1 rounded-full" style={{background:'rgba(0,0,0,0.1)'}} />
+            <span className="text-[10px] font-bold leading-none" style={{color:'rgba(15,23,42,0.45)'}}>{profile.class}</span>
           </div>
         </Link>
         <div className="flex items-center gap-3">
@@ -776,27 +776,27 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <div className="absolute inset-0 z-50 flex flex-col animate-in fade-in duration-300">
           <div className="absolute inset-0 backdrop-blur-md" style={{ background: 'rgba(0,0,0,0.55)' }} onClick={() => { setShowProfile(false); setShowSettings(false); }} />
           <div className="absolute bottom-0 left-0 right-0 rounded-t-[2.8rem] overflow-y-auto max-h-[92vh] custom-scrollbar animate-in slide-in-from-bottom duration-500"
-            style={{ background: 'linear-gradient(180deg,#051b27 0%,#030f16 100%)', boxShadow: '0 -24px 80px rgba(0,0,0,0.6)' }}>
+            style={{ background: 'linear-gradient(180deg,#fdfbf7 0%,#faf8f2 100%)', borderTop: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 -24px 80px rgba(15,23,42,0.12)' }}>
             {/* 핸들 바 + 닫기 */}
             <div className="flex items-center justify-between px-5 pt-4 pb-1">
               <button
                 onClick={() => { setShowProfile(false); setShowSettings(false); }}
                 className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95"
-                style={{ color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.08)' }}>
+                style={{ color: '#475569', background: 'rgba(15,23,42,0.05)' }}>
                 <X size={15} strokeWidth={2.5} />
               </button>
-              <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.2)' }} />
+              <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(0,0,0,0.1)' }} />
               <div className="w-8" /> {/* 균형 spacer */}
             </div>
 
             {/* IG 프로필 헤더 */}
-            <div className="px-5 pt-4 pb-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="px-5 pt-4 pb-5" style={{ borderBottom: '1px solid rgba(15,23,42,0.06)' }}>
               {/* 상단 — DM + 트로피 + 설정 */}
               <div className="flex items-center justify-end gap-1.5 mb-4">
                 {/* DM 버튼 */}
                 <button onClick={() => setShowDmModal(true)}
                   className="w-9 h-9 flex items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95"
-                  style={{ color: 'rgba(255,255,255,0.55)', background: 'rgba(255,255,255,0.06)' }}>
+                  style={{ color: '#475569', background: 'rgba(15,23,42,0.05)' }}>
                   <Send size={16} strokeWidth={2} />
                 </button>
                 {/* 트로피 (리더보드) */}
@@ -816,7 +816,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 {profile.class !== 'GUEST' && (
                   <button onClick={() => { setShowSettings(true); setPwError(''); setCurrentPw(''); setNewPw(''); }}
                     className="w-9 h-9 flex items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95"
-                    style={{ color: 'rgba(255,255,255,0.55)', background: 'rgba(255,255,255,0.06)' }}>
+                    style={{ color: '#475569', background: 'rgba(15,23,42,0.05)' }}>
                     <Settings size={17} strokeWidth={2} />
                   </button>
                 )}
@@ -826,7 +826,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               <div className="flex items-center gap-5 mb-3">
                 {/* IG 스토리 링 아바타 */}
                 <div className="p-[3px] rounded-full shrink-0" style={{ background: 'linear-gradient(135deg,#14b8a6,#38bdf8,#fb923c,#f43f5e)' }}>
-                  <div className="w-20 h-20 rounded-full flex items-center justify-center text-[26px] font-black" style={{ background: '#030f16', color: '#fff' }}>
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center text-[26px] font-black" style={{ background: '#fafaf6', color: '#1e293b', border: '1px solid rgba(0,0,0,0.05)' }}>
                     {profile.name.slice(-2)}
                   </div>
                 </div>
@@ -834,8 +834,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 <div className="flex flex-1 justify-around">
                   {displayStats.map(s => (
                     <div key={s.label} className="text-center">
-                      <p className="text-[20px] font-black text-white leading-none">{s.value}</p>
-                      <p className="text-[10px] font-bold mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</p>
+                      <p className="text-[20px] font-black text-slate-800 leading-none">{s.value}</p>
+                      <p className="text-[10px] font-bold mt-0.5" style={{ color: 'rgba(15,23,42,0.5)' }}>{s.label}</p>
                     </div>
                   ))}
                 </div>
@@ -844,15 +844,15 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
               {/* 이름 + 반 + 학교 + 메달 */}
               <div className="mt-3 mb-2">
-                <p className="text-[19px] font-black text-white leading-tight tracking-tight">{profile.name}</p>
+                <p className="text-[19px] font-black text-slate-800 leading-tight tracking-tight">{profile.name}</p>
                 {/* 반 + 학교 */}
                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: 'rgba(140,100,255,0.18)', color: 'rgba(200,175,255,0.9)', border: '1px solid rgba(140,100,255,0.25)' }}>
+                    style={{ background: 'rgba(16,185,129,0.08)', color: '#047857', border: '1px solid rgba(16,185,129,0.15)' }}>
                     {profile.class}
                   </span>
                   {profile.school && (
-                    <span className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                    <span className="text-[11px] font-medium" style={{ color: 'rgba(15,23,42,0.45)' }}>
                       · {profile.school}
                     </span>
                   )}
@@ -861,7 +861,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 {streak > 0 && (
                   <div className="flex items-center gap-1.5 mt-2">
                     <span className="text-[13px]">🔥</span>
-                    <span className="text-[12px] font-black" style={{ color: 'rgba(255,170,50,0.95)' }}>
+                    <span className="text-[12px] font-black" style={{ color: '#d97706' }}>
                       {streak}일 연속 학습 중
                     </span>
                   </div>
@@ -887,7 +887,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                         <span className="text-[11px] font-black" style={{ color: '#cd7f32' }}>{medals.bronze}회</span>
                       </div>
                     )}
-                    <span className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.30)' }}>월간 리더보드</span>
+                    <span className="text-[10px] font-medium" style={{ color: 'rgba(15,23,42,0.4)' }}>월간 리더보드</span>
                   </div>
                 )}
               </div>
@@ -1127,45 +1127,45 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               )}
 
               {/* AI 어드바이스 — IG DM 말풍선 느낌 */}
-              <div className="mb-4 px-4 py-4 rounded-[1.4rem]" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}>
+              <div className="mb-4 px-4 py-4 rounded-[1.4rem] shadow-sm" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.05)' }}>
                 <div className="flex items-center gap-2 mb-2.5">
-                  <div className="p-[2px] rounded-full" style={{ background: 'linear-gradient(135deg,#14b8a6,#fb923c)' }}>
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#030f16' }}>
-                      <Bot size={12} className="text-white" />
+                  <div className="p-[2px] rounded-full" style={{ background: 'linear-gradient(135deg,#10b981,#fb923c)' }}>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#fafaf6' }}>
+                      <Bot size={12} className="text-slate-800" />
                     </div>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'rgba(160,130,255,0.6)' }}>Parallax AI</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#0f766e' }}>Parallax AI</span>
                 </div>
-                <p className="text-[13px] font-medium leading-relaxed" style={{ color: 'rgba(255,255,255,0.82)' }}>{advice || "학습 데이터를 분석 중이에요..."}</p>
+                <p className="text-[13px] font-semibold leading-relaxed text-slate-700">{advice || "학습 데이터를 분석 중이에요..."}</p>
               </div>
 
-              {/* 스트릭 카드 — IG 인디고/퍼플 감성 */}
-              <div className="mb-5 px-4 py-4 rounded-[1.4rem]" style={{ background: 'linear-gradient(135deg,rgba(20,184,166,0.20),rgba(251,146,60,0.15))', border: '1px solid rgba(20,184,166,0.30)' }}>
+              {/* 스트릭 카드 — Mint & Peach 테마 */}
+              <div className="mb-5 px-4 py-4 rounded-[1.4rem] shadow-sm" style={{ background: 'linear-gradient(135deg,rgba(16,185,129,0.08),rgba(251,146,60,0.08))', border: '1px solid rgba(251,146,60,0.2)' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: 'rgba(180,150,255,0.7)' }}>🔥 STREAK</p>
-                    <p className="text-[26px] font-black" style={{ color: '#c4b5fd' }}>{streak}일 연속</p>
-                    <p className="text-[11px] font-bold mt-0.5" style={{ color: 'rgba(200,180,255,0.65)' }}>{getStreakMessage(profile.name, streak)}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest mb-1 text-slate-500">🔥 STREAK</p>
+                    <p className="text-[26px] font-black text-slate-800">{streak}일 연속</p>
+                    <p className="text-[11px] font-bold mt-0.5 text-slate-600">{getStreakMessage(profile.name, streak)}</p>
                   </div>
                   <div className="text-[44px] leading-none select-none">
                     {streak === 0 ? '👀' : streak <= 3 ? '🔥' : streak <= 7 ? '🔥🔥' : streak <= 14 ? '🔥🔥🔥' : '🔥🔥🔥🔥'}
                   </div>
                 </div>
-                <div className="mt-2 text-[9px] font-bold" style={{ color: 'rgba(180,150,255,0.35)' }}>* 주당 최대 2일 휴식 가능 • 일~토 1주 기준</div>
+                <div className="mt-2 text-[9px] font-bold text-slate-400">* 주당 최대 2일 휴식 가능 • 일~토 1주 기준</div>
               </div>
 
               {/* 오늘의 명문 — IG 감성 카드 */}
               {(() => {
                 const q = getDailyQuote();
                 return (
-                  <div className="mb-4 px-4 py-4 rounded-[1.4rem]" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}>
+                  <div className="mb-4 px-4 py-4 rounded-[1.4rem] shadow-sm" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.05)' }}>
                     <div className="flex items-center gap-2 mb-2.5">
-                      <Quote size={12} style={{ color: 'rgba(180,140,255,0.7)' }} />
-                      <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'rgba(160,130,255,0.6)' }}>Today&apos;s Quote</span>
-                      <span className="ml-auto text-[9px] font-bold" style={{ color: 'rgba(255,255,255,0.25)' }}>{new Date().toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</span>
+                      <Quote size={12} style={{ color: '#fb923c' }} />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Today&apos;s Quote</span>
+                      <span className="ml-auto text-[9px] font-bold text-slate-400">{new Date().toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</span>
                     </div>
-                    <p className="text-[14px] font-bold leading-relaxed serif italic mb-2" style={{ color: 'rgba(255,255,255,0.88)' }}>&ldquo;{q.text}&rdquo;</p>
-                    <p className="text-[11px] font-black" style={{ color: 'rgba(180,150,255,0.7)' }}>— {q.author}</p>
+                    <p className="text-[14px] font-bold leading-relaxed serif italic mb-2 text-slate-700">&ldquo;{q.text}&rdquo;</p>
+                    <p className="text-[11px] font-black text-slate-500">— {q.author}</p>
                     <button
                       onClick={() => {
                         if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -1187,8 +1187,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                           else { window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.onvoiceschanged = null; doSpeak(); }; }
                         }
                       }}
-                      className="mt-3 flex items-center gap-1.5 text-[11px] font-black transition-colors"
-                      style={{ color: 'rgba(160,130,255,0.6)' }}
+                      className="mt-3 flex items-center gap-1.5 text-[11px] font-black transition-colors text-slate-500 hover:text-slate-800"
                     >
                       <Volume2 size={13} /> 발음 듣기
                     </button>
@@ -1207,30 +1206,30 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       {/* ── 학생 공지사항 상세 모달 ── */}
       {showNoticeModal && activeNotice && (
         <div className="absolute inset-0 z-[300] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="absolute inset-0 bg-foreground/65 backdrop-blur-sm" onClick={() => { setShowNoticeModal(false); setActiveNotice(null); }} />
-          <div className="relative w-full max-w-sm bg-background rounded-[2.5rem] shadow-[0_24px_60px_rgba(0,0,0,0.5)] p-6 animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto flex flex-col"
-            style={{ background: 'linear-gradient(180deg,#051b27 0%,#030f16 100%)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => { setShowNoticeModal(false); setActiveNotice(null); }} />
+          <div className="relative w-full max-w-sm bg-background rounded-[2.5rem] shadow-[0_24px_60px_rgba(15,23,42,0.15)] p-6 animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto flex flex-col"
+            style={{ background: 'linear-gradient(180deg,#fdfbf7 0%,#faf8f2 100%)', border: '1px solid rgba(0,0,0,0.06)' }}>
             
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4 shrink-0">
+            <div className="flex items-center justify-between pb-4 border-b border-black/5 mb-4 shrink-0">
               <div>
-                <span className="text-[9px] font-black uppercase tracking-widest block text-indigo-400">
+                <span className="text-[9px] font-black uppercase tracking-widest block text-teal-600 font-bold">
                   📢 {activeNotice.class_name === '전체' ? '전체 공지사항' : activeNotice.class_name}
                 </span>
-                <span className="text-[10px] text-accent/50">
+                <span className="text-[10px] text-accent/60 font-semibold">
                   {new Date(activeNotice.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </span>
               </div>
               <button
                 onClick={() => { setShowNoticeModal(false); setActiveNotice(null); }}
                 className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95"
-                style={{ color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.08)' }}>
+                style={{ color: '#475569', background: 'rgba(15,23,42,0.05)' }}>
                 <X size={15} strokeWidth={2.5} />
               </button>
             </div>
 
             {/* Title */}
-            <h3 className="text-[16px] font-black text-white leading-tight mb-4 shrink-0">{activeNotice.title}</h3>
+            <h3 className="text-[16px] font-black text-slate-800 leading-tight mb-4 shrink-0">{activeNotice.title}</h3>
 
             {/* Content */}
             <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
@@ -1239,8 +1238,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                   <NoticeIframe content={activeNotice.content} />
                 </div>
               ) : (
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                  <p className="whitespace-pre-wrap text-[13px] text-slate-300 leading-relaxed font-medium">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                  <p className="whitespace-pre-wrap text-[13px] text-slate-700 leading-relaxed font-medium">
                     {activeNotice.content}
                   </p>
                 </div>
@@ -1252,7 +1251,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               <button
                 onClick={() => { setShowNoticeModal(false); setActiveNotice(null); }}
                 className="w-full h-12 rounded-2xl font-bold text-[13px] text-white flex items-center justify-center hover:opacity-90 active:scale-95 transition-all"
-                style={{ background: 'linear-gradient(135deg,#6366f1 0%,#4f46e5 100%)' }}>
+                style={{ background: 'linear-gradient(135deg,#10b981 0%,#fb923c 100%)' }}>
                 닫기
               </button>
             </div>
@@ -1263,20 +1262,20 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       {/* ── 학생 공지사항 전체보기 목록 모달 ── */}
       {showNoticeListModal && (
         <div className="absolute inset-0 z-[250] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="absolute inset-0 bg-foreground/65 backdrop-blur-sm" onClick={() => setShowNoticeListModal(false)} />
-          <div className="relative w-full max-w-sm bg-background rounded-[2.5rem] shadow-[0_24px_60px_rgba(0,0,0,0.5)] p-6 animate-in zoom-in-95 duration-300 h-[80vh] flex flex-col"
-            style={{ background: 'linear-gradient(180deg,#051b27 0%,#030f16 100%)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => setShowNoticeListModal(false)} />
+          <div className="relative w-full max-w-sm bg-background rounded-[2.5rem] shadow-[0_24px_60px_rgba(15,23,42,0.15)] p-6 animate-in zoom-in-95 duration-300 h-[80vh] flex flex-col"
+            style={{ background: 'linear-gradient(180deg,#fdfbf7 0%,#faf8f2 100%)', border: '1px solid rgba(0,0,0,0.06)' }}>
             
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4 shrink-0">
+            <div className="flex items-center justify-between pb-4 border-b border-black/5 mb-4 shrink-0">
               <div>
-                <h3 className="text-[16px] font-black text-white">전체 공지사항</h3>
+                <h3 className="text-[16px] font-black text-slate-800">전체 공지사항</h3>
                 <p className="text-[10px] text-accent/50 mt-0.5">그동안 게시된 공지들을 모아볼 수 있습니다</p>
               </div>
               <button
                 onClick={() => setShowNoticeListModal(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95"
-                style={{ color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.08)' }}>
+                style={{ color: '#475569', background: 'rgba(15,23,42,0.05)' }}>
                 <X size={15} strokeWidth={2.5} />
               </button>
             </div>
@@ -1296,15 +1295,15 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                     }}
                     className={`w-full text-left p-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
                       read 
-                        ? 'bg-white/2 border-white/5 text-slate-400' 
-                        : 'bg-white/5 border-indigo-500/30 text-white'
+                        ? 'bg-slate-50 border-slate-100 text-slate-400' 
+                        : 'bg-white border-emerald-500/20 text-slate-800 shadow-sm'
                     }`}
                   >
                     <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                       <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${
                         n.class_name === '전체' 
-                          ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' 
-                          : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                          ? 'bg-amber-500/10 text-amber-700 border border-amber-500/20' 
+                          : 'bg-indigo-500/10 text-indigo-700 border border-indigo-500/20'
                       }`}>
                         {n.class_name === '전체' ? '전체' : n.class_name}
                       </span>
@@ -1312,7 +1311,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                         {new Date(n.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                       </span>
                       {!read && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse ml-auto" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-auto" />
                       )}
                     </div>
                     <p className="text-[13px] font-bold truncate">{n.title}</p>
@@ -1325,7 +1324,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             <div className="mt-4 shrink-0">
               <button
                 onClick={() => setShowNoticeListModal(false)}
-                className="w-full h-11 rounded-2xl bg-white/5 border border-white/10 text-slate-300 text-[13px] font-bold hover:bg-white/10 transition-colors"
+                className="w-full h-11 rounded-2xl bg-slate-50 border border-slate-200 text-slate-600 text-[13px] font-bold hover:bg-slate-100 transition-colors"
               >
                 닫기
               </button>
@@ -1458,15 +1457,15 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <div className="absolute inset-0 z-[300] flex items-center justify-center p-6 animate-in fade-in duration-200">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowDmModal(false)} />
           <div className="relative w-full max-w-[280px] rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300"
-            style={{ background: 'linear-gradient(180deg,#03121b 0%,#052335 100%)', border: '1px solid rgba(20,184,166,0.15)' }}>
+            style={{ background: 'linear-gradient(180deg,#fdfbf7 0%,#faf8f2 100%)', border: '1px solid rgba(0,0,0,0.06)' }}>
             {/* 헤더 */}
-            <div className="px-6 pt-6 pb-4 text-center" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="px-6 pt-6 pb-4 text-center" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
               <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3"
-                style={{ background: 'linear-gradient(135deg,#14b8a6,#fb923c)' }}>
+                style={{ background: 'linear-gradient(135deg,#10b981,#f97316)' }}>
                 <Send size={18} className="text-white" />
               </div>
-              <h3 className="text-[16px] font-black text-white">메시지 보내기</h3>
-              <p className="text-[11px] mt-1" style={{ color: 'rgba(160,210,255,0.45)' }}>플랫폼을 선택해주세요</p>
+              <h3 className="text-[16px] font-black text-slate-800">메시지 보내기</h3>
+              <p className="text-[11px] mt-1" style={{ color: 'rgba(15,23,42,0.45)' }}>플랫폼을 선택해주세요</p>
             </div>
             {/* 옵션 */}
             <div className="p-4 flex flex-col gap-2.5">
@@ -1485,7 +1484,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               <button
                 onClick={() => { alert('인스타그램 연동은 준비 중이에요!'); setShowDmModal(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all active:scale-[0.98] hover:scale-[1.01] text-white"
-                style={{ background: 'linear-gradient(135deg,#14b8a6,#38bdf8,#fb923c)', }}>
+                style={{ background: 'linear-gradient(135deg,#10b981,#f97316)', }}>
                 <span className="text-[22px] leading-none">📸</span>
                 <div className="text-left">
                   <p className="text-[14px] font-black leading-none">인스타그램</p>
@@ -1494,7 +1493,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               </button>
               <button onClick={() => setShowDmModal(false)}
                 className="w-full py-2.5 rounded-2xl text-[12px] font-bold transition-all hover:opacity-80"
-                style={{ color: 'rgba(255,255,255,0.35)' }}>취소</button>
+                style={{ color: 'rgba(15,23,42,0.4)' }}>취소</button>
             </div>
           </div>
         </div>
@@ -1508,8 +1507,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 w-full max-w-md h-[88px] flex items-center justify-around z-30 px-4 pb-safe"
         style={{
-          background:'rgba(9,9,15,0.82)',
-          borderTop:'1px solid rgba(255,255,255,0.07)',
+          background:'rgba(253,251,247,0.82)',
+          borderTop:'1px solid rgba(15,23,42,0.06)',
           backdropFilter:'blur(24px)',
           WebkitBackdropFilter:'blur(24px)',
         }}>
@@ -1527,16 +1526,16 @@ function NavButton({ href, icon, label, isActive = false }: { href: string; icon
   return (
     <Link href={href} className="flex flex-col items-center justify-center flex-1 h-full gap-1.5 group relative">
       <div className={`transition-all duration-500 relative z-10 ${isActive ? "-translate-y-1.5 scale-110" : "group-hover:-translate-y-0.5"}`}
-        style={{color: isActive ? '#fff' : 'rgba(255,255,255,0.28)'}}>
+        style={{color: isActive ? '#1e293b' : 'rgba(15,23,42,0.35)'}}>
         {icon}
       </div>
       <span className="text-[10px] font-black tracking-tight transition-all duration-500 z-10"
-        style={{color: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.28)'}}>
+        style={{color: isActive ? '#1e293b' : 'rgba(15,23,42,0.35)'}}>
         {label}
       </span>
       {isActive && (
         <div className="absolute inset-x-3 bottom-2 h-0.5 rounded-full animate-in zoom-in duration-500"
-          style={{background:'linear-gradient(90deg,#14b8a6,#38bdf8)'}} />
+          style={{background:'linear-gradient(90deg,#10b981,#f97316)'}} />
       )}
     </Link>
   );

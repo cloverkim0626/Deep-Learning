@@ -121,15 +121,15 @@ function LoginForm() {
 
 
       <Link href="/" className="mb-12 flex items-center gap-2 text-[12px] font-black tracking-[0.2em] transition-all uppercase"
-        style={{color:'rgba(100,210,240,0.7)'}}>
+        style={{color: role === 'student' ? '#0f766e' : 'rgba(100,210,240,0.7)'}}>
         <ArrowLeft size={16} strokeWidth={3} /> 메인으로
       </Link>
 
       <div className="mb-12 space-y-3 text-center">
-        <h2 className="text-[36px] serif font-black leading-tight tracking-tighter" style={{color:'rgba(220,245,255,0.97)'}}>
+        <h2 className="text-[36px] serif font-black leading-tight tracking-tighter" style={{color: role === 'student' ? '#1e293b' : 'rgba(220,245,255,0.97)'}}>
           {role === "student" ? "학생 로그인" : "선생님 로그인"}
         </h2>
-        <p className="text-[13px] font-medium" style={{color:'rgba(100,200,235,0.65)'}}>
+        <p className="text-[13px] font-medium" style={{color: role === 'student' ? '#64748b' : 'rgba(100,200,235,0.65)'}}>
           {role === "student" ? "반과 이름을 선택한 후 비밀번호를 입력하세요." : "관리자 암호를 입력해 주세요."}
         </p>
       </div>
@@ -153,11 +153,11 @@ function LoginForm() {
           <div className="space-y-5">
             {/* 1. 반 선택 */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-black pl-1 uppercase tracking-widest block" style={{color:'rgba(180,230,255,0.8)'}}>1. 소속 반</label>
+              <label className="text-[11px] font-black pl-1 uppercase tracking-widest block" style={{color: role === 'student' ? '#475569' : 'rgba(180,230,255,0.8)'}}>1. 소속 반</label>
               <div className="relative">
                 <select value={selectedClass} onChange={e => { setSelectedClass(e.target.value); setSelectedStudent(""); }}
                   className="w-full h-16 px-6 rounded-3xl appearance-none font-bold text-[15px] outline-none transition-all cursor-pointer"
-                  style={{background:'rgba(255,255,255,0.96)',border:'1.5px solid rgba(200,230,255,0.4)',color:'#0f2035'}}>
+                  style={{background:'rgba(255,255,255,0.96)',border:'1.5px solid rgba(15,23,42,0.08)',color:'#0f2035'}}>
                   <option value="" disabled style={{background:'#fff'}}>반을 선택해 주세요</option>
                   {CLASS_DATA.map(c => <option key={c.name} value={c.name} style={{background:'#fff'}}>{c.name}</option>)}
                 </select>
@@ -167,11 +167,11 @@ function LoginForm() {
 
             {/* 2. 이름 선택 */}
             <div className={`space-y-1.5 transition-all duration-500 ${selectedClass ? "opacity-100" : "opacity-35 pointer-events-none"}`}>
-              <label className="text-[11px] font-black pl-1 uppercase tracking-widest block" style={{color:'rgba(180,230,255,0.8)'}}>2. 본인 이름</label>
+              <label className="text-[11px] font-black pl-1 uppercase tracking-widest block" style={{color: role === 'student' ? '#475569' : 'rgba(180,230,255,0.8)'}}>2. 본인 이름</label>
               <div className="relative">
                 <select value={selectedStudent} onChange={e => setSelectedStudent(e.target.value)}
                   className="w-full h-16 px-6 rounded-3xl appearance-none font-bold text-[15px] outline-none transition-all cursor-pointer"
-                  style={{background:'rgba(255,255,255,0.96)',border:'1.5px solid rgba(200,230,255,0.4)',color:'#0f2035'}}>
+                  style={{background:'rgba(255,255,255,0.96)',border:'1.5px solid rgba(15,23,42,0.08)',color:'#0f2035'}}>
                   <option value="" disabled style={{background:'#fff'}}>
                     {loadingDb && (isGuestClass || isSyncedClass) ? "불러오는 중..." : "이름을 선택해 주세요"}
                   </option>
@@ -180,22 +180,22 @@ function LoginForm() {
                 <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none" size={18} style={{color:'rgba(10,80,140,0.5)'}} />
               </div>
               {isGuestClass && !loadingDb && studentsInClass.length === 0 && (
-                <p className="text-[11px] font-bold pl-1" style={{color:'rgba(255,180,80,0.9)'}}>등록된 체험 학생이 없습니다. 선생님께 문의하세요.</p>
+                <p className="text-[11px] font-bold pl-1 animate-pulse" style={{color:'#ea580c'}}>등록된 체험 학생이 없습니다. 선생님께 문의하세요.</p>
               )}
               {isSyncedClass && !loadingDb && studentsInClass.length === 0 && (
-                <p className="text-[11px] font-bold pl-1" style={{color:'rgba(255,180,80,0.9)'}}>등록된 학생이 없습니다. 수업관리에서 학생을 등록해 주세요.</p>
+                <p className="text-[11px] font-bold pl-1 animate-pulse" style={{color:'#ea580c'}}>등록된 학생이 없습니다. 수업관리에서 학생을 등록해 주세요.</p>
               )}
             </div>
 
             {/* 3. 비밀번호 — GUEST 포함 모든 학생 */}
             <div className={`space-y-1.5 transition-all duration-500 pt-2 ${selectedStudent ? "opacity-100" : "opacity-35 pointer-events-none"}`}>
-              <label className="text-[11px] font-black pl-1 uppercase tracking-widest block" style={{color:'rgba(180,230,255,0.8)'}}>3. 비밀번호</label>
+              <label className="text-[11px] font-black pl-1 uppercase tracking-widest block" style={{color: role === 'student' ? '#475569' : 'rgba(180,230,255,0.8)'}}>3. 비밀번호</label>
               <input type="password" placeholder="비밀번호" value={password} onChange={e => setPassword(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleLogin()}
                 className="w-full h-16 px-6 rounded-3xl font-black text-[18px] text-center outline-none transition-all"
-                style={{background:'rgba(255,255,255,0.96)',border:'1.5px solid rgba(200,230,255,0.4)',color:'#0f2035',caretColor:'#0a5080'}} />
+                style={{background:'rgba(255,255,255,0.96)',border:'1.5px solid rgba(15,23,42,0.08)',color:'#0f2035',caretColor:'#0a5080'}} />
               {isGuestClass && selectedStudent && (
-                <p className="text-[11px] font-bold pl-1" style={{color:'rgba(200,245,255,0.7)'}}>체험 계정 비밀번호는 선생님께 문의하세요.</p>
+                <p className="text-[11px] font-bold pl-1 animate-pulse" style={{color:'#ea580c'}}>체험 계정 비밀번호는 선생님께 문의하세요.</p>
               )}
             </div>
 
@@ -206,11 +206,11 @@ function LoginForm() {
                 className="w-full h-16 rounded-3xl font-black tracking-[0.2em] text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-25 disabled:pointer-events-none"
                 style={{
                   background: role === 'student'
-                    ? 'linear-gradient(135deg,#14b8a6 0%,#38bdf8 40%,#06b6d4 75%,#0096c7 100%)'
+                    ? 'linear-gradient(135deg,#10b981 0%,#fb923c 100%)'
                     : 'linear-gradient(135deg,rgba(15,160,210,0.9) 0%,rgba(10,130,185,0.95) 100%)',
                   color:'rgba(255,255,255,0.97)',
                   boxShadow: role === 'student'
-                    ? '0 4px 24px rgba(6,182,212,0.45), 0 2px 8px rgba(20,184,166,0.35)'
+                    ? '0 4px 24px rgba(251,146,60,0.25), 0 2px 8px rgba(16,185,129,0.2)'
                     : '0 4px 24px rgba(10,140,200,0.4)',
                 }}>
                 입장하기 <LogIn size={20} strokeWidth={2.5} />
@@ -220,7 +220,7 @@ function LoginForm() {
         )}
       </div>
 
-      <p className="mt-16 text-center text-[10px] font-black tracking-[0.3em] uppercase select-none pb-2" style={{color:'rgba(60,160,200,0.3)'}}>Produced by Team Parallax</p>
+      <p className="mt-16 text-center text-[10px] font-black tracking-[0.3em] uppercase select-none pb-2" style={{color: role === 'student' ? 'rgba(15,23,42,0.2)' : 'rgba(60,160,200,0.3)'}}>Produced by Team Parallax</p>
     </div>
   );
 }
@@ -235,15 +235,15 @@ function LoginPageInner() {
   const searchParams = useSearchParams();
   const isStudent = (searchParams.get("role") ?? "student") === "student";
   return (
-    <main className="flex justify-center items-center min-h-screen p-6 relative overflow-hidden"
+    <main className={`flex justify-center items-center min-h-screen p-6 relative overflow-hidden ${isStudent ? "student-theme" : ""}`}
       style={isStudent ? {
-        /* 학생: 청량 시안 & 에메랄드 여름 바다 메인 */
+        /* 학생: 화사한 민트 & 복숭아 크림 배경 */
         background: `
-          radial-gradient(ellipse 75% 65% at 20% 25%, rgba(6,182,212,0.38) 0%, transparent 58%),
-          radial-gradient(ellipse 65% 60% at 80% 75%, rgba(20,184,166,0.28) 0%, transparent 55%),
-          radial-gradient(ellipse 50% 50% at 60% 10%, rgba(34,211,238,0.25) 0%, transparent 58%),
-          radial-gradient(ellipse 45% 45% at 10% 80%, rgba(56,189,248,0.22) 0%, transparent 55%),
-          linear-gradient(145deg, #021622 0%, #053c5a 40%, #021622 100%)
+          radial-gradient(ellipse 75% 65% at 20% 25%, rgba(16,185,129,0.12) 0%, transparent 58%),
+          radial-gradient(ellipse 65% 60% at 80% 75%, rgba(251,146,60,0.12) 0%, transparent 55%),
+          radial-gradient(ellipse 50% 50% at 60% 10%, rgba(253,164,175,0.10) 0%, transparent 58%),
+          radial-gradient(ellipse 45% 45% at 10% 80%, rgba(16,185,129,0.08) 0%, transparent 55%),
+          linear-gradient(145deg, #fdfbf7 0%, #faf8f2 50%, #f7f4eb 100%)
         `,
       } : {
         /* 선생님: IG 다크 ambient 배경 */
@@ -255,7 +255,7 @@ function LoginPageInner() {
         `,
       }}>
       <LoginBg isStudent={isStudent} />
-      <Suspense fallback={<div className="serif font-bold animate-pulse z-10 relative" style={{color:'rgba(255,255,255,0.7)'}}>Loading...</div>}>
+      <Suspense fallback={<div className="serif font-bold animate-pulse z-10 relative" style={{color: isStudent ? '#1e293b' : 'rgba(255,255,255,0.7)'}}>Loading...</div>}>
         <LoginForm />
       </Suspense>
     </main>

@@ -496,7 +496,7 @@ export default function VocabDashboard() {
               className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl glass border border-foreground/5 shadow-sm hover:border-foreground/20 transition-all text-left"
             >
               <div>
-                <span className="text-[9px] font-black uppercase tracking-widest mb-0.5 block" style={{ color: 'rgba(180,155,255,0.75)' }}>현재 배당된 지문</span>
+                <span className="text-[9px] font-black uppercase tracking-widest mb-0.5 block" style={{ color: '#0f766e' }}>현재 배당된 지문</span>
                 <div className="flex items-center gap-2">
                   <span className="text-[14px] font-bold text-foreground">
                     {currentSet ? currentSet.label : "배당된 세트가 없습니다."}
@@ -506,7 +506,7 @@ export default function VocabDashboard() {
                   ) : null; })()}
                 </div>
                 {currentSet && (
-                  <div className="text-[11px] font-bold mt-0.5" style={{ color: 'rgba(220,200,255,0.80)' }}>
+                  <div className="text-[11px] font-bold mt-0.5" style={{ color: '#475569' }}>
                     {[currentSet.workbook, currentSet.chapter, currentSet.passageNumber].filter(Boolean).join(' · ')}
                   </div>
                 )}
@@ -596,7 +596,7 @@ export default function VocabDashboard() {
                     style={{
                       backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
                       background: '#ffffff',
-                      boxShadow: '0 8px 40px rgba(0,0,0,0.28), 0 2px 8px rgba(64,93,230,0.12)',
+                      boxShadow: '0 8px 30px rgba(251,146,60,0.08), 0 2px 8px rgba(0,0,0,0.04)',
                     } as React.CSSProperties}
                   >
                     {/* 진행상황 — 좌상단 */}
@@ -621,7 +621,7 @@ export default function VocabDashboard() {
                     {/* ── 스피커 버튼 — 독립 고정 (상단) ── */}
                     <div className="absolute inset-x-0 flex justify-center" style={{ top: '13%' }}>
                       <button
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isSpeaking ? 'bg-indigo-600 text-white scale-110' : 'bg-indigo-50 text-indigo-400 hover:bg-indigo-100'}`}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isSpeaking ? 'bg-emerald-600 text-white scale-110' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
                         title="발음 듣기"
                         onClick={(e) => { e.stopPropagation(); handleSpeak(e); }}
                       >
@@ -631,7 +631,7 @@ export default function VocabDashboard() {
 
                     {/* ── 영단어 + 품사 — POS 위, 단어 아래 ── */}
                     <div className="absolute inset-x-0 flex flex-col items-center" style={{ top: '35%' }}>
-                      <p className="text-[13px] font-semibold tracking-[0.22em] flex items-center gap-1.5 mb-3" style={{ color: '#6366f1' }}>
+                      <p className="text-[13px] font-semibold tracking-[0.22em] flex items-center gap-1.5 mb-3" style={{ color: '#10b981' }}>
                         <Sparkles size={11} style={{ opacity: 0.45 }} /> {expandPOS(currentWord.posAbbr)}
                       </p>
                       <h2 className={`serif font-bold leading-none text-center px-4 ${currentWord.word.length >= 14 ? 'text-[34px]' : 'text-[42px]'}`}
@@ -695,7 +695,7 @@ export default function VocabDashboard() {
                       backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
                       transform: 'rotateY(180deg)',
                       background: '#ffffff',
-                      boxShadow: '0 8px 40px rgba(0,0,0,0.28), 0 2px 8px rgba(64,93,230,0.12)',
+                      boxShadow: '0 8px 30px rgba(251,146,60,0.08), 0 2px 8px rgba(0,0,0,0.04)',
                     } as React.CSSProperties}
                   >
                     <div className="h-full overflow-y-auto custom-scrollbar p-7">
