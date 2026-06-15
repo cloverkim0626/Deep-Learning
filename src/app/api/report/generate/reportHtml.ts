@@ -22,7 +22,11 @@ export function buildReportHtml(d: any): string {
   const dateStr = `${date.getFullYear()}.${String(date.getMonth()+1).padStart(2,'0')}.${String(date.getDate()).padStart(2,'0')}`;
   const dayStr = DAY_KR[date.getDay()];
   const className = cls?.name || '';
-  const schedule = (cls?.schedule || [])[0];
+  // session_date의 요일에 맞는 시간표 항목 선택
+  const DAY_KO_SCH = ['일','월','화','수','목','금','토'];
+  const sessionDayKo = DAY_KO_SCH[date.getDay()];
+  const scheduleArr = cls?.schedule || [];
+  const schedule = scheduleArr.find((s: any) => s.day === sessionDayKo) || scheduleArr[0] || null;
   const attStatus = att?.status || 'present';
   const attLabel = attStatus==='present'?'정상 출석':attStatus==='late'?'지각':'결석';
   const attClass = attStatus==='present'?'status-present':attStatus==='late'?'status-late':'status-absent';
@@ -32,17 +36,24 @@ export function buildReportHtml(d: any): string {
   const vocabByDate: Record<string,{vocab:number;synonym:number;card:number}> = {};
   for (const v of vocabSessions||[]) {
     const dt = v.completed_at?.slice(0,10); if(!dt) continue;
-    if(!vocabByDate[dt]) vocabByDate[dt]={vocab:0,synonym:0,card:0};
     const t = v.test_type||'';
     const cnt = v.correct_count||0;
-    if(t==='vocab'||t==='vocab_drill') vocabByDate[dt].vocab += cnt;
-    else if(t==='synonym'||t==='synonym_drill') vocabByDate[dt].synonym += cnt;
-    else if(t==='card_game'||t==='card_game_drill') {
-      // 카드게임: 총 카드수 = 단어수 × 2. 통과(correct_count=total_questions) → 단어수 득점
+    if(t==='vocab'||t==='vocab_drill') {
+      if(!vocabByDate[dt]) vocabByDate[dt]={vocab:0,synonym:0,card:0};
+      vocabByDate[dt].vocab += cnt;
+    } else if(t==='synonym'||t==='synonym_drill') {
+      if(!vocabByDate[dt]) vocabByDate[dt]={vocab:0,synonym:0,card:0};
+      vocabByDate[dt].synonym += cnt;
+    } else if(t==='card_game'||t==='card_game_drill') {
       const wordCount = Math.round((v.total_questions||0)/2);
       const passed = cnt >= (v.total_questions||0);
-      vocabByDate[dt].card += passed ? wordCount : Math.round(cnt/2);
+      const earned = passed ? wordCount : Math.round(cnt/2);
+      if(earned > 0) {
+        if(!vocabByDate[dt]) vocabByDate[dt]={vocab:0,synonym:0,card:0};
+        vocabByDate[dt].card += earned;
+      }
     }
+    // 그 외 test_type 무시 (과제 시험 결과 등 섞이지 않도록)
   }
 
   /* 날짜 범위 */
@@ -50,7 +61,11 @@ export function buildReportHtml(d: any): string {
   const dates: string[] = [];
   for(let d2=new Date(startDate);d2<=date;d2.setDate(d2.getDate()+1)) dates.push(d2.toISOString().slice(0,10));
   let streak = 0;
-  for(let i=dates.length-1;i>=0;i--) { if(vocabByDate[dates[i]]) streak++; else break; }
+  for(let i=dates.length-1;i>=0;i--) {
+    const v = vocabByDate[dates[i]];
+    if(v && (v.vocab + v.synonym + v.card > 0)) streak++;
+    else break;
+  }
 
   const vocabRows = dates.map(dt => {
     const d2 = new Date(dt+'T12:00:00');
@@ -64,8 +79,8 @@ export function buildReportHtml(d: any): string {
     return `<tr><td class="vocab-date${isSun?' sunday':''}">${d2.getMonth()+1}/${d2.getDate()} (${DAY_KR[d2.getDay()]})</td><td class="vocab-detail">${esc(detail)}</td></tr>`;
   }).join('');
 
-  /* 테스트 목록 */
-  const testSlots = (slots||[]).filter((s:any) => s.hw_type==='vocab_test'||s.hw_type==='test_prep');
+  /* 테스트 목록: vocab_test만 테스트 결과에 표시. test_prep은 신규 과제에 포함 */
+  const testSlots = (slots||[]).filter((s:any) => s.hw_type==='vocab_test');
   const testHtml = testSlots.map((s:any) => {
     const chk = (checks||[]).find((c:any)=>c.slot_id===s.id&&c.student_name===student_name);
     const score = chk?.score ?? null;
@@ -97,7 +112,7 @@ export function buildReportHtml(d: any): string {
       <div class="assignment-content"><div class="assignment-name">${esc(s.title)}</div></div>
       <div class="assignment-status">${st.label}</div></div>`;
   }).join('');
-  const newHtml = (slots||[]).filter((s:any)=>s.hw_type!=='vocab_test'&&s.hw_type!=='test_prep').map((s:any) =>
+  const newHtml = (slots||[]).filter((s:any)=>s.hw_type!=='vocab_test').map((s:any) =>
     `<div class="assignment-row new"><div class="assignment-indicator">●</div>
       <div class="assignment-content"><div class="assignment-name">${esc(s.title)}</div></div>
       <div class="assignment-status">${s.due_date?'~'+s.due_date.slice(5).replace('-','/'):'신규'}</div></div>`
@@ -236,7 +251,7 @@ body{font-family:'Inter',sans-serif;background:#000;color:#1a1a1a;line-height:1.
       <div class="section-title">테스트 결과</div>
       <div class="test-list">${testHtml}</div>
     </div>`:''}
-    ${(dueSlots||[]).length>0||((slots||[]).filter((s:any)=>s.hw_type!=='vocab_test'&&s.hw_type!=='test_prep').length>0)?`<div class="section">
+    ${(dueSlots||[]).length>0||((slots||[]).filter((s:any)=>s.hw_type!=='vocab_test').length>0)?`<div class="section">
       <div class="section-number">05</div>
       <div class="section-title">과제 현황</div>
       <div class="assignment-section">

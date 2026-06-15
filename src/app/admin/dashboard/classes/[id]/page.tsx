@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, use, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import {
   getClasses, getClassStudents, addStudentToClass, removeStudentFromClass,
-  getSessionsForWeek, createSession, deleteSession,
+  getSessionsForWeek, getExtraSessionsForWeek, createSession, deleteSession,
   getAttendanceForSessions, upsertAttendance, markAllPresent,
   getHomeworkSlotsForSessions, createHomeworkSlotBatch, deleteHomeworkSlot,
   setSlotStudents, getSlotStudents, getLessonNotes, upsertLessonNote,
@@ -73,6 +73,7 @@ type AttPopup = {
   expanded?: 'late' | 'absent';
   lateReason?: string;
   lateTime?: string;
+  absentReason?: string;
   makeupType?: string;
   makeupDate?: string;
 };
@@ -93,7 +94,8 @@ function AttendancePopup({ popup, onClose, onSave, onQuickSave }: {
     try {
       if (status === 'present') { await onQuickSave('present'); return; }
       await onSave(status, {
-        late_reason:        status === 'late'   ? (state.lateReason || '') : '',
+        late_reason:        status === 'late'   ? (state.lateReason || '') :
+                            status === 'absent' ? (state.absentReason || '') : '',
         late_arrival_time:  status === 'late'   ? (state.lateTime   || '') : '',
         makeup_type:        status === 'absent' ? ((state.makeupType as MakeupType) || '') : '',
         makeup_date:        status === 'absent' && state.makeupType === 'direct' ? (state.makeupDate || null) : null,
@@ -172,6 +174,10 @@ function AttendancePopup({ popup, onClose, onSave, onQuickSave }: {
         {state.expanded === 'absent' && (
           <div className="px-3 pb-3 space-y-2 border-t border-foreground/5 pt-3"
             style={{fontFamily:'var(--font-jakarta),-apple-system,sans-serif'}}>
+            {/* 결석 사유 */}
+            <input placeholder="결석 사유" value={state.absentReason || ''} onChange={e => setState(s => ({ ...s, absentReason: e.target.value }))}
+              className="w-full h-9 px-3 rounded-xl border border-foreground/10 bg-transparent text-[12px] outline-none focus:border-foreground/30"
+              style={{fontFamily:'inherit'}} />
             <div className="grid grid-cols-3 gap-1.5">
               {[['', '미설정'], ['direct', '대면보강'], ['video', '영상보강']].map(([val, label]) => (
                 <button key={val} type="button" onClick={() => setState(s => ({ ...s, makeupType: val }))}
@@ -357,8 +363,8 @@ function AddHomeworkModal({ session, allStudents, existingSlots, onClose, onAdde
     { value: 'general',      label: '문제풀이' },
     { value: 'passage_read', label: '워크북' },
     { value: 'test_prep',    label: '테스트준비' },
-    { value: 'vocab_test',   label: '단어테스트' },
     { value: 'other',        label: '기타' },
+    // vocab_test: 단어 앱에서 자동 관리 (과제 모달 직접 추가 불가)
   ];
 
   return (
@@ -1593,18 +1599,26 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   // 휴강 사유 모달
   const [cancelReasonModal, setCancelReasonModal] = useState<WeekColumn | null>(null);
   const [cancelReason, setCancelReason] = useState('');
-  // 수업일자 추가
-  const [extraDates, setExtraDates] = useState<string[]>([]);
+  // 수업일자 추가 (날짜 + 수업내용 메모)
+  type ExtraSession = { date: string; note: string };
+  const [extraSessions, setExtraSessions] = useState<ExtraSession[]>([]);
   const [extraDateInput, setExtraDateInput] = useState('');
   const [showExtraDatePicker, setShowExtraDatePicker] = useState(false);
+  const [extraNoteModal, setExtraNoteModal] = useState<{ date: string } | null>(null);
+  const [extraNoteInput, setExtraNoteInput] = useState('');
+  const [deleteExtraConfirm, setDeleteExtraConfirm] = useState<string | null>(null);
 
-  // 추가 수업일자를 WeekColumn으로 변환하여 기존 컬럼에 merge
+  // 추가 수업일자를 WeekColumn으로 변환 — 현재 주차(일~토) 내 날짜만 표시
   const DAY_NAMES_KO = ['일','월','화','수','목','금','토'];
   const allCols: WeekColumn[] = weekData ? (() => {
-    const extra = extraDates
-      .filter(d => !weekData.columns.some(c => c.date === d))
-      .map(d => ({
-        date: d, dayName: DAY_NAMES_KO[new Date(d).getDay()],
+    const weekEndStr = toDateStr(addDays(weekStart, 6)); // 토요일
+    const weekStartStr = toDateStr(weekStart); // 일요일
+    const extra = extraSessions
+      .filter(es => es.date >= weekStartStr && es.date <= weekEndStr) // 이번 주차만
+      .filter(es => !weekData.columns.some(c => c.date === es.date))
+      .map(es => ({
+        date: es.date,
+        dayName: DAY_NAMES_KO[new Date(es.date).getDay()],
         time: '', end_time: '', is_clinic: false, is_extra: true, session: null,
       } as WeekColumn));
     return [...weekData.columns, ...extra].sort((a, b) => a.date.localeCompare(b.date));
@@ -1644,21 +1658,33 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       })).sort((a, b) => a.date.localeCompare(b.date));
 
       const weekDates = rawCols.map(c => c.date);
+      const weekStartStr = toDateStr(wStart);
+      const weekEndStr   = toDateStr(addDays(wStart, 6));
       const sessions = weekDates.length > 0 ? await getSessionsForWeek(classId, weekDates) : [];
+      // extra 세션 DB 로드 (service 함수 사용)
+      const extraLoaded: ClassSession[] = await getExtraSessionsForWeek(classId, weekStartStr, weekEndStr);
+      // extraSessions state 동기화
+      setExtraSessions(extraLoaded.map(e => ({ date: e.session_date, note: e.note || '' })));
+
+      const allSessions = [...sessions, ...extraLoaded.filter(e => !sessions.some(s => s.session_date === e.session_date))];
       const sessionByDate: Record<string, ClassSession> = {};
-      for (const s of sessions) sessionByDate[s.session_date] = s;
+      for (const s of allSessions) sessionByDate[s.session_date] = s;
 
       const columns: WeekColumn[] = rawCols.map(c => ({
         date: c.date, dayName: c.day, time: c.time, end_time: c.end_time,
         is_clinic: c.is_clinic, session: sessionByDate[c.date] || null,
       }));
+      // extra 컬럼 (정규 스케줄에 없는 날짜)
+      const DAY_KO2 = ['\uc77c','\uc6d4','\ud654','\uc218','\ubaa9','\uae08','\ud1a0'];
+      const extraCols: WeekColumn[] = extraLoaded.filter(e => !rawCols.some(c => c.date === e.session_date)).map(e => ({ date: e.session_date, dayName: DAY_KO2[new Date(e.session_date + 'T00:00:00').getDay()], time: '', end_time: '', is_clinic: false, is_extra: true, session: e } as WeekColumn));
+      const allColumns = [...columns, ...extraCols].sort((a, b) => a.date.localeCompare(b.date));
 
       // 출결
-      const sessionIds = sessions.map(s => s.id);
+      const sessionIds = allSessions.map(s => s.id);
       const attRows = sessionIds.length > 0 ? await getAttendanceForSessions(sessionIds) : [];
       const attMap: Record<string, Record<string, AttendanceRow>> = {};
       for (const r of attRows) {
-        const ses = sessions.find(s => s.id === r.session_id);
+        const ses = allSessions.find(s => s.id === r.session_id);
         if (!ses) continue;
         if (!attMap[ses.session_date]) attMap[ses.session_date] = {};
         attMap[ses.session_date][r.student_name] = r;
@@ -1700,7 +1726,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
         rolloverMap[d].push(r);
       }
 
-      setWeekData({ columns, attMap, slots: slotMap, checks: checkMap, slotStudents: slotStudentsMap, lessonNotes: lessonNotesMap, rolloverChecks: rolloverMap });
+      setWeekData({ columns: allColumns, attMap, slots: slotMap, checks: checkMap, slotStudents: slotStudentsMap, lessonNotes: lessonNotesMap, rolloverChecks: rolloverMap });
     } catch (e) { console.error(e); }
     finally { setWeekLoading(false); }
   }, [classId]);
@@ -1717,10 +1743,14 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       const session = await createSession(classId, col.date, type);
       setWeekData(prev => {
         if (!prev) return prev;
-        return {
-          ...prev,
-          columns: prev.columns.map(c => c.date === col.date ? { ...c, session } : c),
-        };
+        const exists = prev.columns.some(c => c.date === col.date);
+        if (exists) {
+          return { ...prev, columns: prev.columns.map(c => c.date === col.date ? { ...c, session } : c) };
+        } else {
+          // extra 컬럼: weekData.columns에 추가해야 세션 조작(출석/과제)이 정상 동작
+          const newCol: WeekColumn = { date: col.date, dayName: col.dayName, time: '', end_time: '', is_clinic: false, session };
+          return { ...prev, columns: [...prev.columns, newCol].sort((a, b) => a.date.localeCompare(b.date)) };
+        }
       });
     } catch (e) { alert("세션 생성 실패: " + (e as Error).message); }
   };
@@ -1898,19 +1928,20 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                       className="h-9 px-3 rounded-lg border border-slate-200 text-[13px] font-semibold outline-none focus:border-violet-400 w-full" />
                     <button onClick={() => {
                       if (!extraDateInput) return;
-                      if (extraDates.includes(extraDateInput)) { setShowExtraDatePicker(false); return; }
-                      setExtraDates(prev => [...prev, extraDateInput]);
+                      if (extraSessions.some(s => s.date === extraDateInput)) { setShowExtraDatePicker(false); return; }
+                      setExtraNoteInput('')
+                      setExtraNoteModal({ date: extraDateInput });
                       setExtraDateInput('');
                       setShowExtraDatePicker(false);
                     }} className="h-8 rounded-lg bg-violet-600 text-white text-[12px] font-black hover:bg-violet-700 transition-all">
-                      추가
+                      다음 →
                     </button>
-                    {extraDates.length > 0 && (
+                    {extraSessions.length > 0 && (
                       <div className="space-y-1 max-h-[120px] overflow-y-auto">
-                        {extraDates.map(d => (
-                          <div key={d} className="flex items-center justify-between text-[11px] text-slate-600 px-1">
-                            <span>{d}</span>
-                            <button onClick={() => setExtraDates(prev => prev.filter(x => x !== d))} className="text-rose-400 hover:text-rose-600"><X size={11}/></button>
+                        {extraSessions.map(es => (
+                          <div key={es.date} className="flex items-center justify-between text-[11px] text-slate-600 px-1">
+                            <span className="truncate">{es.date}{es.note && <span className="text-slate-400 ml-1">({es.note.slice(0,10)})</span>}</span>
+                            <button onClick={() => setExtraSessions(prev => prev.filter(x => x.date !== es.date))} className="text-rose-400 hover:text-rose-600 ml-1 shrink-0"><X size={11}/></button>
                           </div>
                         ))}
                       </div>
@@ -1970,6 +2001,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                               {col.is_clinic && <span style={{fontSize:'9px',background:'#ccfbf1',color:'#0f766e',padding:'1px 5px',borderRadius:'4px',fontWeight:500}}>클리닉</span>}
                               {today && !isCancelled && <span style={{fontSize:'9px',background:'#0071e3',color:'#fff',padding:'1px 5px',borderRadius:'4px',fontWeight:500}}>오늘</span>}
                               {isCancelled && <span style={{fontSize:'9px',background:'#fecdd3',color:'#be123c',padding:'1px 5px',borderRadius:'4px',fontWeight:700}}>휴강</span>}
+                              {col.is_extra && <span style={{fontSize:'9px',background:'#ede9fe',color:'#7c3aed',padding:'1px 5px',borderRadius:'4px',fontWeight:700}}>추가</span>}
                             </p>
                             <p className="col-time">{col.time}{col.end_time ? ` ~ ${col.end_time}` : ''}{(() => { const m = calcDurationMins(col.time, col.end_time); return m ? <span style={{fontSize:'9px',color:'#94a3b8',marginLeft:'3px'}}>({m}분)</span> : null; })()}</p>
                           </div>
@@ -2077,7 +2109,9 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                           const assigned = weekData.slotStudents[slot.id];
                           return !assigned || assigned.length === 0 || assigned.includes(stu.student_name);
                         });
-                        const myTests = mySessionSlots.filter(s => s.hw_type === 'vocab_test');
+                        // ★ vocab_test라도 due_date가 있으면 과제로 배당된 것 → checkSlots에 표시
+                        // due_date 없는 vocab_test만 테스트 결과 영역에 표시
+                        const myTests = mySessionSlots.filter(s => s.hw_type === 'vocab_test' && !s.due_date);
                         // ★ 핵심 수정: 과제는 전체 주간 슬롯에서 due_date === col.date인 것을 찾음
                         // (배당일이 달라도 검사일이 이 날이면 여기 표시)
                         const allWeekSlots = Object.values(weekData.slots).flat();
@@ -2153,14 +2187,52 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                   const isDelayed = chk?.status === 'delayed';
                                   const isAnyDone = isDone || isDonePartial;
 
-                                  // vocab_test / test_prep → 비클릭 표시 배지 (점검사항 없음)
-                                  if (slot.hw_type === 'vocab_test' || slot.hw_type === 'test_prep') {
+                                  // test_prep 기타 비클릭 배지 (점검 없음)
+                                  // vocab_test (due_date 있음) → 과제로 배당된 단어테스트, 일반 과제체림 표시
+                                  if (slot.hw_type === 'test_prep') {
                                     return (
                                       <div key={slot.id}
-                                        style={{fontSize:'10px',padding:'2px 6px',borderRadius:'6px',background: slot.hw_type==='vocab_test'?'#fff1f2':'#fffbeb', border:`1px solid ${slot.hw_type==='vocab_test'?'#fecdd3':'#fde68a'}`, color: slot.hw_type==='vocab_test'?'#be123c':'#92400e', lineHeight:'1.4', wordBreak:'break-all'}}
-                                        title={slot.hw_type==='vocab_test'?'단어테스트 (점검없음)':'테스트준비 (점검없음)'}>
-                                        {slot.hw_type==='vocab_test'?'🎯':'📖'} {slot.title}
+                                        style={{fontSize:'10px',padding:'2px 6px',borderRadius:'6px',background:'#fffbeb', border:'1px solid #fde68a', color:'#92400e', lineHeight:'1.4', wordBreak:'break-all'}}
+                                        title='테스트준비 (점검없음)'>
+                                        📖 {slot.title}
                                         <span style={{marginLeft:'4px',opacity:0.5,fontStyle:'italic'}}>·점검없음</span>
+                                      </div>
+                                    );
+                                  }
+                                  if (slot.hw_type === 'vocab_test') {
+                                    // 과제로 배당된 단어테스트 (due_date 있음) → 클릭 가능한 과제 항목으로 표시
+                                    return (
+                                      <div key={slot.id} className="flex items-center gap-0.5">
+                                        <button
+                                          onClick={() => {
+                                            if (isAnyDone) {
+                                              upsertHomeworkCheck({ slot_id: slot.id, student_name: stu.student_name, status: 'pending' });
+                                              setWeekData(prev => prev ? { ...prev, checks: { ...prev.checks, [slot.id]: { ...(prev.checks[slot.id]||{}), [stu.student_name]: { ...(chk||{}), slot_id: slot.id, student_name: stu.student_name, status: 'pending' } as HomeworkCheck } } } : prev);
+                                            } else {
+                                              setHwCompleteModal({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk||null });
+                                            }
+                                          }}
+                                          className={`hw-item flex-1 text-left break-words whitespace-normal ${
+                                            isDone        ? 'done'    :
+                                            isDonePartial ? 'partial' :
+                                            isDelayed     ? 'delayed' : ''
+                                          }`}>
+                                          <span style={{fontSize:'10px',marginRight:'3px'}}>🎯</span>
+                                          {isAnyDone && <span className="line-through">{slot.title}</span>}
+                                          {isAnyDone && (
+                                            <span style={{fontSize:'10px',marginLeft:'4px',opacity:0.6,fontStyle:'italic',textDecoration:'none'}}>
+                                              {isDone ? '등원후' : '완료후'}
+                                            </span>
+                                          )}
+                                          {!isAnyDone && <>{isDelayed ? '⏩ ' : ''}{slot.title}</>
+                                          }
+                                        </button>
+                                        {!isAnyDone && (
+                                          <button onClick={() => setRolloverPopup({ slotId: slot.id, studentName: stu.student_name, slotTitle: slot.title, existingCheck: chk||null })}
+                                            style={{flexShrink:0,width:'18px',height:'18px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'6px',fontSize:'11px',color:'#aeaeb2',transition:'all 0.15s'}}>
+                                            →
+                                          </button>
+                                        )}
                                       </div>
                                     );
                                   }
@@ -2200,26 +2272,44 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                                 })}
 
 
-                                {/* 이월과제: 완료해도 줄긋기로 유지 */}
+                                {/* 이월과제: 원본 과제명 + 몇차연기 표시, HwCompleteModal 연결 */}
                                 {(weekData.rolloverChecks[col.date]||[]).filter(rc=>rc.student_name===stu.student_name).map(rc=>{
-                                  const rcDone = weekData.checks[rc.slot_id]?.[stu.student_name]?.status === 'done';
+                                  const rcCheck = weekData.checks[rc.slot_id]?.[stu.student_name];
+                                  const rcDone = rcCheck?.status === 'done';
+                                  const rcDonePartial = rcCheck?.status === 'done_partial';
+                                  const rcAnyDone = rcDone || rcDonePartial;
+                                  // 연기 횟수: delay_note에서 "N차" 파싱 후 +1, 없으면 1차
+                                  const delayNum = (() => {
+                                    const m = (rc.delay_note || '').match(/(\d+)차/);
+                                    return m ? parseInt(m[1]) + 1 : 1;
+                                  })();
+                                  const slotTitle = (rc as HomeworkCheck & { slot_title?: string }).slot_title || '이월 과제';
                                   return (
                                     <div key={rc.id||rc.slot_id+rc.student_name} className="flex items-center gap-0.5">
                                       <button
                                         onClick={async()=>{
-                                          if (rcDone) {
-                                            await upsertHomeworkCheck({slot_id:rc.slot_id,student_name:stu.student_name,status:'delayed',rollover_date:col.date});
+                                          if (rcAnyDone) {
+                                            await upsertHomeworkCheck({slot_id:rc.slot_id,student_name:stu.student_name,status:'delayed',rollover_date:col.date,delay_note:rc.delay_note});
                                             setWeekData(prev=>prev?{...prev,checks:{...prev.checks,[rc.slot_id]:{...(prev.checks[rc.slot_id]||{}),[stu.student_name]:{...(rc as HomeworkCheck),status:'delayed',rollover_date:col.date}}}}:prev);
                                           } else {
-                                            await upsertHomeworkCheck({slot_id:rc.slot_id,student_name:stu.student_name,status:'done',rollover_date:col.date});
-                                            setWeekData(prev=>prev?{...prev,checks:{...prev.checks,[rc.slot_id]:{...(prev.checks[rc.slot_id]||{}),[stu.student_name]:{...(rc as HomeworkCheck),status:'done',rollover_date:col.date}}}}:prev);
+                                            setHwCompleteModal({slotId:rc.slot_id,studentName:stu.student_name,slotTitle:`${slotTitle} (이월)`,existingCheck:rcCheck||null});
                                           }
                                         }}
-                                        className={`flex-1 text-left px-1.5 py-1 rounded-lg text-[12px] font-semibold transition-all truncate border ${
-                                          rcDone ? 'bg-emerald-50 text-emerald-600 line-through border-emerald-200' : 'bg-orange-50 text-orange-600 border-orange-200'
-                                        }`}>
-                                        {rcDone ? '✓ ' : '⏩ '}이월
+                                        className={`hw-item flex-1 text-left break-words whitespace-normal ${
+                                          rcDone ? 'done' : rcDonePartial ? 'partial' : 'delayed'
+                                        }`}
+                                        title={`${slotTitle} — ${delayNum}차 연기`}>
+                                        {rcAnyDone
+                                          ? <><span className="line-through">{slotTitle}</span><span style={{fontSize:'10px',marginLeft:'4px',opacity:0.6,fontStyle:'italic',textDecoration:'none'}}>{rcDone?'등원후':'완료후'}</span></>
+                                          : <><span>⏩ {slotTitle}</span><span style={{fontSize:'9px',marginLeft:'3px',padding:'1px 4px',borderRadius:'4px',background:'rgba(234,88,12,0.12)',color:'#ea580c',fontWeight:700}}>({delayNum}차연기)</span></>
+                                        }
                                       </button>
+                                      {!rcAnyDone && (
+                                        <button onClick={() => setRolloverPopup({slotId:rc.slot_id,studentName:stu.student_name,slotTitle:slotTitle,existingCheck:rcCheck||null})}
+                                          style={{flexShrink:0,width:'18px',height:'18px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'6px',fontSize:'11px',color:'#aeaeb2',transition:'all 0.15s'}}>
+                                          →
+                                        </button>
+                                      )}
                                     </div>
                                   );
                                 })}
@@ -2731,6 +2821,67 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                 style={{ background: '#be123c' }}>
                 휴강 확정
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* ── 수업 내용 입력 모달 (extra 수업일자 추가 시) ── */}
+      {extraNoteModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[400] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-sm rounded-2xl border border-slate-200 shadow-2xl p-5 space-y-4">
+            <div>
+              <h3 className="text-[15px] font-black text-slate-800">📅 수업 추가</h3>
+              <p className="text-[12px] text-slate-400 mt-0.5">{extraNoteModal.date} · 추가 수업</p>
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">수업 내용 (선택)</label>
+              <textarea value={extraNoteInput} onChange={e => setExtraNoteInput(e.target.value)}
+                placeholder="예: 보강 수업, 특별 특강 등..."
+                rows={3}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-[13px] outline-none focus:border-slate-400 resize-none" />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setExtraNoteModal(null)}
+                className="flex-1 h-10 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-500 hover:bg-slate-50">취소</button>
+              <button onClick={async () => {
+                try {
+                  const saved = await createSession(classId, extraNoteModal.date, 'extra', extraNoteInput || undefined);
+                  setExtraSessions(prev => [...prev, { date: extraNoteModal.date, note: extraNoteInput }]);
+                  const DAY_KO = ['\uc77c','\uc6d4','\ud654','\uc218','\ubaa9','\uae08','\ud1a0'];
+                  setWeekData(prev => {
+                    if (!prev) return prev;
+                    if (prev.columns.some(c => c.date === extraNoteModal.date)) return prev;
+                    const newCol: WeekColumn = { date: extraNoteModal.date, dayName: DAY_KO[new Date(extraNoteModal.date + 'T00:00:00').getDay()], time: '', end_time: '', is_clinic: false, is_extra: true, session: saved };
+                    return { ...prev, columns: [...prev.columns, newCol].sort((a, b) => a.date.localeCompare(b.date)) };
+                  });
+                  setExtraNoteModal(null);
+                } catch (e) { alert('\uc218\uc5c5 \ucd94\uac00 \uc2e4\ud328: ' + (e as Error).message); }
+              }}
+                className="flex-1 h-10 rounded-xl bg-violet-600 text-white text-[13px] font-black hover:bg-violet-700">추가</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── extra 수업일자 삭제 확인 모달 ── */}
+      {deleteExtraConfirm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[400] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-xs rounded-2xl border border-slate-200 shadow-2xl p-5 space-y-4">
+            <h3 className="text-[15px] font-black text-slate-800">🗑️ 수업 삭제</h3>
+            <p className="text-[13px] text-slate-600"><span className="font-bold">{deleteExtraConfirm}</span> 추가 수업을 삭제하시겠습니까?</p>
+            <div className="flex gap-2">
+              <button onClick={() => setDeleteExtraConfirm(null)}
+                className="flex-1 h-10 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-500 hover:bg-slate-50">취소</button>
+              <button onClick={async () => {
+                const col = weekData?.columns.find(c => c.date === deleteExtraConfirm && c.is_extra);
+                if (col?.session?.id) { try { await deleteSession(col.session.id); } catch (e) { alert('\uc0ad\uc81c \uc2e4\ud328: ' + (e as Error).message); return; } }
+                setExtraSessions(prev => prev.filter(x => x.date !== deleteExtraConfirm));
+                setWeekData(prev => prev ? { ...prev, columns: prev.columns.filter(c => c.date !== deleteExtraConfirm || !c.is_extra) } : null);
+                setDeleteExtraConfirm(null);
+              }}
+                className="flex-1 h-10 rounded-xl bg-rose-500 text-white text-[13px] font-black hover:bg-rose-600">삭제</button>
             </div>
           </div>
         </div>

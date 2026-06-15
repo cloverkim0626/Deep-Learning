@@ -475,12 +475,13 @@ export default function VocabDashboard() {
 
         <Link
           href="/dashboard/word-test"
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-foreground/10 text-[12px] font-bold text-foreground hover:bg-foreground/5 transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold hover:opacity-85 transition-all"
+          style={{ background: '#334155', color: '#e2e8f0' }}
         >
-          <Trophy size={13} className="text-accent" />
+          <Trophy size={12} style={{ color: '#94a3b8' }} />
           TEST
           {remainingTests > 0 && (
-            <span className="bg-foreground text-background text-[9px] px-1.5 py-0.5 rounded-full font-black">{remainingTests}</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: '#6366f1', color: '#fff' }}>{remainingTests}</span>
           )}
         </Link>
       </div>
@@ -829,8 +830,8 @@ export default function VocabDashboard() {
                         >
                           <Volume2 size={13} />
                         </button>
-                        {/* 유/반의어 배지 */}
-                        {item.question_type && item.question_type !== 'vocab' && (
+                        {/* 유/반의어 배지 - vocab/vocab_writing은 표시 안 함 */}
+                        {item.question_type && !['vocab','vocab_writing','vocab_drill'].includes(item.question_type) && (
                           <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
                             item.question_type === 'synonym'
                               ? 'bg-sky-100 text-sky-600'

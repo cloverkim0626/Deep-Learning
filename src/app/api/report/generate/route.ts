@@ -77,7 +77,15 @@ export async function POST(req: NextRequest) {
       report_data: reportData, html_content: html, published: false, updated_at: new Date().toISOString(),
     }], { onConflict: 'class_id,student_name,session_date' });
 
-    return NextResponse.json({ ok: true, html });
+    // 새로 생성된(upsert된) row의 id 조회
+    const { data: saved } = await sb.from('daily_reports')
+      .select('id')
+      .eq('class_id', class_id)
+      .eq('student_name', student_name)
+      .eq('session_date', session_date)
+      .maybeSingle();
+
+    return NextResponse.json({ ok: true, html, id: saved?.id ?? null });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

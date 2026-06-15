@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Send, Sparkles, Loader2, MessageSquare, RotateCcw, BookOpen, ChevronDown } from "lucide-react";
@@ -48,7 +48,9 @@ export default function AITeacherPage() {
   const [studentName, setStudentName] = useState("학생");
   const [chatInitialized, setChatInitialized] = useState(false);
   const [passagesLoading, setPassagesLoading] = useState(true);
-  const [selectorOpen, setSelectorOpen] = useState(true); // 선택기 접기/폼치기
+  const [selectorOpen, setSelectorOpen] = useState(false); // 처음엔 접힌 상태
+  const [keepPassage, setKeepPassage] = useState(false); // 현재 지문으로 계속 질문하기
+  const [rememberPassage, setRememberPassage] = useState(false); // 최근 지문 기억
 
   const getName = useCallback(() => {
     try {
@@ -82,10 +84,23 @@ export default function AITeacherPage() {
     const name = getName();
     setStudentName(name);
 
-    // 최근 경로 복원
+    // 최근 지문 기억 설정 복원
+    try {
+      const savedPassage = localStorage.getItem('genie_last_passage');
+      if (savedPassage) {
+        const sp = JSON.parse(savedPassage);
+        setRememberPassage(true);
+        if (sp.setId) setSelectedSetId(sp.setId);
+        if (sp.workbook) setFilterWorkbook(sp.workbook);
+        if (sp.mid) setFilterMid(sp.mid);
+        if (sp.sub) setFilterSub(sp.sub);
+      }
+    } catch { /* noop */ }
+
+    // 최근 경로 복원 (지문 기억 없을 때)
     try {
       const savedPath = localStorage.getItem('ai_tutor_last_path');
-      if (savedPath) {
+      if (savedPath && !localStorage.getItem('genie_last_passage')) {
         const p = JSON.parse(savedPath);
         if (p.workbook) setFilterWorkbook(p.workbook);
         if (p.mid) setFilterMid(p.mid);
@@ -173,6 +188,24 @@ export default function AITeacherPage() {
     savePath(filterWorkbook, filterMid, val);
   };
 
+  // 지문 선택 저장 헬퍼
+  const selectPassage = (id: string) => {
+    setSelectedSetId(id);
+    if (id !== 'none') setSelectorOpen(false);
+    if (rememberPassage && id !== 'none') {
+      const p = passages.find(x => x.id === id);
+      try {
+        localStorage.setItem('genie_last_passage', JSON.stringify({
+          setId: id,
+          workbook: filterWorkbook,
+          mid: filterMid,
+          sub: filterSub,
+          label: p?.label || '',
+        }));
+      } catch { /* noop */ }
+    }
+  };
+
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
 
@@ -256,6 +289,7 @@ export default function AITeacherPage() {
   const selectedSet = passages.find(a => a.id === selectedSetId);
   const lastAIMsg = [...messages].reverse().find(m => m.sender === "ai");
 
+  // SelectBox: 라이트 헤더에 맞는 밝은 스타일
   const SelectBox = ({ value, onChange, children, className = "" }: {
     value: string; onChange: (v: string) => void; children: React.ReactNode; className?: string;
   }) => (
@@ -263,42 +297,96 @@ export default function AITeacherPage() {
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full bg-accent-light border border-foreground/5 text-accent text-[10px] font-bold rounded-lg px-2.5 py-1.5 appearance-none focus:outline-none cursor-pointer pr-6 hover:border-foreground/20 transition-all"
+        style={{
+          width: '100%',
+          background: '#fff',
+          border: '1.5px solid #d1d5db',
+          color: '#111',
+          fontSize: '11px',
+          fontWeight: 700,
+          borderRadius: '10px',
+          padding: '6px 28px 6px 10px',
+          appearance: 'none',
+          outline: 'none',
+          cursor: 'pointer',
+        }}
       >
         {children}
       </select>
-      <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
+      <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#666' }} />
     </div>
   );
 
   return (
     <div className="flex flex-col h-full max-w-2xl mx-auto w-full relative bg-transparent">
       {/* Header */}
-      <div className="flex items-start gap-3 px-5 pt-6 pb-4 shrink-0 z-20 bg-background/80 backdrop-blur-md sticky top-0 border-b border-foreground/5">
-        <div className="w-9 h-9 rounded-[0.8rem] bg-foreground text-background flex items-center justify-center shadow-xl shrink-0 mt-0.5">
-          <Sparkles size={16} strokeWidth={1.5} />
+      <div className="flex items-start gap-3 px-5 pt-5 pb-4 shrink-0 z-20 sticky top-0 border-b"
+        style={{ background: 'rgba(245,246,250,0.97)', borderColor: 'rgba(0,0,0,0.08)', backdropFilter: 'blur(12px)' }}>
+        {/* 딥러닝 Parallax 로고 아이콘 */}
+        <div className="w-9 h-9 rounded-[0.8rem] overflow-hidden shadow-sm shrink-0 mt-0.5"
+          style={{ border: '1px solid rgba(0,0,0,0.10)' }}>
+          <img src="/app-icon.jpg" alt="Deep Learning" className="w-full h-full object-cover" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
-            <h1 className="text-[14px] text-white font-black">✨ Genie</h1>
-            <span className="text-[9px] font-black text-accent/60 bg-accent-light px-2 py-0.5 rounded-md border border-foreground/5 uppercase tracking-widest">
+            <h1 className="text-[18px]" style={{
+              fontFamily: 'var(--font-outfit), "Outfit", "Plus Jakarta Sans", sans-serif',
+              fontWeight: 700,
+              color: '#0096c7',
+              letterSpacing: '-0.4px',
+            }}>Genie</h1>
+            <span className="text-[9px] font-black px-2 py-0.5 rounded-md border uppercase tracking-widest"
+              style={{ color: '#555', background: '#eee', borderColor: 'rgba(0,0,0,0.08)' }}>
               {messages.length > 1 ? `${messages.length}개 대화` : "새 대화"}
             </span>
-            {passagesLoading && <span className="text-[9px] text-accent/40 font-bold">지문 로딩 중...</span>}
+            {passagesLoading && <span className="text-[9px] font-bold" style={{ color: '#999' }}>지문 로딩 중...</span>}
+            {/* 최근 지문 기억 체크박스 */}
+            <label className="ml-auto flex items-center gap-1.5 cursor-pointer select-none group">
+              <input
+                type="checkbox"
+                checked={rememberPassage}
+                onChange={e => {
+                  setRememberPassage(e.target.checked);
+                  if (!e.target.checked) {
+                    try { localStorage.removeItem('genie_last_passage'); } catch { /* noop */ }
+                  } else if (selectedSetId !== 'none') {
+                    const p = passages.find(x => x.id === selectedSetId);
+                    try {
+                      localStorage.setItem('genie_last_passage', JSON.stringify({
+                        setId: selectedSetId, workbook: filterWorkbook,
+                        mid: filterMid, sub: filterSub, label: p?.label || '',
+                      }));
+                    } catch { /* noop */ }
+                  }
+                }}
+                className="w-3.5 h-3.5 rounded cursor-pointer"
+                style={{ accentColor: '#a78bfa' }}
+              />
+              <span className="text-[10px] font-bold transition-colors" style={{ color: '#444' }}>지문 기억</span>
+            </label>
           </div>
 
-          {/* ── 지문 선택 버튼 (접기/폼치기) ── */}
           <button
             onClick={() => setSelectorOpen(o => !o)}
-            className="flex items-center gap-1.5 text-[10px] font-black rounded-xl px-2.5 py-1.5 transition-all mb-1.5"
-            style={{ background: 'rgba(255,255,255,0.06)', color: selectorOpen ? 'rgba(200,180,255,0.9)' : 'rgba(255,255,255,0.40)' }}
+            className="flex items-center gap-2 rounded-xl px-3 py-2 transition-all mb-1.5 w-full"
+            style={{
+              background: selectorOpen ? '#e8e8f0' : '#eff0f5',
+              border: selectorOpen ? '1.5px solid #a5b4fc' : '1.5px solid #d1d5db',
+              color: '#111',
+            }}
           >
-            <BookOpen size={11} />
-            {selectedSetId !== 'none' && !selectorOpen
-              ? (() => { const p = passages.find(x => x.id === selectedSetId); return p ? (p.label || '지문 선택됨') : '지문 선택'; })()
-              : '지문 선택'
-            }
-            <ChevronDown size={10} className={`ml-auto transition-transform duration-200 ${selectorOpen ? '' : '-rotate-90'}`} />
+            <BookOpen size={13} style={{ color: selectorOpen ? '#6366f1' : '#666', flexShrink: 0 }} />
+            <span className="text-[12px] font-black flex-1 text-left truncate" style={{ color: '#111' }}>
+              {selectedSetId !== 'none' && !selectorOpen
+                ? (() => { const p = passages.find(x => x.id === selectedSetId); return p ? (p.label || '지문 선택됨') : '지문 선택'; })()
+                : '지문 선택'
+              }
+            </span>
+            {!selectorOpen && selectedSetId === 'none' && (
+              <span className="text-[9px] font-bold" style={{ color: '#999' }}>(탭해서 선택)</span>
+            )}
+            <ChevronDown size={12} className={`shrink-0 transition-transform duration-200 ${selectorOpen ? 'rotate-180' : ''}`}
+              style={{ color: '#666' }} />
           </button>
 
           {/* ── 3단계 필터 (selectorOpen 일 때만 표시) ── */}
@@ -323,7 +411,7 @@ export default function AITeacherPage() {
               <div className="relative">
                 <select
                   value={selectedSetId}
-                  onChange={e => { setSelectedSetId(e.target.value); if (e.target.value !== 'none') setSelectorOpen(false); }}
+                  onChange={e => selectPassage(e.target.value)}
                   className="w-full bg-foreground/5 border border-foreground/10 text-foreground text-[11px] font-bold rounded-xl px-3 py-2 appearance-none focus:outline-none cursor-pointer pr-8 hover:border-foreground/20 transition-all"
                 >
                   <option value="none">지문 없이 자유 질문</option>
@@ -337,6 +425,7 @@ export default function AITeacherPage() {
               </div>
             </div>
           )}
+
         </div>
         <button
           onClick={handleClearChat}
@@ -347,15 +436,7 @@ export default function AITeacherPage() {
         </button>
       </div>
 
-      {/* Context Badge */}
-      {selectedSet && (
-        <div className="mx-5 mt-3 mb-0 px-4 py-2.5 bg-foreground/5 rounded-2xl border border-foreground/5 flex items-center gap-2 animate-in fade-in duration-300">
-          <BookOpen size={13} className="text-accent shrink-0" />
-          <span className="text-[12px] font-bold text-foreground truncate">
-            {[selectedSet.workbook, selectedSet.sub_category || selectedSet.chapter, selectedSet.label].filter(Boolean).join(" · ")}
-          </span>
-        </div>
-      )}
+
 
       {/* Chat History */}
       <div className="flex-1 overflow-y-auto px-4 custom-scrollbar flex flex-col gap-4 pb-[200px] pt-4">

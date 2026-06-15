@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { FileText, RefreshCw, Eye, Send, ChevronDown, ChevronUp, X, Search, ArrowUpDown, CheckSquare, Square, XCircle } from "lucide-react";
+import { FileText, RefreshCw, Eye, Send, ChevronDown, X, Search, ArrowUpDown, XCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type ClassRow = { id: string; name: string };
@@ -10,34 +10,29 @@ type Report = {
 };
 
 export default function AdminReportsPage() {
-  // ── 데이터 ──────────────────────────────────────────────────────────────────
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // ── 필터 / 정렬 ────────────────────────────────────────────────────────────
   const [filterClass, setFilterClass] = useState("");
   const [filterStudent, setFilterStudent] = useState("");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [dateAsc, setDateAsc] = useState(false);
 
-  // ── 생성 패널 ──────────────────────────────────────────────────────────────
   const [genClass, setGenClass] = useState<ClassRow | null>(null);
   const [genStudents, setGenStudents] = useState<string[]>([]);
   const [genSelectedStudents, setGenSelectedStudents] = useState<string[]>([]);
   const [genDate, setGenDate] = useState(new Date().toISOString().slice(0, 10));
-  const [generating, setGenerating] = useState<string[]>([]); // generating student names
+  const [generating, setGenerating] = useState<string[]>([]);
   const [genResults, setGenResults] = useState<Record<string, { status: "ok" | "error"; msg?: string }>>({});
   const [genError, setGenError] = useState("");
 
-  // ── 미리보기 / 발행 ────────────────────────────────────────────────────────
   const [previewReport, setPreviewReport] = useState<Report | null>(null);
   const [comment, setComment] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [commentSaved, setCommentSaved] = useState(false);
 
-  // ── 학생 이력 패널 ─────────────────────────────────────────────────────────
   const [historyStudent, setHistoryStudent] = useState<string | null>(null);
   const [historyReports, setHistoryReports] = useState<Report[]>([]);
 
@@ -45,14 +40,13 @@ export default function AdminReportsPage() {
     supabase.from("classes").select("id,name").order("opened_at").then(({ data }) => setClasses((data || []) as ClassRow[]));
   }, []);
 
-  // 반 변경 시 학생 로드
   useEffect(() => {
     if (!genClass) { setGenStudents([]); setGenSelectedStudents([]); return; }
     supabase.from("students").select("name").eq("class_name", genClass.name).order("name")
       .then(({ data }) => {
         const names = (data || []).map((s: any) => s.name);
         setGenStudents(names);
-        setGenSelectedStudents(names); // 기본 전체 선택
+        setGenSelectedStudents(names);
       });
   }, [genClass]);
 
@@ -74,9 +68,20 @@ export default function AdminReportsPage() {
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
-  // 일괄 생성
+  // 일괄 생성 (이미 존재하는 경우 재생성 확인)
   const generateBatch = async () => {
     if (!genClass || genSelectedStudents.length === 0) return;
+    // 이미 존재하는 리포트 확인
+    const { data: existing } = await supabase.from("daily_reports")
+      .select("student_name")
+      .eq("class_id", genClass.id)
+      .eq("session_date", genDate)
+      .in("student_name", genSelectedStudents);
+    const existingNames = (existing || []).map((r: any) => r.student_name);
+    if (existingNames.length > 0) {
+      const ok = confirm(`${existingNames.join(', ')}의 리포트가 이미 존재합니다.\n최신 수업 내용으로 재생성하시겠습니까?`);
+      if (!ok) return;
+    }
     setGenError(""); setGenResults({});
     setGenerating(genSelectedStudents);
     for (const stu of genSelectedStudents) {
@@ -105,7 +110,6 @@ export default function AdminReportsPage() {
     if (unpublish) {
       await supabase.from("daily_reports").update({ published: false, published_at: null }).eq("id", r.id);
     } else {
-      // html_content에 플레이스홀더 대신 teacher_comment 컨럼만 저장 (중복발행 시 코멘트 소실 방지)
       await supabase.from("daily_reports").update({
         published: true,
         published_at: new Date().toISOString(),
@@ -117,6 +121,7 @@ export default function AdminReportsPage() {
     loadReports();
   };
 
+  // 단순 삭제
   const deleteReport = async (r: Report) => {
     if (!confirm(`${r.student_name} (${r.session_date}) 리포트를 삭제하시겠습니까?\n발행된 경우 학부모 페이지에서도 사라집니다.`)) return;
     await supabase.from("daily_reports").delete().eq("id", r.id);
@@ -124,7 +129,8 @@ export default function AdminReportsPage() {
     loadReports();
   };
 
-  // 코멘트 저장 (발행 전 임시 저장)
+
+  // 코멘트 임시저장
   const saveComment = async (r: Report) => {
     await supabase.from("daily_reports").update({ teacher_comment: comment }).eq("id", r.id);
     setCommentSaved(true); setTimeout(() => setCommentSaved(false), 1500);
@@ -138,7 +144,6 @@ export default function AdminReportsPage() {
     setHistoryStudent(studentName);
   };
 
-  // 필터된 보기용
   const groupedByStudent: Record<string, Report[]> = {};
   for (const r of reports) {
     if (!groupedByStudent[r.student_name]) groupedByStudent[r.student_name] = [];
@@ -158,7 +163,6 @@ export default function AdminReportsPage() {
         <div className="glass rounded-3xl border border-foreground/10 p-6 space-y-4">
           <p className="text-[10px] font-black text-accent uppercase tracking-widest">📋 리포트 생성</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* 반 */}
             <div>
               <label className="text-[10px] font-black text-accent uppercase tracking-widest block mb-1.5">반 선택</label>
               <div className="relative">
@@ -170,13 +174,11 @@ export default function AdminReportsPage() {
                 <ChevronDown size={14} className="absolute right-3 top-3.5 text-accent pointer-events-none"/>
               </div>
             </div>
-            {/* 날짜 */}
             <div>
               <label className="text-[10px] font-black text-accent uppercase tracking-widest block mb-1.5">수업 날짜</label>
               <input type="date" value={genDate} onChange={e => setGenDate(e.target.value)}
                 className="w-full h-11 px-3 rounded-xl border border-foreground/10 bg-transparent text-[13px] font-bold outline-none focus:border-foreground/30"/>
             </div>
-            {/* 학생 선택 */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-[10px] font-black text-accent uppercase tracking-widest">학생 선택</label>
@@ -228,7 +230,6 @@ export default function AdminReportsPage() {
             </button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-            {/* 반 필터 */}
             <div className="relative">
               <select value={filterClass} onChange={e => setFilterClass(e.target.value)}
                 className="w-full h-9 px-2 rounded-xl border border-foreground/10 bg-transparent text-[12px] font-bold outline-none appearance-none">
@@ -237,19 +238,15 @@ export default function AdminReportsPage() {
               </select>
               <ChevronDown size={12} className="absolute right-2 top-2.5 text-accent pointer-events-none"/>
             </div>
-            {/* 학생 검색 */}
             <div className="relative">
               <Search size={12} className="absolute left-2.5 top-2.5 text-accent pointer-events-none"/>
               <input value={filterStudent} onChange={e => setFilterStudent(e.target.value)} placeholder="학생 이름 검색"
                 className="w-full h-9 pl-7 pr-2 rounded-xl border border-foreground/10 bg-transparent text-[12px] font-bold outline-none"/>
             </div>
-            {/* 시작 날짜 */}
             <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)}
               className="h-9 px-2 rounded-xl border border-foreground/10 bg-transparent text-[12px] font-bold outline-none"/>
-            {/* 종료 날짜 */}
             <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)}
               className="h-9 px-2 rounded-xl border border-foreground/10 bg-transparent text-[12px] font-bold outline-none"/>
-            {/* 날짜 정렬 */}
             <button onClick={() => setDateAsc(a => !a)}
               className="h-9 px-3 rounded-xl border border-foreground/10 text-[11px] font-black flex items-center gap-1.5 hover:bg-foreground/5">
               <ArrowUpDown size={12}/>날짜 {dateAsc ? "오름차순↑" : "내림차순↓"}
@@ -257,7 +254,7 @@ export default function AdminReportsPage() {
           </div>
         </div>
 
-        {/* ── 리포트 목록 (학생별 그룹) ── */}
+        {/* ── 리포트 목록 ── */}
         {loading ? (
           <div className="flex justify-center py-12"><div className="w-6 h-6 rounded-full border-2 border-foreground/20 border-t-foreground animate-spin"/></div>
         ) : reports.length === 0 ? (
@@ -268,7 +265,6 @@ export default function AdminReportsPage() {
               const reps = groupedByStudent[stu];
               return (
                 <div key={stu} className="glass rounded-2xl border border-foreground/10 overflow-hidden">
-                  {/* 학생 헤더 */}
                   <div className="flex items-center gap-3 px-5 py-3 bg-foreground/3 border-b border-foreground/5 cursor-pointer"
                     onClick={() => loadHistory(stu)}>
                     <p className="font-black text-[14px] text-foreground flex-1">{stu}</p>
@@ -276,7 +272,6 @@ export default function AdminReportsPage() {
                     <button onClick={e => { e.stopPropagation(); loadHistory(stu); }}
                       className="text-[10px] text-indigo-500 hover:underline font-black">이력 전체 보기</button>
                   </div>
-                  {/* 리포트 행 */}
                   <div className="divide-y divide-foreground/5">
                     {reps.map(r => (
                       <div key={r.id} className={`px-5 py-3 flex items-center gap-3 ${r.published ? "bg-emerald-50/30" : ""}`}>
@@ -317,24 +312,22 @@ export default function AdminReportsPage() {
       {/* ── 미리보기 / 발행 모달 ── */}
       {previewReport && (
         <div className="fixed inset-0 z-50 bg-black/70 flex flex-col">
-          {/* 헤더 */}
           <div className="flex items-start gap-4 px-6 py-4 bg-white/10 backdrop-blur-md shrink-0">
             <div className="flex-1">
               <p className="text-white font-black text-[15px]">{previewReport.student_name} · {previewReport.session_date}</p>
               <p className="text-white/50 text-[11px]">{previewReport.published ? "✅ 발행됨" : "미발행"}</p>
             </div>
-            {/* 코멘트 입력 */}
             <div className="flex-1 min-w-[280px]">
               <p className="text-white/60 text-[10px] font-black mb-1 uppercase tracking-widest">강사 코멘트</p>
               <textarea value={comment} onChange={e => setComment(e.target.value)} rows={3}
                 placeholder="강사 코멘트를 입력하세요..."
                 className="w-full px-3 py-2 rounded-xl bg-white/20 text-white placeholder:text-white/40 text-[12px] font-medium outline-none resize-none"/>
-              <div className="flex gap-2 mt-1.5">
+              <div className="flex gap-2 mt-1.5 flex-wrap">
                 <button onClick={() => saveComment(previewReport)}
                   className="h-7 px-3 rounded-lg bg-white/20 text-white text-[11px] font-bold hover:bg-white/30">
                   {commentSaved ? "✓ 저장됨" : "임시저장"}
                 </button>
-              {!previewReport.published && (
+                {!previewReport.published && (
                   <button onClick={() => publish(previewReport)} disabled={publishing}
                     className="h-7 px-4 rounded-lg bg-emerald-500 text-white text-[11px] font-black hover:bg-emerald-600 disabled:opacity-40 flex items-center gap-1">
                     <Send size={11}/>발행
@@ -347,15 +340,14 @@ export default function AdminReportsPage() {
                   </button>
                 )}
                 <button onClick={() => deleteReport(previewReport)}
-                  className="h-7 px-3 rounded-lg bg-slate-200 text-slate-600 text-[11px] font-bold hover:bg-rose-100 hover:text-rose-700 transition-all">
-                  삭제
+                  className="h-7 px-3 rounded-lg bg-slate-700 text-white text-[11px] font-bold hover:bg-rose-600 transition-all flex items-center gap-1">
+                  🗑 삭제
                 </button>
               </div>
             </div>
             <button onClick={() => { setPreviewReport(null); setComment(""); }}
               className="h-9 px-4 rounded-xl bg-white/20 text-white text-[13px] font-bold ml-2 shrink-0">닫기</button>
           </div>
-          {/* iframe - 코멘트를 동적으로 치환하여 렌더링 */}
           <div className="flex-1 overflow-auto">
             <iframe
               srcDoc={(previewReport.html_content || '').replace('{{TEACHER_COMMENT}}', comment || previewReport.teacher_comment || '')}

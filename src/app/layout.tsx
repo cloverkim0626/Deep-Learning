@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Serif_KR, Gaegu, Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
+import { Inter, Noto_Serif_KR, Gaegu, Plus_Jakarta_Sans, Playfair_Display, Pacifico, Outfit } from "next/font/google";
 import "./globals.css";
 import SplashScreen from "@/components/SplashV4";
 
@@ -33,6 +33,18 @@ const playfair = Playfair_Display({
   style: ["italic"],
 });
 
+const pacifico = Pacifico({
+  variable: "--font-pacifico",
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800", "900"],
+});
+
 export const metadata: Metadata = {
   title: "Deep Learning — Team Parallax",
   description: "Team Parallax의 AI 기반 영어 학습 플랫폼",
@@ -55,7 +67,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${inter.variable} ${jakarta.variable} ${notoSerifKR.variable} ${gaegu.variable} ${playfair.variable} h-full antialiased`}
+      className={`${inter.variable} ${jakarta.variable} ${notoSerifKR.variable} ${gaegu.variable} ${playfair.variable} ${pacifico.variable} ${outfit.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground transition-colors duration-700">
         {/* 네이티브 스플래시 이전 순간 — JS 로드 전 검은화면 */}

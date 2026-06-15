@@ -3,13 +3,55 @@ import OpenAI from 'openai';
 
 export async function POST(req: Request) {
   try {
-    const { rawText, category, sub_category, sub_sub_category, passage_number, passageLabel } = await req.json();
+    const body = await req.json();
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({ error: "Missing API Key" }, { status: 500 });
     }
-
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    // ── word_detail 모드: 단일 단어/phrase 상세정보만 추출 ──────────────────────
+    if (body.mode === 'word_detail') {
+      const { targetWord, targetPos, passageText } = body;
+      const prompt = `You are a vocabulary extraction engine for Korean CSAT preparation.
+Extract full vocabulary detail for the word/phrase "${targetWord}"${targetPos ? ` (pos: ${targetPos})` : ''} as used in this passage.
+
+CRITICAL RULES:
+1. "word" field MUST be the BASE LEMMA (dictionary form), NEVER the inflected surface form.
+   Examples: "containing" → "contain", "studies" → "study", "better" → "good" or "well" depending on use.
+   ⚠️ NEVER output a corrupted/partial form like "containe" — always use the correct full base form.
+2. "synonyms" and "antonyms" MUST be exactly 3 real English words, comma-separated.
+   NEVER output "none", "N/A", "-", or any placeholder. If true antonyms are few, use conceptually opposite words.
+3. "pos_abbr" must match the word's grammatical role in the passage, not its most common use.
+4. Return ONLY valid JSON (no markdown, no code fences).
+
+Passage:
+"${passageText}"
+
+Return JSON:
+{
+  "word": "<BASE LEMMA — dictionary form>",
+  "pos_abbr": "n|v|adj|adv|phr",
+  "korean": "contextual Korean meaning (15자 이내)",
+  "structure": "for phr only, else empty string",
+  "context": "exact sentence from passage containing this word",
+  "context_korean": "natural Korean translation of that sentence",
+  "synonyms": "word1, word2, word3",
+  "antonyms": "word1, word2, word3",
+  "grammar_tip": "Korean 반말체 CSAT tip",
+  "is_key": false
+}`;
+      const resp = await openai.chat.completions.create({
+        model: 'gpt-4o', temperature: 0.2,
+        messages: [{ role: 'system', content: prompt }],
+        response_format: { type: 'json_object' },
+      });
+      const parsed = JSON.parse(resp.choices[0].message.content || '{}');
+      return NextResponse.json({ word: parsed });
+    }
+
+    // ── 기존 전체 인제스트 모드 ──────────────────────────────────────────────────
+    const { rawText, category, sub_category, sub_sub_category, passage_number, passageLabel } = body;
 
     const prompt = `
 You are "The Parallax — Vocabulary Extraction Engine v2.2".

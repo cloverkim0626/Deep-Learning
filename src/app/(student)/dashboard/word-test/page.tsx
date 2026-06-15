@@ -34,8 +34,9 @@ function fisherYates<T>(arr: T[]): T[] {
 }
 function parseList(val: string | string[] | null | undefined): string[] {
   if (!val) return [];
-  if (Array.isArray(val)) return val.filter(Boolean);
-  return val.split(',').map(s => s.trim()).filter(Boolean);
+  const raw = Array.isArray(val) ? val : val.split(',').map(s => s.trim());
+  // "none", "N/A", "-" 등 의미없는 값 제거
+  return raw.filter(s => s && !/^(none|n\/a|n\/a\.|-|–|—|null)$/i.test(s));
 }
 function buildQuestions(words: TestWord[]): Question[] {
   // 모든 유의어/반의어 풀
@@ -715,7 +716,7 @@ type GameCard = { id: string; pairId: string; content: string; isHeadword: boole
 type GameRound = 'synonym' | 'antonym';
 type GamePhase = 'playing' | 'round_result' | 'final_result';
 
-function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: () => void; onGamePass: () => void }) {
+function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: () => void; onGamePass: () => Promise<void> }) {
   const buildRound = useCallback((round: GameRound): GameCard[] => {
     const eligible = words.filter(w => round === 'synonym' ? w.testSynonym && w.synonyms.length > 0 : w.testAntonym && w.antonyms.length > 0);
     const cards: GameCard[] = [];
@@ -730,6 +731,10 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
 
   const hasSynRound = words.some(w => w.testSynonym && w.synonyms.length > 0);
   const hasAntRound = words.some(w => w.testAntonym && w.antonyms.length > 0);
+
+  // ★ Rules of Hooks: 모든 훅은 early return 이전에 선언
+  const passCalledRef = useRef(false);
+  const [isSavingPass, setIsSavingPass] = useState(false);
 
   // 둘 다 없으면 게임 불가
   if (!hasSynRound && !hasAntRound) {
@@ -762,9 +767,10 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
     if (currentRound === 'synonym') {
       setSynResult(result);
       if (hasAntRound) setGamePhase('round_result');
-      else { setGamePhase('final_result'); if (passed) onGamePass(); }
-    } else { setAntResult(result); setGamePhase('final_result'); if (passed) onGamePass(); }
-  }, [currentRound, pairs, hasAntRound, onGamePass]);
+      else { setGamePhase('final_result'); }
+    } else { setAntResult(result); setGamePhase('final_result'); }
+    // ⚠️ onGamePass는 PASS 버튼 클릭 시 await로 처리 (race condition 방지)
+  }, [currentRound, pairs, hasAntRound]);
 
   useEffect(() => {
     if (gamePhase !== 'playing') return;
@@ -1023,7 +1029,7 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
       <div>
         <p className="text-[11px] font-light uppercase tracking-[3px] mb-1" style={{color: overallPass ? 'rgba(80,200,240,0.6)' : 'rgba(180,120,255,0.6)'}}>최종 결과</p>
         <h2 className="text-4xl font-semibold">{overallPass ? 'PASS! 🎉' : 'FAIL'}</h2>
-        <p className="text-[13px] mt-2" style={{color:'rgba(200,235,255,0.7)'}}>{overallPass ? 'PASS 인장이 찍혔어요! 👏' : '한 번 더 연습하면 분명 통과할 수 있어!'}</p>
+        <p className="text-[13px] mt-2" style={{color:'rgba(200,235,255,0.7)'}}>{overallPass ? 'PASS 인장이 찍혔습니다! 아래 버튼을 눌러주세요 👇' : '한 번 더 연습하면 분명 통과할 수 있어!'}</p>
       </div>
       <div className="w-full max-w-xs space-y-2">
         {synResult && (
@@ -1041,10 +1047,27 @@ function GameMode({ words, onExit, onGamePass }: { words: TestWord[]; onExit: ()
           </div>
         )}
       </div>
+      {/* ── PASS: 저장 후 나가기 (await 순서 보장) ── */}
+      {overallPass && (
+        <button
+          disabled={isSavingPass}
+          onClick={async () => {
+            if (passCalledRef.current) { onExit(); return; }
+            passCalledRef.current = true;
+            setIsSavingPass(true);
+            try { await onGamePass(); } catch(e) { console.error('[PASS btn]', e); }
+            finally { setIsSavingPass(false); }
+            onExit();
+          }}
+          className="h-14 px-10 font-semibold rounded-2xl text-[14px] hover:-translate-y-0.5 transition-all disabled:opacity-60"
+          style={{background:'linear-gradient(135deg,rgba(0,160,220,0.85),rgba(0,100,160,0.9))', border:'1px solid rgba(80,200,240,0.5)', boxShadow:'0 0 24px rgba(0,140,200,0.4)'}}>
+          {isSavingPass ? '저장 중...' : '✓ PASS 인장 받기'}
+        </button>
+      )}
       <button onClick={onExit}
-        className="h-14 px-10 font-semibold rounded-2xl text-[14px] hover:-translate-y-0.5 transition-all"
-        style={{background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.25)', boxShadow:'0 4px 20px rgba(0,0,0,0.3)'}}>
-        다시 선택
+        className="h-12 px-8 font-semibold rounded-2xl text-[13px] hover:-translate-y-0.5 transition-all"
+        style={{background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.18)', boxShadow:'0 4px 20px rgba(0,0,0,0.3)'}}>
+        {overallPass ? '목록으로' : '다시 선택'}
       </button>
     </div>
   );
@@ -1274,10 +1297,10 @@ export default function WordTestPage() {
           return sa.localeCompare(sb, 'ko');
         }));
     } catch (err) { console.error('세트 로딩 실패:', err); setAllSets([]); }
-    setPhase("intro");
+    // setPhase는 호출자가 직접 제어 (game 화면에서 호출 시 인트로로 전환 방지)
   }, []);
 
-  useEffect(() => { loadSets(); }, [loadSets]);
+  useEffect(() => { loadSets().then(() => setPhase("intro")); }, [loadSets]);
 
   // \ud1b5\uacfc \uc9c1\ud6c4 allSets\uc5d0\uc11c \uc989\uc2dc \uc81c\uac70\ud558\ub294 \ud5ec\ud37c
   // vocab + syn \ubaa8\ub450 \ud1b5\uacfc\ud55c \uc138\ud2b8\ub97c \ubaa9\ub85d\uc5d0\uc11c \ubc14\ub85c \uc9c0\uc6c0
@@ -1412,9 +1435,18 @@ export default function WordTestPage() {
           const item = (data.distractors as { id: string; distractors: string[] }[])
             .find(d => d.id === w.id);
           if (item && item.distractors.length >= 3) {
-            // 유효한 모든 뜻(콤마 구분)에 해당하는 distractor 제거
-            const allMeanings = w.korean.split(/[,，、\/]/).map(s => s.trim().toLowerCase());
-            const clean = item.distractors.filter(d => !allMeanings.includes(d.trim().toLowerCase()));
+            // 모든 유효 뜻 목록 (소문자, 어간 포함)
+            const allMeanings = w.korean.split(/[,，、\/]/).map(s => s.trim().toLowerCase()).filter(Boolean);
+            // 강화된 필터: 포함관계(어미 변형 포함)까지 체크
+            const clean = item.distractors.filter(d => {
+              const dl = d.trim().toLowerCase();
+              return !allMeanings.some(m =>
+                dl === m ||                    // 완전 일치
+                dl.includes(m) ||             // distractor가 뜻을 포함
+                m.includes(dl) ||             // 뜻이 distractor를 포함
+                dl.replace(/[하다하여하고하는]$/, '') === m.replace(/[하다하여하고하는]$/, '') // 동사 어미 변형
+              );
+            });
             const firstMeaning = w.korean.split(/[,，、\/]/)[0].trim();
             if (clean.length >= 3) {
               return fisherYates([firstMeaning, ...clean.slice(0, 5)]);
@@ -1424,6 +1456,7 @@ export default function WordTestPage() {
         });
         setVocabChoices(choices);
       }
+
     } catch {
       // 실패 시 기존 클라이언트 생성 폴백 사용
     }
@@ -1510,6 +1543,7 @@ export default function WordTestPage() {
     if (quizTimerRef.current) clearInterval(quizTimerRef.current);
     setSelectedSetId(null); setSessionId(null);
     setResults([]); setVocabResults([]); setCurrentIdx(0); setSelected(null);
+    setPhase('intro'); // ← 이게 없어서 나가기 후에도 test화면이 유지되던 버그
     loadSets(); loadWrongDrill();
   };
 
@@ -1595,11 +1629,13 @@ export default function WordTestPage() {
   if (phase === "vocab_test") return <VocabMCQTest words={vocabWords} allWords={vocabAllWords} preloadedChoices={vocabChoices.length > 0 ? vocabChoices : undefined} onDone={handleVocabDone} onExit={() => setPhase("intro")} />;
   if (phase === "vocab_result") return <VocabResultScreen results={vocabResults}
     onRestart={() => handleStartVocab(selectedSetId === WRONG_DRILL_ID ? [WRONG_DRILL_ID] : selectedSetId ? [selectedSetId] : null)}
-    onExit={() => { setSelectedSetId(null); loadSets(); loadWrongDrill(); }} />;
-  if (phase === "game") return <GameMode words={gameWords} onExit={() => setPhase("intro")} onGamePass={handleGamePass} />;
+    onExit={() => { setSelectedSetId(null); setPhase("intro"); loadSets(); loadWrongDrill(); }} />;
+
+  if (phase === "game") return <GameMode words={gameWords} onExit={() => { loadSets().then(() => setPhase("intro")); loadWrongDrill(); }} onGamePass={handleGamePass} />;
   if (phase === "result") return <ResultScreen results={results}
     onRestart={() => handleStart(selectedSetId === WRONG_DRILL_ID ? [WRONG_DRILL_ID] : selectedSetId ? [selectedSetId] : null)}
-    onExit={() => { setSelectedSetId(null); loadSets(); loadWrongDrill(); }} />;
+    onExit={() => { setSelectedSetId(null); setPhase("intro"); loadSets(); loadWrongDrill(); }} />;
+
 
   // ─── 객관식 퀴즈 화면 ─────────────────────────────────────────────────────
   const q = questions[currentIdx];

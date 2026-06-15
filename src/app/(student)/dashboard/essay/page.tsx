@@ -60,13 +60,16 @@ type ScoreResult = {
   grammar_check?: { grammatically_correct: boolean; contextually_appropriate: boolean; word_order_correct: boolean };
   correct_answer?: string;
 };
-type Stage = "select-passage" | "select-type" | "select-count" | "generating" | "answering" | "scoring" | "result";
+type Stage = "select-passage" | "select-type" | "generating" | "answering" | "scoring" | "result";
+
+// 최근 경로 타입 (파일 저장 여부 체크후 적용)
+type SavedPath = { workbook: string; mid: string; sub: string };
 
 // ── BaeyolAnswering 컴포넌트 ──────────────────────────────────────────────────
-// 지문 전체 표시 + 배열 대상 문장은 ______ 로 숨김 + 힌트보기 버튼
+// 지문 전체 표시 + 배열 대상 문장은 밑줄로 강조
 function BaeyolAnswering({
   q, arr, shuf, cMap, allPlaced,
-  activeQIdx, questions, allAnswered, selectedTemplate,
+  activeQIdx, questions, allAnswered, selectedTemplate, fullText,
   onPlace, onRemove, onNext, onSubmit, studentOrder, getLabel,
 }: {
   q: GeneratedQ;
@@ -76,6 +79,7 @@ function BaeyolAnswering({
   activeQIdx: number; questions: GeneratedQ[];
   allAnswered: boolean;
   selectedTemplate: Template | null;
+  fullText: string;
   onPlace: (label: string) => void;
   onRemove: (pos: number) => void;
   onNext: () => void; onSubmit: () => void;
@@ -83,6 +87,51 @@ function BaeyolAnswering({
   getLabel: (chunk: string) => string;
 }) {
   const [hintVisible, setHintVisible] = useState(false);
+  const targetSentence = q.blank_position_sentence ?? q.selected_sentence?.text ?? "";
+
+  // 지문에서 대상 문장을 찾아 공란으로 대체 — 시험지 형식
+  const BlankSpan = () => (
+    <span
+      style={{
+        display: 'inline-block',
+        width: '50%',
+        borderBottom: '2px solid #38bdf8',  // sky-400
+        verticalAlign: 'bottom',
+        marginBottom: '2px',
+        marginLeft: '2px',
+        marginRight: '2px',
+      }}
+      title="이 문장을 아래 단어 목록으로 완성하세요"
+    />
+  );
+
+  const renderPassageWithBlank = () => {
+    const baseStyle = "text-[13px] text-gray-900 leading-[1.9] whitespace-pre-wrap font-serif";
+    if (!fullText || !targetSentence) {
+      return <p className={baseStyle}>{fullText || targetSentence}</p>;
+    }
+    const idx = fullText.indexOf(targetSentence);
+    if (idx === -1) {
+      // fallback: 전체 지문 표시 + 아래에 공란 별도 표시
+      return (
+        <>
+          <p className={baseStyle}>{fullText}</p>
+          <p className="mt-3 text-[13px] leading-[1.9] font-serif">
+            <BlankSpan />
+          </p>
+        </>
+      );
+    }
+    const before = fullText.slice(0, idx);
+    const after  = fullText.slice(idx + targetSentence.length);
+    return (
+      <p className={baseStyle}>
+        {before}
+        <BlankSpan />
+        {after}
+      </p>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -95,18 +144,17 @@ function BaeyolAnswering({
         <p className="text-[13px] font-bold text-foreground leading-relaxed">{q.question_text}</p>
       </div>
 
-      {/* ── 지문 전체 (배열 대상 문장은 ______ 로 표시) */}
-      <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] overflow-hidden">
-        <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-foreground/5">
-          <p className="text-[9px] font-black text-accent/40 uppercase tracking-widest">지문</p>
-          {/* 힌트보기 버튼 — 한글해석 토글 */}
+      {/* ── 지문 전체 (시험지 스타일: 흰 배경, 검정 글씨, 대상 문장 공란) */}
+      <div className="rounded-2xl border border-gray-300 bg-white overflow-hidden shadow-sm">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-gray-200">
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">지문</p>
           {q.blank_position_sentence_korean && (
             <button
               onClick={() => setHintVisible(v => !v)}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black transition-all ${
                 hintVisible
                   ? "bg-amber-100 text-amber-700 border border-amber-200"
-                  : "bg-foreground/5 text-accent/50 hover:bg-amber-50 hover:text-amber-600"
+                  : "bg-gray-100 text-gray-500 hover:bg-amber-50 hover:text-amber-600"
               }`}
             >
               💡 힌트보기
@@ -114,35 +162,15 @@ function BaeyolAnswering({
           )}
         </div>
 
-        {/* 힌트: 한글 해석 (클릭 시만 노출) */}
         {hintVisible && q.blank_position_sentence_korean && (
           <div className="mx-4 mt-3 px-3 py-2.5 rounded-xl bg-amber-50/80 border border-amber-100">
-            <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-1">빈칸 문장 한글 해석</p>
+            <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-1">밑줄 문장 한글 해석</p>
             <p className="text-[12px] text-amber-800 leading-relaxed font-medium">{q.blank_position_sentence_korean}</p>
           </div>
         )}
 
-        {/* 지문 본문 */}
-        <div className="px-4 pt-3 pb-4">
-          {q.passage_with_blank ? (
-            <p className="text-[13px] text-foreground leading-[1.85] whitespace-pre-wrap">
-              {q.passage_with_blank.split("______").map((part, i, parts) => (
-                <span key={i}>
-                  {part}
-                  {i < parts.length - 1 && (
-                    <span className="inline-flex items-center mx-0.5">
-                      <span className="inline-block px-2 py-0.5 rounded-md bg-indigo-100/80 border border-indigo-200 text-indigo-400 font-black text-[11px] tracking-widest select-none">
-                        ______
-                      </span>
-                    </span>
-                  )}
-                </span>
-              ))}
-            </p>
-          ) : (
-            /* passage_with_blank 없을 경우 fallback: 구 문장 표시 */
-            <p className="text-[12px] text-accent/40 italic">지문을 불러오는 중...</p>
-          )}
+        <div className="px-5 pt-4 pb-5">
+          {renderPassageWithBlank()}
         </div>
       </div>
 
@@ -150,12 +178,10 @@ function BaeyolAnswering({
       <div>
         <p className="text-[10px] font-black text-accent/35 uppercase tracking-widest mb-2">내 배열</p>
 
-        {/* 배열 박스 — 단어만 표시, 알파벳 라벨 없음 */}
         <div className="min-h-[52px] px-4 py-3 rounded-2xl border-2 border-dashed border-indigo-200/60 bg-indigo-50/20 flex flex-wrap gap-x-1 gap-y-1.5 items-center mb-1">
           {arr.length === 0
             ? <p className="text-[12px] text-accent/25 font-medium w-full text-center py-1">아래 단어를 순서대로 클릭하여 문장을 완성하세요</p>
             : arr.map((label, pi) => {
-                // cMap[label] = "(A) word" → strip label prefix to get just "word"
                 const rawChunk = cMap[label] ?? label;
                 const wordText = rawChunk.replace(/^\([A-Z]\)\s*/, "");
                 return (
@@ -169,7 +195,6 @@ function BaeyolAnswering({
           }
         </div>
 
-        {/* 라벨 순서 — 박스 아래 작게 */}
         <p className="text-[10px] font-mono text-accent/35 text-center mb-4 tracking-wider">
           {arr.length > 0 ? studentOrder : "\u00A0"}
         </p>
@@ -178,7 +203,7 @@ function BaeyolAnswering({
         <div className="flex flex-wrap gap-2">
           {shuf.map(chunk => {
             const label = getLabel(chunk);
-            const text = chunk.replace(/^\([A-Z]\)\s*/, ""); // strip "(A) " prefix
+            const text = chunk.replace(/^\([A-Z]\)\s*/, "");
             const isPlaced = arr.includes(label);
             return (
               <button key={label}
@@ -201,7 +226,6 @@ function BaeyolAnswering({
           )}
         </div>
 
-        {/* 다음 문제 / 제출 */}
         <div className="mt-4 flex gap-2">
           {activeQIdx < questions.length - 1 && allPlaced && (
             <button onClick={onNext}
@@ -247,7 +271,9 @@ export default function EssayPage() {
   const [results,       setResults]       = useState<ScoreResult[]>([]);
   const [stage,         setStage]         = useState<Stage>("select-passage");
   const [copied,        setCopied]        = useState<number | null>(null);
-  const [filterOpen,    setFilterOpen]    = useState(true); // 지문 필터 접기
+  const [filterOpen,    setFilterOpen]    = useState(false); // 처음엔 접힌 상태
+  // 최근/고정 경로
+  const [savedPath, setSavedPath] = useState<SavedPath | null>(null);
 
   // ── 초기화 ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -263,7 +289,8 @@ export default function EssayPage() {
     try {
       const saved = localStorage.getItem('essay_last_path');
       if (saved) {
-        const pt = JSON.parse(saved);
+        const pt = JSON.parse(saved) as SavedPath;
+        setSavedPath(pt);
         if (pt.workbook) setFilterWorkbook(pt.workbook);
         if (pt.mid) setFilterMid(pt.mid);
         if (pt.sub) setFilterSub(pt.sub);
@@ -284,11 +311,19 @@ export default function EssayPage() {
       (filterMid === "전체" || p.chapter === filterMid));
     return ["전체", ...Array.from(new Set(base.map(p => p.sub_sub_category || "미분류")))];
   }, [passages, filterWorkbook, filterMid]);
-  const filtered = useMemo(() => passages.filter(p =>
-    (filterWorkbook === "전체" || p.workbook === filterWorkbook) &&
-    (filterMid === "전체" || p.chapter === filterMid) &&
-    (filterSub === "전체" || p.sub_sub_category === filterSub)
-  ), [passages, filterWorkbook, filterMid, filterSub]);
+  const filtered = useMemo(() => {
+    const base = passages.filter(p =>
+      (filterWorkbook === "전체" || p.workbook === filterWorkbook) &&
+      (filterMid === "전체" || p.chapter === filterMid) &&
+      (filterSub === "전체" || p.sub_sub_category === filterSub)
+    );
+    return [...base].sort((a, b) => {
+      const na = parseInt(a.passage_number || '0', 10) || 0;
+      const nb = parseInt(b.passage_number || '0', 10) || 0;
+      return na - nb;
+    });
+  }, [passages, filterWorkbook, filterMid, filterSub]);
+
 
   // ── 배열형 헬퍼 ────────────────────────────────────────────────────────────
   const getLabel = (chunk: string) => chunk.match(/^\([A-Z]\)/)?.[0] ?? chunk;
@@ -331,6 +366,117 @@ export default function EssayPage() {
     return sh;
   };
 
+  // ── Collocation 그룹핑 (20단어 초과 시 적용) ────────────────────────────────
+  // 4가지 명확한 패턴만 엄격하게 적용 (이상한 묶음 방지)
+  type TokenList = { id: number; text: string }[];
+
+  const groupCollocations = (tokens: TokenList): string[] => {
+    const n = tokens.length;
+    const lo = (i: number) => tokens[i]?.text?.toLowerCase().replace(/[,.:;!?'"()]/g, '') ?? '';
+
+
+    // ── 패턴 매처 ─────────────────────────────────────────────────────────────
+    const matchAt = (i: number): number => {
+
+      // ── 패턴 1: 고정 3단어 전치사구/접속사구 ─────────────────────────────
+      if (i + 2 < n) {
+        const tri = `${lo(i)} ${lo(i+1)} ${lo(i+2)}`;
+        const FIXED3 = [
+          'in spite of','in terms of','in order to','in addition to',
+          'as a result','as a whole','as well as','as long as','as far as',
+          'in the case','on the other','with respect to','in relation to',
+          'in the form','in the face','on the basis','at the same',
+          'in other words','on the contrary','on the one','for the sake',
+          'in front of','at the end','at the beginning','as a consequence',
+        ];
+        if (FIXED3.some(p => tri.startsWith(p))) return 3;
+      }
+
+      // ── 패턴 2: 고정 2단어 접속사/부사구 (엄격히 명시된 것만) ─────────────
+      if (i + 1 < n) {
+        const bi = `${lo(i)} ${lo(i+1)}`;
+        const FIXED2 = [
+          // 접속사구
+          'even though','even if','as if','as though','so that',
+          'in order','rather than','such as','not only','not just',
+          'for example','for instance','that is','in fact','in addition',
+          'in contrast','by contrast','in conclusion','to conclude',
+          'however ,','therefore ,','moreover ,','furthermore ,',
+          // 관계절
+          'in which','of which','to which','by which','from which','through which',
+          'which is','which are','which was','which were',
+          'who is','who are','who was','who were',
+        ];
+        if (FIXED2.includes(bi)) return 2;
+
+        // ── 패턴 3: be동사 + 과거분사 (is/are/was/were/been + -ed/-en/-wn 등) ─
+        const BE = ['is','are','was','were','been','be'];
+        const isPP = (w: string) => /(?:ed|en|wn|nt|lt|pt|ft|ld|nd|rd|st|ct|xt|rn|ven|ten|sen|zen|own|awn|oken|aken|arisen|fallen|driven|given|risen|written|beaten|hidden|chosen|frozen|spoken|stolen|taken|broken|woven|gotten)$/i.test(w);
+        if (BE.includes(lo(i)) && i+1 < n && isPP(lo(i+1))) return 2;
+
+        // ── 패턴 4: 관사 + 형용사(목록) + 명사어미 — 3단어 ─────────────────
+        const ARTICLES = ['the','a','an','this','that','these','those'];
+        const ADJ_LIST = new Set([
+          'important','significant','critical','major','minor','key','main','primary',
+          'central','essential','fundamental','basic','common','general','specific',
+          'particular','different','various','social','political','economic','cultural',
+          'historical','natural','physical','mental','moral','ethical','human',
+          'individual','global','local','national','international','modern','traditional',
+          'democratic','scientific','technological','environmental','educational',
+          'intellectual','psychological','emotional','spiritual','practical','theoretical',
+          'new','old','great','large','small','high','low','long','short','strong',
+          'real','true','false','first','last','only','same','most','many','other',
+          'such','certain','complex','simple','direct','indirect','formal','informal',
+          'positive','negative','active','passive','public','private','free','open',
+          'whole','full','total','complete','necessary','possible','clear','deep',
+        ]);
+        const NOUN_SUFFIX = /(?:tion|sion|ment|ness|ity|ance|ence|ship|hood|ism|ist|age|ure|ture|ure|ing|ings|ers|ors|ants|ents|ees|ies)$/i;
+
+        if (ARTICLES.includes(lo(i)) && i+2 < n) {
+          // 관사 + 형용사 + 명사어미
+          if (ADJ_LIST.has(lo(i+1)) && NOUN_SUFFIX.test(lo(i+2))) return 3;
+        }
+
+        // ── 패턴 4b: 관사 + 명사어미 단어 — 2단어 ───────────────────────────
+        if (ARTICLES.includes(lo(i)) && i+1 < n && NOUN_SUFFIX.test(lo(i+1))) return 2;
+      }
+
+      return 0;
+    };
+
+    // ── PASS 1: greedy 스캔 ───────────────────────────────────────────────────
+    const chunks: string[] = [];
+    let i = 0;
+    while (i < n) {
+      const len = matchAt(i);
+      if (len >= 2) {
+        chunks.push(tokens.slice(i, i + len).map(t => t.text).join(' '));
+        i += len;
+
+      } else {
+        chunks.push(tokens[i].text);
+        i++;
+      }
+    }
+
+    // ── PASS 2: 21 초과 시 인접 단일 토큰 강제 병합 ───────────────────────────
+    while (chunks.length > 21) {
+      let merged = false;
+      for (let j = 0; j < chunks.length - 1 && chunks.length > 21; j++) {
+        if (!chunks[j].includes(' ') && !chunks[j+1].includes(' ')) {
+          chunks.splice(j, 2, `${chunks[j]} ${chunks[j+1]}`);
+          merged = true;
+        }
+      }
+      if (!merged) chunks.splice(0, 2, `${chunks[0]} ${chunks[1]}`);
+    }
+
+    return chunks;
+  };
+
+
+
+
   // ── 리셋 ──────────────────────────────────────────────────────────────────
   const resetQuestionState = () => {
     setSelectedTemplate(null); setQuestions([]); setAnswers([]);
@@ -338,64 +484,123 @@ export default function EssayPage() {
     setActiveQIdx(0); setGenProgress(0);
   };
 
-  // ── 핸들러: 지문 선택 ────────────────────────────────────────────────────
+  // ── 경로 저장 헬퍼
+  const savePath = (wb: string, mid: string, sub: string) => {
+    const next: SavedPath = { workbook: wb, mid, sub };
+    setSavedPath(next);
+    try { localStorage.setItem('essay_last_path', JSON.stringify(next)); } catch { /* noop */ }
+  };
+
+  // ── 핸들러: 지문 선택
   const pickPassage = (p: Passage) => {
     setSelectedPassage(p);
     resetQuestionState();
     setStage("select-type");
   };
 
-  // ── 핸들러: 유형 선택 (→ 개수 선택으로) ──────────────────────────────────
-  const pickTemplate = (t: Template) => {
+  // ── 핸들러: 유형 선택 → 개수 단계 없이 바로 essay_sentences 전체 문장 수로 생성
+  const pickTemplate = async (t: Template) => {
+    if (!selectedPassage) return;
     setSelectedTemplate(t);
     setQuestions([]); setAnswers([]); setArrangedAll([]); setShuffledAll([]); setResults([]);
-    setStage("select-count");
+    // essay_sentences 개수 = 지문에 설정된 서술형 문장 전체
+    const count = Math.max(1, selectedPassage.essay_sentences?.length ?? 1);
+    await startGeneration(t, count);
   };
 
-  // ── 핵심: 순차 생성 (비중복) ──────────────────────────────────────────────
-  const startGeneration = async (count: 1 | 2 | 3) => {
-    if (!selectedPassage || !selectedTemplate) return;
-    setQuestionCount(count);
+  // ── 핵심: essay_sentences 직접 활용 → API 호출 없이 로컬 생성 ──────────────
+  const startGeneration = async (template: Template, count: number) => {
+    if (!selectedPassage) return;
+    setSelectedTemplate(template);
+    setQuestionCount(count as 1 | 2 | 3);
     setStage("generating");
     setGenProgress(0);
 
-    const usedFragments: string[] = [];
+    const sentences = selectedPassage.essay_sentences ?? [];
+    if (sentences.length === 0) {
+      setStage("select-type");
+      alert("이 지문에 서술형 문장이 저장되어 있지 않습니다.");
+      return;
+    }
+
     const generatedQs: GeneratedQ[] = [];
+    const usedIndices = new Set<number>();
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < Math.min(count, sentences.length); i++) {
       setGenProgress(i);
-      try {
-        const res = await fetch("/api/essay-question", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            essay_sentences: selectedPassage.essay_sentences ?? [],
-            full_text: selectedPassage.full_text ?? "",
-            question_prompt: selectedTemplate.question_prompt,
-            used_fragments: usedFragments,
-          }),
-        }).then(r => r.json());
+      // 아직 안 쓴 문장 중 랜덤 선택
+      const available = sentences.filter((_, idx) => !usedIndices.has(idx));
+      const pick = available[Math.floor(Math.random() * available.length)];
+      usedIndices.add(sentences.indexOf(pick));
 
-        if (res.error) throw new Error(res.error);
-        const q = res as GeneratedQ;
-        generatedQs.push(q);
-        const frag = extractFragment(q);
-        if (frag) usedFragments.push(frag);
-      } catch {
-        // 에러 시 더미 삽입 후 계속
-        generatedQs.push({
-          question_type: "서술형",
-          question_text: "이 문제는 생성에 실패했습니다. 다시 시도해주세요.",
-          selected_sentence: null,
-        });
+      // 단어 토큰화
+      const wordTokens = pick.text.trim().split(/\s+/).filter(w => w.length > 0).map((w, wi) => ({ id: wi, text: w }));
+
+      // ── 20단어 초과 시 API로 Collocation 그룹핑 ─────────────────────────────
+      let chunkTexts: string[];
+
+      if (wordTokens.length > 20) {
+        try {
+          const res = await fetch('/api/essay-chunks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sentence: pick.text.trim() }),
+          });
+          const data = await res.json();
+          chunkTexts = Array.isArray(data.chunks) && data.chunks.length > 0
+            ? data.chunks
+            : wordTokens.map(t => t.text);
+        } catch {
+          // API 실패 시 단순 단어 분리 fallback
+          chunkTexts = wordTokens.map(t => t.text);
+        }
+      } else {
+        chunkTexts = wordTokens.map(t => t.text);
       }
+
+
+      // 라벨 A~Z 할당 (청크 수 기준)
+      const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const makeLabel = (i: number) => i < 26 ? ALPHA[i] : `A${ALPHA[i - 26]}`;
+      const labels = chunkTexts.map((_, i) => makeLabel(i));
+
+      const shuffledIdx = shuffleArr([...Array(chunkTexts.length).keys()]);
+      // labelByChunkIdx[chunkIdx] = 해당 청크에 배정된 라벨
+      const labelByChunkIdx: string[] = new Array(chunkTexts.length);
+      shuffledIdx.forEach((chunkIdx, labelIdx) => { labelByChunkIdx[chunkIdx] = labels[labelIdx]; });
+
+      const chunks = chunkTexts.map((text, ci) => `(${labelByChunkIdx[ci]}) ${text}`);
+      // correct_order = 원래 순서의 라벨들 (정답)
+      const correctOrder = chunkTexts.map((_, ci) => labelByChunkIdx[ci]).join('-');
+      // A-Z 알파벳 순 정렬
+      const shuffledChunks = [...chunks].sort((a, b) => {
+        const la = a.match(/^\(([A-Z]{1,2})\)/)?.[1] ?? '';
+        const lb = b.match(/^\(([A-Z]{1,2})\)/)?.[1] ?? '';
+        return la.localeCompare(lb);
+      });
+
+      const q: GeneratedQ = {
+        question_type: "배열",
+        question_text: "다음 밑줄 친 문장의 단어를 올바른 순서로 배열하시오.",
+        selected_sentence: pick,
+        passage_with_blank: undefined, // 사용 안 함 — 지문은 full_text 직접 사용
+        blank_position_sentence: pick.text,
+        blank_position_sentence_korean: pick.korean,
+        chunks: shuffledChunks,
+        correct_order: correctOrder,
+        correct_sentence: pick.text,
+        conditions: [],
+        difficulty: "",
+        grammar_point: "",
+      };
+      generatedQs.push(q);
     }
 
     setQuestions(generatedQs);
     setAnswers(new Array(generatedQs.length).fill(""));
     setArrangedAll(new Array(generatedQs.length).fill([]));
     setShuffledAll(generatedQs.map(q =>
-      q.question_type === "배열" && q.chunks ? shuffleArr(q.chunks) : []
+      q.question_type === "배열" && q.chunks ? [...q.chunks] : []
     ));
     setActiveQIdx(0);
     setStage("answering");
@@ -421,31 +626,57 @@ export default function EssayPage() {
     if (!allAnswered || !selectedTemplate) return;
     setStage("scoring");
 
-    const reqs = questions.map((q, i) => {
-      const ans = q.question_type === "배열" ? studentOrderFor(i) : (answers[i] ?? "").trim();
-      let body: Record<string, unknown>;
-      if (q.question_type === "배열") {
-        body = { question_type: "배열", correct_order: q.correct_order,
-          correct_sentence: q.correct_sentence, conditions: q.conditions,
-          chunks: q.chunks, student_answer: ans, scoring_prompt: selectedTemplate.scoring_prompt };
-      } else if (q.question_type === "빈칸") {
-        body = { question_type: "빈칸", correct_answer: q.correct_answer,
-          total_words: q.total_words, given_words: q.given_words,
-          find_words: q.find_words, conditions: q.conditions,
-          student_answer: ans, scoring_prompt: selectedTemplate.scoring_prompt };
-      } else {
-        body = { question_type: "서술형", question_text: q.question_text,
-          model_answer: "", student_answer: ans, scoring_prompt: selectedTemplate.scoring_prompt };
-      }
-      return fetch("/api/essay-score", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }).then(r => r.json());
-    });
-
     try {
-      const allResults = await Promise.all(reqs);
-      setResults(allResults as ScoreResult[]);
+      const allResults: ScoreResult[] = await Promise.all(questions.map(async (q, i) => {
+        const ans = q.question_type === "배열" ? studentOrderFor(i) : (answers[i] ?? "").trim();
+
+        // 배열형: AI API 없이 로컬 채점
+        if (q.question_type === "배열") {
+          const correct = (q.correct_order ?? "").split("-");
+          // arrangedAll에는 "(A)" 형식으로 저장되므로 괄호 제거하여 "A" 형식으로 정규화
+          const student = ans.split("-").map(l => l.replace(/[()]/g, ""));
+          const totalWords = correct.length;
+          let correctCount = 0;
+          const positionAnalysis = correct.map((label, pos) => {
+            const match = student[pos] === label;
+            if (match) correctCount++;
+            return { position: pos + 1, correct: label, student: student[pos] ?? "—", match };
+          });
+          const score = Math.round((correctCount / totalWords) * 5);
+          // 학생이 배열한 단어 문장 재구성
+          const cMap: Record<string, string> = {};
+          (q.chunks ?? []).forEach(c => { const l = c.match(/^\(([A-Z])\)/)?.[1] ?? ""; cMap[l] = c.replace(/^\([A-Z]\)\s*/, ""); });
+          const studentSentence = student.map(l => cMap[l] ?? l).join(" ");
+          return {
+            question_type: "배열" as const,
+            score,
+            score_max: 5,
+            feedback: score === 5 ? "🎉 완벽합니다!" : score >= 3 ? "잘 했어요! 몇 가지 위치를 다시 확인해보세요." : "더 연습이 필요합니다. 정답을 확인해보세요.",
+            correct_sentence: q.correct_sentence,
+            student_sentence: studentSentence,
+            correct_positions: correct.join("-"),
+            position_analysis: positionAnalysis,
+          } as ScoreResult;
+        }
+
+        // 빈칸/서술형은 기존 API 사용
+        let body: Record<string, unknown>;
+        if (q.question_type === "빈칸") {
+          body = { question_type: "빈칸", correct_answer: q.correct_answer,
+            total_words: q.total_words, given_words: q.given_words,
+            find_words: q.find_words, conditions: q.conditions,
+            student_answer: ans, scoring_prompt: selectedTemplate.scoring_prompt };
+        } else {
+          body = { question_type: "서술형", question_text: q.question_text,
+            model_answer: "", student_answer: ans, scoring_prompt: selectedTemplate.scoring_prompt };
+        }
+        return fetch("/api/essay-score", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }).then(r => r.json());
+      }));
+
+      setResults(allResults);
       setActiveQIdx(0);
       setStage("result");
     } catch (e) {
@@ -476,10 +707,6 @@ export default function EssayPage() {
 
   const resetToPassage = () => { resetQuestionState(); setStage("select-passage"); setSelectedPassage(null); };
   const resetToType    = () => { resetQuestionState(); setStage("select-type"); };
-  const resetToCount   = () => {
-    setQuestions([]); setAnswers([]); setArrangedAll([]); setShuffledAll([]); setResults([]);
-    setStage("select-count");
-  };
 
   const scoreColor = (s: number | null, max: number) => {
     if (s === null) return "text-accent";
@@ -492,10 +719,10 @@ export default function EssayPage() {
 
   // ── 스텝 표시 ─────────────────────────────────────────────────────────────
   const stageStep: Record<Stage, number> = {
-    "select-passage": 0, "select-type": 1, "select-count": 2,
+    "select-passage": 0, "select-type": 1,
     "generating": 2, "answering": 3, "scoring": 3, "result": 4,
   };
-  const steps = ["지문", "유형", "개수", "풀기", "결과"];
+  const steps = ["지문", "유형", "풀기", "결과"];
   const stepNow = stageStep[stage];
 
   if (loading) return (
@@ -513,6 +740,22 @@ export default function EssayPage() {
         <div className="flex items-center gap-2 mb-2">
           <Sparkles size={14} className="text-indigo-400" />
           <h1 className="text-[16px] font-black" style={{ color: '#ffffff' }}>서술형 연습</h1>
+          <label className="ml-auto flex items-center gap-1.5 cursor-pointer select-none group">
+            <input
+              type="checkbox"
+              checked={!!savedPath}
+              onChange={e => {
+                if (e.target.checked) {
+                  savePath(filterWorkbook, filterMid, filterSub);
+                } else {
+                  setSavedPath(null);
+                  try { localStorage.removeItem('essay_last_path'); } catch { /* noop */ }
+                }
+              }}
+              className="w-3.5 h-3.5 rounded accent-indigo-500 cursor-pointer"
+            />
+            <span className="text-[10px] font-bold text-white/40 group-hover:text-white/60 transition-colors">최근 경로 저장</span>
+          </label>
         </div>
         <div className="flex items-center gap-1">
           {steps.map((s, i) => (
@@ -545,22 +788,21 @@ export default function EssayPage() {
                 : '교재 / 단원 필터'}
               <ChevronDown size={10} className={`ml-auto transition-transform duration-200 ${filterOpen ? '' : '-rotate-90'}`} />
             </button>
-            {/* 3개 드롭다운 (접힌 시 숨김) */}
             {filterOpen && [
               { label: '교재', value: filterWorkbook, opts: workbooks,
                 set: (v: string) => {
                   setFilterWorkbook(v); setFilterMid('전체'); setFilterSub('전체');
-                  try { localStorage.setItem('essay_last_path', JSON.stringify({ workbook: v, mid: '전체', sub: '전체' })); } catch { /* noop */ }
+                  savePath(v, '전체', '전체');
                 }},
               { label: '중분류', value: filterMid, opts: mids,
                 set: (v: string) => {
                   setFilterMid(v); setFilterSub('전체');
-                  try { localStorage.setItem('essay_last_path', JSON.stringify({ workbook: filterWorkbook, mid: v, sub: '전체' })); } catch { /* noop */ }
+                  savePath(filterWorkbook, v, '전체');
                 }},
               { label: '소분류', value: filterSub, opts: subs,
                 set: (v: string) => {
                   setFilterSub(v);
-                  try { localStorage.setItem('essay_last_path', JSON.stringify({ workbook: filterWorkbook, mid: filterMid, sub: v })); } catch { /* noop */ }
+                  savePath(filterWorkbook, filterMid, v);
                 }},
             ].map(({ label, value, opts, set }) => (
               <div key={label} className="relative">
@@ -579,16 +821,17 @@ export default function EssayPage() {
               : <div className="space-y-2">
                   {filtered.map(p => (
                     <button key={p.id} onClick={() => pickPassage(p)}
-                      className="w-full text-left px-4 py-3.5 rounded-2xl transition-all group" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.14)' }}>
+                      className="w-full text-left px-4 py-3.5 rounded-2xl transition-all group"
+                      style={{ background: 'rgba(255,255,255,0.13)', border: '1px solid rgba(255,255,255,0.25)' }}>
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-[10px] font-bold mb-0.5" style={{ color: 'rgba(180,155,255,0.80)' }}>
-                            {[p.workbook, p.chapter, p.sub_sub_category].filter(Boolean).join(" · ")}
+                          <p className="text-[10px] font-bold mb-0.5" style={{ color: 'rgba(200,180,255,0.95)' }}>
+                            {[p.workbook, p.chapter, p.sub_sub_category].filter(Boolean).join(" \u00b7 ")}
                           </p>
                           <p className="text-[13px] font-bold truncate" style={{ color: '#ffffff' }}>
                             {p.passage_number ? `${p.passage_number}번 · ` : ""}{p.label || "지문"}
                           </p>
-                          <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.50)' }}>
+                          <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
                             {p.essay_sentences?.length
                               ? `구조화 문장 ${p.essay_sentences.length}개`
                               : p.full_text
@@ -599,8 +842,8 @@ export default function EssayPage() {
                         </div>
                         <BookOpen size={14} className={`shrink-0 transition-colors ${
                           (!p.essay_sentences?.length && !p.full_text)
-                            ? "text-amber-200"
-                            : "text-accent/15 group-hover:text-indigo-400"
+                            ? "text-amber-300"
+                            : "text-white/40 group-hover:text-indigo-300"
                         }`} />
 
                       </div>
@@ -618,11 +861,11 @@ export default function EssayPage() {
               className="flex items-center gap-1.5 text-[11px] font-black text-accent/40 hover:text-foreground transition-colors">
               <ArrowLeft size={13} /> 지문 다시 선택
             </button>
-            <div className="flex items-center gap-3 px-4 py-3 bg-indigo-50/50 border border-indigo-100/80 rounded-2xl">
-              <FileText size={14} className="text-indigo-400 shrink-0" />
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)' }}>
+              <FileText size={14} className="text-indigo-300 shrink-0" />
               <div className="min-w-0">
-                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">선택된 지문</p>
-                <p className="text-[13px] font-bold truncate" style={{ color: '#ffffff' }}>{selectedPassage.label}</p>
+                <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">선택된 지문</p>
+                <p className="text-[13px] font-bold truncate text-white">{selectedPassage.label}</p>
               </div>
             </div>
             <p className="text-[10px] font-black text-accent/35 uppercase tracking-widest pt-1">서술형 유형</p>
@@ -631,13 +874,14 @@ export default function EssayPage() {
               : <div className="space-y-2">
                   {templates.map(t => (
                     <button key={t.type_key} onClick={() => pickTemplate(t)}
-                      className="w-full text-left px-5 py-4 rounded-2xl border border-foreground/8 hover:border-indigo-200 hover:bg-indigo-50/20 transition-all group">
+                      className="w-full text-left px-5 py-4 rounded-2xl transition-all group"
+                      style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)' }}>
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[14px] font-black text-foreground group-hover:text-indigo-600 transition-colors">{t.display_name}</p>
-                          <p className="text-[10px] text-accent/30 font-mono mt-0.5">{t.type_key}</p>
+                          <p className="text-[14px] font-black text-white group-hover:text-indigo-300 transition-colors">{t.display_name}</p>
+                          <p className="text-[10px] text-white/50 font-mono mt-0.5">{t.type_key}</p>
                         </div>
-                        <Sparkles size={14} className="text-accent/15 group-hover:text-indigo-400 transition-colors" />
+                        <Sparkles size={14} className="text-white/30 group-hover:text-indigo-400 transition-colors" />
                       </div>
                     </button>
                   ))}
@@ -717,9 +961,9 @@ export default function EssayPage() {
         {stage === "answering" && questions.length > 0 && (
           <div className="pt-4 space-y-3">
             <div className="flex items-center justify-between">
-              <button onClick={resetToCount}
+              <button onClick={resetToType}
                 className="flex items-center gap-1.5 text-[11px] font-black text-accent/40 hover:text-foreground transition-colors">
-                <ArrowLeft size={13} /> 개수 다시 선택
+                <ArrowLeft size={13} /> 유형 다시 선택
               </button>
               <span className="text-[10px] font-black text-accent/30">
                 {questions.filter((_, i) => isAnswered(i)).length}/{questions.length} 완료
@@ -764,6 +1008,7 @@ export default function EssayPage() {
                     questions={questions}
                     allAnswered={allAnswered}
                     selectedTemplate={selectedTemplate}
+                    fullText={selectedPassage?.full_text ?? ""}
                     onPlace={(label) => placeChunk(activeQIdx, label)}
                     onRemove={(pos) => removeChunk(activeQIdx, pos)}
                     onNext={() => setActiveQIdx(activeQIdx + 1)}
@@ -1135,7 +1380,7 @@ export default function EssayPage() {
 
             {/* 하단 액션 */}
             <div className="flex gap-2 pt-2">
-              <button onClick={resetToCount}
+              <button onClick={resetToType}
                 className="flex-1 h-11 rounded-2xl border border-foreground/10 text-[13px] font-bold text-accent hover:bg-foreground/5 transition-all flex items-center justify-center gap-1.5">
                 <RotateCcw size={13} /> 다시 풀기
               </button>

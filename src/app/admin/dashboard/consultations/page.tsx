@@ -31,14 +31,15 @@ type ConsultItem = {
 };
 
 const TYPE_LABELS: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  trial:      { label: "앱 체험",   color: "#6366f1", bg: "#eef2ff",  icon: "✨" },
-  study:      { label: "공부법",    color: "#0ea5e9", bg: "#f0f9ff",  icon: "📖" },
-  audit:      { label: "청강",      color: "#8b5cf6", bg: "#f5f3ff",  icon: "🏫" },
-  material:   { label: "교재샘플", color: "#10b981", bg: "#ecfdf5",  icon: "📄" },
-  enrollment: { label: "등록상담", color: "#f59e0b", bg: "#fffbeb",  icon: "🎓" },
-  career:     { label: "진로상담", color: "#ef4444", bg: "#fef2f2",  icon: "🗺️" },
-  premium:    { label: "유료문의", color: "#64748b", bg: "#f8fafc",  icon: "💳" },
-  trial_app:  { label: "체험신청", color: "#7c3aed", bg: "#f5f3ff",  icon: "🎯" },
+  trial:          { label: "앱 체험",     color: "#6366f1", bg: "#eef2ff",  icon: "✨" },
+  study:          { label: "공부법",      color: "#0ea5e9", bg: "#f0f9ff",  icon: "📖" },
+  audit:          { label: "청강",        color: "#8b5cf6", bg: "#f5f3ff",  icon: "🏫" },
+  material:       { label: "교재샘플",   color: "#10b981", bg: "#ecfdf5",  icon: "📄" },
+  enrollment:     { label: "등록상담",   color: "#f59e0b", bg: "#fffbeb",  icon: "🎓" },
+  career:         { label: "진로상담",   color: "#ef4444", bg: "#fef2f2",  icon: "🗺️" },
+  premium:        { label: "유료문의",   color: "#64748b", bg: "#f8fafc",  icon: "💳" },
+  trial_app:      { label: "체험신청",   color: "#7c3aed", bg: "#f5f3ff",  icon: "🎯" },
+  report_comment: { label: "리포트 코멘트", color: "#16a34a", bg: "#f0fdf4", icon: "💬" },
 };
 
 const STATUS_OPTIONS = [
@@ -84,6 +85,28 @@ export default function ConsultationsPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // ─ Supabase Realtime: contact_inquiries INSERT 실시간 구독 (WebSocket — API 비용 없음) ─
+  const [newFlash, setNewFlash] = useState<string | null>(null);
+  useEffect(() => {
+    const channel = supabase
+      .channel("realtime-consultations")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "contact_inquiries" },
+        (payload) => {
+          const row = payload.new as ConsultItem;
+          const newItem: ConsultItem = { ...row, source: "inquiry" as const };
+          setItems(prev => [newItem, ...prev]);
+          setEditNote(prev => ({ ...prev, [newItem.id]: "" }));
+          // 신규 항목 진동 표시
+          setNewFlash(newItem.id);
+          setTimeout(() => setNewFlash(null), 4000);
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const updateStatus = async (id: string, status: string, source: "inquiry" | "trial") => {
     const table = source === "inquiry" ? "contact_inquiries" : "trial_applications";
@@ -137,8 +160,8 @@ export default function ConsultationsPage() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-black text-slate-800">상담 신청</h1>
-          <p className="text-[12px] text-slate-400 mt-0.5">문의·체험신청 통합 관리</p>
+          <h1 className="text-[22px] font-black text-slate-800">상담 내역</h1>
+          <p className="text-[12px] text-slate-400 mt-0.5">문의·체험신청·리포트 코멘트 통합 관리</p>
         </div>
         <button onClick={load} disabled={loading}
           className="h-9 px-4 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center gap-2 text-[12px] font-bold">
@@ -212,8 +235,14 @@ export default function ConsultationsPage() {
             const meta = item.source === "inquiry"
               ? (TYPE_LABELS[item.inquiry_type ?? ""] ?? { label: item.inquiry_type, color: "#64748b", bg: "#f8fafc", icon: "📋" })
               : TYPE_LABELS["trial_app"];
+            const isNew = newFlash === item.id;
             return (
-              <div key={item.id} className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
+              <div key={item.id}
+                className="bg-white rounded-2xl border overflow-hidden shadow-sm transition-all duration-500"
+                style={{
+                  borderColor: isNew ? "#10b981" : "#f1f5f9",
+                  boxShadow: isNew ? "0 0 0 2px rgba(16,185,129,0.2), 0 0 20px 4px rgba(16,185,129,0.15)" : "0 1px 3px rgba(0,0,0,0.05)",
+                }}>
                 {/* 요약 행 */}
                 <div className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-slate-50 transition-all"
                   onClick={() => setExpandedId(isExpanded ? null : item.id)}>
@@ -253,6 +282,13 @@ export default function ConsultationsPage() {
                 {/* 펼침 상세 */}
                 {isExpanded && (
                   <div className="px-5 pb-5 pt-2 border-t border-slate-50 space-y-3">
+                    {/* 리포트 코멘트 메타 (report_comment 타입) */}
+                    {item.source === "inquiry" && item.inquiry_type === "report_comment" && item.audit_class_preference && (
+                      <div className="rounded-xl px-4 py-3" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                        <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">📋 대상 정보</p>
+                        <p className="text-[13px] font-bold text-slate-700">{item.audit_class_preference}</p>
+                      </div>
+                    )}
                     {/* 문의 내용 (inquiry) */}
                     {item.source === "inquiry" && item.detail_message && (
                       <div className="rounded-xl px-4 py-3" style={{ background: "#f8fafc" }}>

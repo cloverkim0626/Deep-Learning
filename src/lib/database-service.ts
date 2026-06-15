@@ -124,6 +124,17 @@ export async function replaceWordsInSet(
   if (insErr) throw insErr;
 }
 
+export async function updateWordSetEssaySentences(
+  setId: string,
+  essaySentences: { idx: number; text: string; korean: string }[]
+) {
+  const { error } = await supabase
+    .from('word_sets')
+    .update({ essay_sentences: essaySentences })
+    .eq('id', setId);
+  if (error) throw error;
+}
+
 export async function saveIngestedPassage(data: {
   workbook: string; chapter: string; label: string; full_text: string; sentences: unknown; words: {
     word: string; pos_abbr: string; korean: string; context?: string; context_korean?: string;
@@ -208,6 +219,24 @@ export async function createStudent(data: StudentData) {
 }
 
 export async function updateStudent(id: string, data: Partial<StudentData>) {
+  // 이름 변경 시 → 관련 테이블 student_name 일괄 cascade
+  if (data.name) {
+    const { data: current } = await supabase.from('students').select('name').eq('id', id).single();
+    const oldName = current?.name;
+    if (oldName && oldName !== data.name) {
+      const newName = data.name;
+      // 병렬로 모든 관련 테이블 업데이트
+      await Promise.allSettled([
+        supabase.from('set_assignments').update({ student_name: newName }).eq('student_name', oldName),
+        supabase.from('test_sessions').update({ student_name: newName }).eq('student_name', oldName),
+        supabase.from('attendance').update({ student_name: newName }).eq('student_name', oldName),
+        supabase.from('homework_checks').update({ student_name: newName }).eq('student_name', oldName),
+        supabase.from('class_students').update({ student_name: newName }).eq('student_name', oldName),
+        supabase.from('wrong_answers').update({ student_id: newName }).eq('student_id', oldName),
+        supabase.from('daily_reports').update({ student_name: newName }).eq('student_name', oldName),
+      ]);
+    }
+  }
   const { error } = await supabase
     .from('students')
     .update(data)
@@ -352,12 +381,28 @@ export async function saveTestResult(data: {
 export async function getTestSessionsByStudent(studentName: string) {
   const { data, error } = await supabase
     .from('test_sessions')
-    .select('id, set_id, test_type, correct_count, total_questions, completed_at, created_at, test_results(*), word_sets(label, passage_number, sub_sub_category)')
+    // word_sets join 제거: inner join이 set_id=null이거나 word_sets에 없는 set_id 세션을 드롭했음
+    // loadSets에서 필요한 필드만 select (set_id, test_type, correct_count, total_questions, completed_at)
+    .select('id, set_id, test_type, correct_count, total_questions, completed_at, created_at')
     .eq('student_name', studentName)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
 }
+/** set_id 배열로 word_sets label 맵 조회 (캘린더 표시용) */
+export async function getWordSetLabels(setIds: string[]): Promise<Record<string, string>> {
+  if (!setIds.length) return {};
+  const { data } = await supabase
+    .from('word_sets')
+    .select('id, label')
+    .in('id', setIds);
+  const map: Record<string, string> = {};
+  for (const ws of (data || [])) {
+    if (ws.id && ws.label) map[ws.id] = ws.label;
+  }
+  return map;
+}
+
 export async function getAllTestSessions() {
   const { data, error } = await supabase
     .from('test_sessions')

@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, PenTool, Bot, MessageCircle, CalendarPlus, Bell, LogOut, Volume2, Quote, Settings, Lock, Eye, EyeOff, Calendar, Trophy, X, Layers, Flame, BarChart2, HelpCircle, Brain, Check, Crown, ChevronLeft, ChevronRight, Send } from "lucide-react";
+import { BookOpen, PenTool, Bot, MessageCircle, CalendarPlus, Bell, LogOut, Volume2, Quote, Settings, Lock, Eye, EyeOff, Calendar, Trophy, X, Layers, Flame, BarChart2, HelpCircle, Brain, Check, Crown, ChevronLeft, ChevronRight, Send, Megaphone } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { getClinicQueue, getTestSessionsByStudent, getQnaPosts, changeStudentPassword, updateStudentNickname, getStudentNickname } from "@/lib/database-service";
+import { getClinicQueue, getTestSessionsByStudent, getQnaPosts, changeStudentPassword, updateStudentNickname, getStudentNickname, getWordSetLabels } from "@/lib/database-service";
 import { getAssignmentsByStudent } from "@/lib/assignment-service";
 import { supabase } from "@/lib/supabase";
 
@@ -77,54 +77,73 @@ function getStreakMessage(name: string, streak: number): string {
 }
 
 // Streak: 90%+ 세션 기준 — 2026-04-20부터 하루 2세트 이상 필요 (이전은 1세트)
-// 주 2일 휴식 허용, 오늘은 미집계
+// 주 2일 휴식 허용 (일~토 기준), 오늘은 자정 전이므로 미집계
 const STREAK_RULE_CHANGE = '2026-04-20';
+const MAX_REST_PER_WEEK = 2;
+
+function toKSTDateStr(utcMs: number): string {
+  // KST = UTC+9
+  const d = new Date(utcMs + 9 * 3600 * 1000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+function getWeekSundayStr(kstDateStr: string): string {
+  // kstDateStr: "YYYY-MM-DD"
+  const [y, m, d] = kstDateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const dow = dt.getUTCDay(); // 0=Sun
+  dt.setUTCDate(dt.getUTCDate() - dow); // go to Sunday
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+
 function computeStreak(sessions: { completed_at?: string | null; correct_count?: number; total_questions?: number }[]): number {
-  // 날짜별 통과 세션 수 집계
+  // ── 1. KST 날짜별 통과 세션 수 집계 ──────────────────────────────
   const dayCountMap: Record<string, number> = {};
   for (const s of sessions) {
     if (!s.completed_at) continue;
     const total = s.total_questions ?? 0;
     if (total === 0) continue;
-    const pct = (s.correct_count ?? 0) / total;
-    if (pct >= 0.9) {
-      const d = new Date(s.completed_at);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if ((s.correct_count ?? 0) / total >= 0.9) {
+      const key = toKSTDateStr(new Date(s.completed_at).getTime());
       dayCountMap[key] = (dayCountMap[key] || 0) + 1;
     }
   }
 
-  // 날짜별로 기준 충족 여부 판단
+  // ── 2. 날짜별 통과 여부 (4/20 이후 2세트 기준) ───────────────────
   const passedDays = new Set<string>();
   for (const [key, count] of Object.entries(dayCountMap)) {
-    const required = key >= STREAK_RULE_CHANGE ? 2 : 1; // 4/20 이전은 1세트, 이후는 2세트
-    if (count >= required) passedDays.add(key);
+    if (count >= (key >= STREAK_RULE_CHANGE ? 2 : 1)) passedDays.add(key);
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // ── 3. 오늘 KST 날짜 ─────────────────────────────────────────────
+  const todayKST = toKSTDateStr(Date.now());
+  const [ty, tm, td] = todayKST.split('-').map(Number);
+  // cursor: 어제부터 역산 (오늘은 자정 전이므로 미포함)
+  const cursorUTC = new Date(Date.UTC(ty, tm - 1, td - 1));
 
+  // ── 4. 주간 버킷 기반 streak 계산 ────────────────────────────────
+  // weekRestMap: 주 시작(일요일) → 이 주의 미학습일 수
+  const weekRestMap: Record<string, number> = {};
   let streak = 0;
-  let skipsLeft = 2; // weekly skips - simplified: allow 2 total consecutive skips
-  let cursor = new Date(today);
-  cursor.setDate(cursor.getDate() - 1); // start from yesterday
 
-  while (true) {
-    const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
+  for (let i = 0; i < 366; i++) {
+    const key = `${cursorUTC.getUTCFullYear()}-${String(cursorUTC.getUTCMonth() + 1).padStart(2, '0')}-${String(cursorUTC.getUTCDate()).padStart(2, '0')}`;
+    const weekKey = getWeekSundayStr(key);
+
     if (passedDays.has(key)) {
       streak++;
-      skipsLeft = 2; // reset skip allowance on pass
     } else {
-      if (skipsLeft > 0) {
-        skipsLeft--;
-      } else {
+      weekRestMap[weekKey] = (weekRestMap[weekKey] || 0) + 1;
+      if (weekRestMap[weekKey] > MAX_REST_PER_WEEK) {
+        // 이 주 미학습일이 3일 초과 → streak 종료
         break;
       }
+      // 허용 범위 내 휴무 → streak 유지 (카운트 증가 없음)
     }
-    cursor.setDate(cursor.getDate() - 1);
-    // safety: don't go back more than 365 days
-    if (streak > 365) break;
+
+    cursorUTC.setUTCDate(cursorUTC.getUTCDate() - 1);
   }
+
   return streak;
 }
 
@@ -165,6 +184,81 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const [calendarSessions, setCalendarSessions] = useState<{ completed_at?: string | null; set_id: string; word_sets?: { label: string } | null; test_type?: string | null; correct_count?: number; total_questions?: number }[]>([]);
   const [calendarSelectedDay, setCalendarSelectedDay] = useState<string | null>(null);
   const [streak, setStreak] = useState(0);
+
+  // ── 학생 공지사항 모달 상태 ──
+  const [activeNotice, setActiveNotice] = useState<{ id: string; title: string; content: string; created_at: string; class_name: string } | null>(null);
+  const [showNoticeModal, setShowNoticeModal] = useState(false);
+  const [showNoticeListModal, setShowNoticeListModal] = useState(false);
+  const [allNotices, setAllNotices] = useState<{ id: string; title: string; content: string; created_at: string; class_name: string }[]>([]);
+
+  const isNoticeRead = (noticeId: string) => {
+    try {
+      const readIds = JSON.parse(localStorage.getItem('read_student_notices') || '[]');
+      return readIds.includes(noticeId);
+    } catch {
+      return false;
+    }
+  };
+
+  const markNoticeAsRead = (noticeId: string) => {
+    try {
+      const readIds = JSON.parse(localStorage.getItem('read_student_notices') || '[]');
+      if (!readIds.includes(noticeId)) {
+        readIds.push(noticeId);
+        localStorage.setItem('read_student_notices', JSON.stringify(readIds));
+      }
+    } catch {}
+  };
+
+  const handleOpenNoticeModal = async (noticeId: string) => {
+    try {
+      const { data: notice } = await supabase
+        .from('student_notices')
+        .select('*')
+        .eq('id', noticeId)
+        .single();
+      if (notice) {
+        setActiveNotice(notice);
+        setShowNoticeModal(true);
+        markNoticeAsRead(noticeId);
+        // Refresh notifications unread status
+        setNotifs(prev => prev.map(n => {
+          if ((n as any).noticeId === noticeId) {
+            return { ...n, unread: false };
+          }
+          return n;
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching notice details:', err);
+    }
+  };
+
+  const handleOpenNoticeListModal = async () => {
+    const name = getStudentName();
+    try {
+      let studentClassName = '전체';
+      const { data: stu } = await supabase.from('students').select('class_name').eq('name', name).single();
+      if (stu && stu.class_name) {
+        studentClassName = stu.class_name;
+      }
+      const classesToMatch = ['전체', studentClassName];
+      if (studentClassName.toLowerCase().includes('guest')) {
+        classesToMatch.push('GUEST');
+      }
+
+      const { data: notices } = await supabase
+        .from('student_notices')
+        .select('*')
+        .in('class_name', classesToMatch)
+        .order('created_at', { ascending: false });
+
+      setAllNotices(notices || []);
+      setShowNoticeListModal(true);
+    } catch (err) {
+      console.error('Error loading notices list:', err);
+    }
+  };
 
   const [profile, setProfile] = useState({
     name: "학생",
@@ -233,8 +327,37 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const loadNotifs = useCallback(async () => {
     const name = getStudentName();
     const lastSeen = Number(localStorage.getItem('notif_last_seen') || '0');
-    const newNotifs: { id: string; text: string; sub: string; unread: boolean; link: string }[] = [];
+    const newNotifs: { id: string; text: string; sub: string; unread: boolean; link: string; type?: string; noticeId?: string }[] = [];
     try {
+      let studentClassName = '전체';
+      const { data: stu } = await supabase.from('students').select('class_name').eq('name', name).single();
+      if (stu && stu.class_name) {
+        studentClassName = stu.class_name;
+      }
+
+      const classesToMatch = ['전체', studentClassName];
+      if (studentClassName.toLowerCase().includes('guest')) {
+        classesToMatch.push('GUEST');
+      }
+
+      const { data: notices } = await supabase
+        .from('student_notices')
+        .select('id, title, content, created_at')
+        .in('class_name', classesToMatch)
+        .order('created_at', { ascending: false });
+
+      (notices || []).forEach(n => {
+        newNotifs.push({
+          id: `notice-${n.id}`,
+          text: `📢 [공지] ${n.title}`,
+          sub: n.content.replace(/<[^>]*>/g, '').slice(0, 40) + (n.content.length > 40 ? '...' : ''),
+          unread: !isNoticeRead(n.id),
+          link: '#',
+          type: 'notice',
+          noticeId: n.id,
+        });
+      });
+
       const posts = await getQnaPosts().catch(() => []);
       (posts as { id: string; author_name: string; question: string; status: string; qna_answers?: { created_at: string; is_teacher: boolean }[]; created_at: string }[])
         .filter(p => p.author_name === name && p.status === 'answered')
@@ -252,6 +375,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             });
           }
         });
+
       const assignments = await getAssignmentsByStudent(name).catch(() => []);
       (assignments as { id: string; label: string; created_at?: string }[])
         .forEach(a => {
@@ -275,9 +399,15 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const handleOpenNotif = () => {
     setShowNotif(!showNotif);
     setShowProfile(false);
+    setShowCalendar(false);
     if (!showNotif) {
       localStorage.setItem('notif_last_seen', Date.now().toString());
-      setTimeout(() => setNotifs(prev => prev.map(n => ({ ...n, unread: false }))), 800);
+      setTimeout(() => setNotifs(prev => prev.map(n => {
+        if ((n as any).type === 'notice') {
+          return { ...n, unread: !isNoticeRead((n as any).noticeId) };
+        }
+        return { ...n, unread: false };
+      })), 800);
     }
   };
 
@@ -318,8 +448,18 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       const streakVal = computeStreak(sessions as { completed_at?: string | null; correct_count?: number; total_questions?: number }[]);
       setStreak(streakVal);
 
+      // set_id → label 맵 조회 (캘린더 표시용, word_sets join 대신 별도 조회)
+      const sessionsArr = sessions as { set_id?: string | null; completed_at?: string | null; correct_count?: number; total_questions?: number; test_type?: string | null }[];
+      const uniqueSetIds = [...new Set(sessionsArr.map(s => s.set_id).filter(Boolean))] as string[];
+      const labelMap = await getWordSetLabels(uniqueSetIds).catch(() => ({} as Record<string, string>));
+      // 세션에 word_sets 필드 보강
+      const enrichedSessions = sessionsArr.map(s => ({
+        ...s,
+        word_sets: s.set_id && labelMap[s.set_id] ? { label: labelMap[s.set_id] } : null,
+      }));
+
       // Calendar sessions
-      setCalendarSessions(sessions as { completed_at?: string | null; set_id: string; word_sets?: { label: string } | null; test_type?: string | null; correct_count?: number; total_questions?: number }[]);
+      setCalendarSessions(enrichedSessions as { completed_at?: string | null; set_id: string; word_sets?: { label: string } | null; test_type?: string | null; correct_count?: number; total_questions?: number }[]);
     } catch (err) {
       console.warn("Stats load failed:", err);
     }
@@ -426,7 +566,11 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 const name = getStudentName();
                 try {
                   const sessions = await getTestSessionsByStudent(name).catch(() => []);
-                  setCalendarSessions(sessions as { completed_at?: string | null; set_id: string; word_sets?: { label: string } | null; test_type?: string | null; correct_count?: number; total_questions?: number }[]);
+                  const sessArr = sessions as { set_id?: string | null; completed_at?: string | null; correct_count?: number; total_questions?: number; test_type?: string | null }[];
+                  const uids = [...new Set(sessArr.map(s => s.set_id).filter(Boolean))] as string[];
+                  const lmap = await getWordSetLabels(uids).catch(() => ({} as Record<string, string>));
+                  const enriched = sessArr.map(s => ({ ...s, word_sets: s.set_id && lmap[s.set_id] ? { label: lmap[s.set_id] } : null }));
+                  setCalendarSessions(enriched as { completed_at?: string | null; set_id: string; word_sets?: { label: string } | null; test_type?: string | null; correct_count?: number; total_questions?: number }[]);
                 } catch { /* noop */ }
               }
               setShowCalendar(c => !c);
@@ -582,18 +726,39 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           <div className="max-h-[300px] overflow-y-auto py-2">
             {notifs.length === 0 ? (
               <div className="px-6 py-12 text-center text-[13px] text-accent/50 font-medium italic">신규 알림이 없습니다.</div>
-            ) : notifs.map(n => (
-              <Link key={n.id} href={n.link}
-                onClick={() => setShowNotif(false)}
-                className={`flex items-start gap-3 px-6 py-4 hover:bg-foreground/3 transition-colors ${n.unread ? 'bg-accent-light/30' : ''}`}
-              >
-                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.unread ? 'bg-foreground' : 'bg-foreground/20'}`} />
-                <div>
-                  <p className={`text-[13px] font-bold ${n.unread ? 'text-foreground' : 'text-accent'}`}>{n.text}</p>
-                  <p className="text-[11px] text-accent/60 mt-0.5">{n.sub}</p>
-                </div>
-              </Link>
-            ))}
+            ) : notifs.map(n => {
+              const isNotice = (n as any).type === 'notice';
+              return (
+                <button key={n.id}
+                  onClick={() => {
+                    setShowNotif(false);
+                    if (isNotice) {
+                      handleOpenNoticeModal((n as any).noticeId);
+                    } else {
+                      router.push(n.link);
+                    }
+                  }}
+                  className={`w-full text-left flex items-start gap-3 px-6 py-4 hover:bg-foreground/3 transition-colors ${n.unread ? 'bg-accent-light/30' : ''}`}
+                >
+                  <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.unread ? 'bg-foreground' : 'bg-foreground/20'}`} />
+                  <div>
+                    <p className={`text-[13px] font-bold ${n.unread ? 'text-foreground' : 'text-accent'}`}>{n.text}</p>
+                    <p className="text-[11px] text-accent/60 mt-0.5">{n.sub}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="border-t border-foreground/5 p-3 text-center bg-foreground/2">
+            <button
+              onClick={() => {
+                setShowNotif(false);
+                handleOpenNoticeListModal();
+              }}
+              className="text-[11px] font-black tracking-widest text-indigo-400 hover:text-indigo-300"
+            >
+              공지사항 전체보기
+            </button>
           </div>
         </div>
       )}
@@ -997,9 +1162,21 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                       onClick={() => {
                         if (typeof window !== 'undefined' && window.speechSynthesis) {
                           window.speechSynthesis.cancel();
-                          const u = new SpeechSynthesisUtterance(q.text);
-                          u.lang = 'en-US'; u.rate = 0.82;
-                          window.speechSynthesis.speak(u);
+                          const doSpeak = () => {
+                            const u = new SpeechSynthesisUtterance(q.text);
+                            u.lang = 'en-US'; u.rate = 0.78; u.pitch = 0.80;
+                            const voices = window.speechSynthesis.getVoices();
+                            const usVoices = voices.filter(v => v.lang === 'en-US');
+                            const maleNames = ['guy','david','mark','james','paul','richard','fred','alex','daniel'];
+                            const femaleNames = ['zira','hazel','susan','samantha','victoria','karen','aria','jenny'];
+                            let voice = usVoices.find(v => maleNames.some(n => v.name.toLowerCase().includes(n)));
+                            if (!voice) voice = usVoices.find(v => !femaleNames.some(n => v.name.toLowerCase().includes(n)));
+                            if (voice) { u.voice = voice; u.lang = voice.lang; }
+                            window.speechSynthesis.speak(u);
+                          };
+                          const voices = window.speechSynthesis.getVoices();
+                          if (voices.length > 0) doSpeak();
+                          else { window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.onvoiceschanged = null; doSpeak(); }; }
                         }
                       }}
                       className="mt-3 flex items-center gap-1.5 text-[11px] font-black transition-colors"
@@ -1013,6 +1190,136 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
               <button onClick={handleLogout} className="w-full h-14 rounded-[2rem] bg-error/10 text-error font-black text-[14px] flex items-center justify-center gap-2 hover:bg-error hover:text-white transition-all">
                 <LogOut size={18} strokeWidth={3} /> 로그아웃
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 학생 공지사항 상세 모달 ── */}
+      {showNoticeModal && activeNotice && (
+        <div className="absolute inset-0 z-[300] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-foreground/65 backdrop-blur-sm" onClick={() => { setShowNoticeModal(false); setActiveNotice(null); }} />
+          <div className="relative w-full max-w-sm bg-background rounded-[2.5rem] shadow-[0_24px_60px_rgba(0,0,0,0.5)] p-6 animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto flex flex-col"
+            style={{ background: 'linear-gradient(180deg,#131326 0%,#09090f 100%)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4 shrink-0">
+              <div>
+                <span className="text-[9px] font-black uppercase tracking-widest block text-indigo-400">
+                  📢 {activeNotice.class_name === '전체' ? '전체 공지사항' : activeNotice.class_name}
+                </span>
+                <span className="text-[10px] text-accent/50">
+                  {new Date(activeNotice.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </div>
+              <button
+                onClick={() => { setShowNoticeModal(false); setActiveNotice(null); }}
+                className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95"
+                style={{ color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.08)' }}>
+                <X size={15} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-[16px] font-black text-white leading-tight mb-4 shrink-0">{activeNotice.title}</h3>
+
+            {/* Content */}
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+              {isHTML(activeNotice.content) ? (
+                <div className="rounded-2xl overflow-hidden bg-white shadow-lg">
+                  <NoticeIframe content={activeNotice.content} />
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                  <p className="whitespace-pre-wrap text-[13px] text-slate-300 leading-relaxed font-medium">
+                    {activeNotice.content}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Close Button */}
+            <div className="mt-5 shrink-0">
+              <button
+                onClick={() => { setShowNoticeModal(false); setActiveNotice(null); }}
+                className="w-full h-12 rounded-2xl font-bold text-[13px] text-white flex items-center justify-center hover:opacity-90 active:scale-95 transition-all"
+                style={{ background: 'linear-gradient(135deg,#6366f1 0%,#4f46e5 100%)' }}>
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 학생 공지사항 전체보기 목록 모달 ── */}
+      {showNoticeListModal && (
+        <div className="absolute inset-0 z-[250] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-foreground/65 backdrop-blur-sm" onClick={() => setShowNoticeListModal(false)} />
+          <div className="relative w-full max-w-sm bg-background rounded-[2.5rem] shadow-[0_24px_60px_rgba(0,0,0,0.5)] p-6 animate-in zoom-in-95 duration-300 h-[80vh] flex flex-col"
+            style={{ background: 'linear-gradient(180deg,#131326 0%,#09090f 100%)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4 shrink-0">
+              <div>
+                <h3 className="text-[16px] font-black text-white">전체 공지사항</h3>
+                <p className="text-[10px] text-accent/50 mt-0.5">그동안 게시된 공지들을 모아볼 수 있습니다</p>
+              </div>
+              <button
+                onClick={() => setShowNoticeListModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95"
+                style={{ color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.08)' }}>
+                <X size={15} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 pr-0.5">
+              {allNotices.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-accent/40 text-[12px] italic">게시된 공지사항이 없습니다.</div>
+              ) : allNotices.map(n => {
+                const read = isNoticeRead(n.id);
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => {
+                      setShowNoticeListModal(false);
+                      handleOpenNoticeModal(n.id);
+                    }}
+                    className={`w-full text-left p-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
+                      read 
+                        ? 'bg-white/2 border-white/5 text-slate-400' 
+                        : 'bg-white/5 border-indigo-500/30 text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                      <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${
+                        n.class_name === '전체' 
+                          ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' 
+                          : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                      }`}>
+                        {n.class_name === '전체' ? '전체' : n.class_name}
+                      </span>
+                      <span className="text-[10px] text-accent/40">
+                        {new Date(n.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                      </span>
+                      {!read && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse ml-auto" />
+                      )}
+                    </div>
+                    <p className="text-[13px] font-bold truncate">{n.title}</p>
+                  </button>
+                );
+              })}
+            </div>
+            
+            {/* Close */}
+            <div className="mt-4 shrink-0">
+              <button
+                onClick={() => setShowNoticeListModal(false)}
+                className="w-full h-11 rounded-2xl bg-white/5 border border-white/10 text-slate-300 text-[13px] font-bold hover:bg-white/10 transition-colors"
+              >
+                닫기
               </button>
             </div>
           </div>
@@ -1224,5 +1531,52 @@ function NavButton({ href, icon, label, isActive = false }: { href: string; icon
           style={{background:'linear-gradient(90deg,#405DE6,#E1306C)'}} />
       )}
     </Link>
+  );
+}
+
+const isHTML = (str: string) => /<[a-z/][\s\S]*>/i.test(str);
+
+// Sandbox HTML iframe helper for students
+function NoticeIframe({ content }: { content: string }) {
+  const [height, setHeight] = useState("200px");
+  const iframeRef = (el: HTMLIFrameElement | null) => {
+    if (!el) return;
+    const doc = el.contentDocument || el.contentWindow?.document;
+    if (!doc) return;
+    doc.open();
+    doc.write(content);
+    doc.close();
+
+    const resize = () => {
+      const body = doc.body;
+      const html = doc.documentElement;
+      if (body && html) {
+        const newHeight = Math.max(
+          body.scrollHeight,
+          body.offsetHeight,
+          html.clientHeight,
+          html.scrollHeight,
+          html.offsetHeight
+        );
+        setHeight(`${newHeight + 20}px`);
+      }
+    };
+    el.onload = resize;
+    setTimeout(resize, 250);
+
+    // Dynamic resize observer
+    if (typeof ResizeObserver !== "undefined" && doc.body) {
+      const observer = new ResizeObserver(resize);
+      observer.observe(doc.body);
+    }
+  };
+
+  return (
+    <iframe
+      ref={iframeRef}
+      style={{ width: "100%", height, border: "none", background: "#ffffff", borderRadius: "16px" }}
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+      scrolling="no"
+    />
   );
 }

@@ -132,7 +132,7 @@ export type WeekData = {
   checks: Record<string, Record<string, HomeworkCheck>>; // slot_id → student → check
   slotStudents: Record<string, string[]>; // slot_id → assigned student names (empty = all)
   lessonNotes: Record<string, string>;   // session_id → note
-  rolloverChecks: Record<string, HomeworkCheck[]>; // date → checks whose rollover_date = this date
+  rolloverChecks: Record<string, (HomeworkCheck & { slot_title?: string; slot_hw_type?: string })[]>; // date → checks whose rollover_date = this date
 };
 
 // ─── Helper: Date Utils ───────────────────────────────────────────────────────
@@ -231,6 +231,25 @@ export async function updateClass(id: string, payload: Partial<{
   description: string;
   opened_at: string;
 }>): Promise<void> {
+  // 이름 변경 시 → 해당 반 학생들의 students.class_name도 일괄 업데이트
+  if (payload.name) {
+    const { data: cls } = await supabase.from('classes').select('name').eq('id', id).single();
+    const oldName = cls?.name;
+    if (oldName && oldName !== payload.name) {
+      // 1) students.class_name 일괄 업데이트
+      await supabase.from('students')
+        .update({ class_name: payload.name })
+        .eq('class_name', oldName);
+      // 2) class_students.student_class 동기화
+      await supabase.from('class_students')
+        .update({ student_class: payload.name, class_name: payload.name })
+        .eq('class_id', id);
+      // 3) set_assignments.student_class 동기화 (배당 현황 유지)
+      await supabase.from('set_assignments')
+        .update({ student_class: payload.name })
+        .eq('student_class', oldName);
+    }
+  }
   const { error } = await supabase.from('classes').update(payload).eq('id', id);
   if (error) throw error;
 }
@@ -308,6 +327,23 @@ export async function getSessionsForWeek(classId: string, weekDates: string[]): 
     .in('session_date', weekDates)
     .order('session_date', { ascending: true });
   if (error) throw error;
+  return (data || []) as ClassSession[];
+}
+
+/** 이번 주 범위의 extra 세션 로드 (수업일자 추가용) */
+export async function getExtraSessionsForWeek(classId: string, weekStart: string, weekEnd: string): Promise<ClassSession[]> {
+  const { data, error } = await supabase
+    .from('class_sessions')
+    .select('*')
+    .eq('class_id', classId)
+    .eq('session_type', 'extra')
+    .gte('session_date', weekStart)
+    .lte('session_date', weekEnd)
+    .order('session_date', { ascending: true });
+  if (error) {
+    console.warn('[getExtraSessionsForWeek] error:', error);
+    return [];
+  }
   return (data || []) as ClassSession[];
 }
 
@@ -535,17 +571,21 @@ export async function getHomeworkChecks(slotIds: string[]): Promise<HomeworkChec
   return (data || []) as HomeworkCheck[];
 }
 
-/** 이월 과제: 특정 날짜들에 rollover_date가 해당하는 delayed checks 조회 */
-export async function getRolloverChecksForWeek(weekDates: string[]): Promise<HomeworkCheck[]> {
+/** 이월 과제: 특정 날짜들에 rollover_date가 해당하는 delayed checks 조회 (slot title 포함) */
+export async function getRolloverChecksForWeek(weekDates: string[]): Promise<(HomeworkCheck & { slot_title?: string; slot_hw_type?: string })[]> {
   if (weekDates.length === 0) return [];
   try {
     const { data, error } = await supabase
       .from('homework_checks')
-      .select('*')
+      .select('*, homework_slots(title, hw_type)')
       .eq('status', 'delayed')
       .in('rollover_date', weekDates);
     if (error) return [];
-    return (data || []) as HomeworkCheck[];
+    return (data || []).map((row: HomeworkCheck & { homework_slots?: { title: string; hw_type: string } | null }) => ({
+      ...row,
+      slot_title: row.homework_slots?.title ?? '',
+      slot_hw_type: row.homework_slots?.hw_type ?? '',
+    }));
   } catch { return []; }
 }
 

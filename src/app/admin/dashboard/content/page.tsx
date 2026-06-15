@@ -214,7 +214,7 @@ type TSess = {
   total_questions: number | null; completed_at: string | null;
 };
 
-function AssignmentTab() {
+function AssignmentTab({ students }: { students: { name: string; class: string }[] }) {
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [sessions, setSessions] = useState<TSess[]>([]);
   const [loading, setLoading] = useState(true);
@@ -223,8 +223,18 @@ function AssignmentTab() {
   const [filterStudent, setFilterStudent] = useState('전체');
   const [statusFilter, setStatusFilter] = useState<'active'|'completed'|'expired'|'all'>('all');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  // 단건 삭제 확인 모달
   const [deleteConfirm, setDeleteConfirm] = useState<{id:string;student:string;label:string}|null>(null);
   const [deleting, setDeleting] = useState(false);
+  // 학생별 체크박스 선택 상태
+  const [checkedIds, setCheckedIds] = useState<Record<string, Set<string>>>({});
+  // 일괄 삭제 더블체킹 모달
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState<{student:string;ids:string[];labels:string[]}|null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkConfirmInput, setBulkConfirmInput] = useState('');
+
+  // 현재 수강생 목록 (삭제된 학생 필터링용)
+  const activeStudentNames = new Set(students.map(s => s.name));
 
   const load = useCallback(async () => {
     setLoading(true); setLoadError(null);
@@ -242,15 +252,39 @@ function AssignmentTab() {
 
   useEffect(() => { load(); }, [load]);
 
+  // 단건 삭제
   const handleRemoveConfirm = async () => {
     if (!deleteConfirm) return;
     setDeleting(true);
     try {
       await removeAssignment(deleteConfirm.id);
       setAssignments(prev => prev.filter(a => a.id !== deleteConfirm.id));
+      setCheckedIds(prev => {
+        const next = { ...prev };
+        if (next[deleteConfirm.student]) {
+          const s = new Set(next[deleteConfirm.student]);
+          s.delete(deleteConfirm.id);
+          next[deleteConfirm.student] = s;
+        }
+        return next;
+      });
       setDeleteConfirm(null);
     } catch (err: unknown) { alert((err as Error).message); }
     finally { setDeleting(false); }
+  };
+
+  // 일괄 삭제
+  const handleBulkDeleteConfirm = async () => {
+    if (!bulkDeleteConfirm) return;
+    setBulkDeleting(true);
+    try {
+      await Promise.all(bulkDeleteConfirm.ids.map(id => removeAssignment(id)));
+      setAssignments(prev => prev.filter(a => !bulkDeleteConfirm.ids.includes(a.id)));
+      setCheckedIds(prev => { const next = { ...prev }; delete next[bulkDeleteConfirm.student]; return next; });
+      setBulkDeleteConfirm(null);
+      setBulkConfirmInput('');
+    } catch (err: unknown) { alert((err as Error).message); }
+    finally { setBulkDeleting(false); }
   };
 
   const handleStatusUpdate = async (id: string, newStatus: 'completed'|'expired') => {
@@ -262,8 +296,28 @@ function AssignmentTab() {
     finally { setUpdatingId(null); }
   };
 
-  const allClasses = ['전체', ...Array.from(new Set(assignments.map(a => a.student_class).filter(Boolean))).sort()];
-  const classFiltered = filterClass === '전체' ? assignments : assignments.filter(a => a.student_class === filterClass);
+  // 체크박스 토글/전체선택/전체해제
+  const toggleCheck = (studentName: string, rowId: string) => {
+    setCheckedIds(prev => {
+      const cur = new Set(prev[studentName] || []);
+      if (cur.has(rowId)) cur.delete(rowId); else cur.add(rowId);
+      return { ...prev, [studentName]: cur };
+    });
+  };
+  const selectAllForStudent = (studentName: string, rows: AssignmentRow[]) => {
+    setCheckedIds(prev => ({ ...prev, [studentName]: new Set(rows.map(r => r.id)) }));
+  };
+  const deselectAllForStudent = (studentName: string) => {
+    setCheckedIds(prev => ({ ...prev, [studentName]: new Set() }));
+  };
+
+  // 수강생 목록 기준 필터 (삭제된 학생 제외)
+  const activeAssignments = students.length > 0
+    ? assignments.filter(a => activeStudentNames.has(a.student_name))
+    : assignments;
+
+  const allClasses = ['전체', ...Array.from(new Set(activeAssignments.map(a => a.student_class).filter(Boolean))).sort()];
+  const classFiltered = filterClass === '전체' ? activeAssignments : activeAssignments.filter(a => a.student_class === filterClass);
   const statusFiltered = statusFilter === 'all' ? classFiltered
     : statusFilter === 'active' ? classFiltered.filter(a => !a.status || a.status === 'active')
     : classFiltered.filter(a => a.status === statusFilter);
@@ -353,58 +407,107 @@ function AssignmentTab() {
         </div>
       ) : (
         <div className="space-y-5">
-          {Object.entries(grouped).map(([studentName, rows]) => (
-            <div key={studentName} className="glass rounded-[2rem] border border-foreground/5 overflow-hidden">
-              <div className="flex items-center gap-4 px-6 py-4 bg-accent-light/30 border-b border-foreground/5">
-                <div className="w-9 h-9 rounded-xl bg-foreground text-background flex items-center justify-center font-black text-[13px]">{studentName[0]}</div>
-                <div>
-                  <div className="text-[15px] font-black text-foreground">{studentName}</div>
-                  <div className="text-[11px] text-accent font-medium">{rows[0]?.student_class} · {rows.length}개 세트</div>
+          {Object.entries(grouped).map(([studentName, rows]) => {
+            const checked = checkedIds[studentName] || new Set<string>();
+            const checkedCount = checked.size;
+            const allChecked = checkedCount === rows.length && rows.length > 0;
+            const someChecked = checkedCount > 0 && !allChecked;
+            return (
+              <div key={studentName} className="glass rounded-[2rem] border border-foreground/5 overflow-hidden">
+                {/* 학생 헤더 */}
+                <div className="flex items-center gap-4 px-6 py-4 bg-accent-light/30 border-b border-foreground/5">
+                  <div className="w-9 h-9 rounded-xl bg-foreground text-background flex items-center justify-center font-black text-[13px]">{studentName[0]}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[15px] font-black text-foreground">{studentName}</div>
+                    <div className="text-[11px] text-accent font-medium">{rows[0]?.student_class} · {rows.length}개 세트{checkedCount > 0 ? ` · ${checkedCount}개 선택됨` : ''}</div>
+                  </div>
+                  {/* 전체선택/전체해제/삭제 버튼 */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => allChecked ? deselectAllForStudent(studentName) : selectAllForStudent(studentName, rows)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all border ${
+                        allChecked ? 'bg-foreground text-background border-foreground'
+                        : someChecked ? 'bg-foreground/10 text-foreground border-foreground/20'
+                        : 'bg-white text-accent border-foreground/10 hover:text-foreground'
+                      }`}
+                    >
+                      <span className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded border text-[8px] font-black ${
+                        allChecked ? 'bg-background border-background/20 text-foreground'
+                        : someChecked ? 'bg-foreground/20 border-foreground/30 text-foreground' : 'border-foreground/20'
+                      }`}>{allChecked ? '✓' : someChecked ? '–' : ''}</span>
+                      {allChecked ? '전체해제' : '전체선택'}
+                    </button>
+                    {checkedCount > 0 && (
+                      <button
+                        onClick={() => {
+                          const selectedRows = rows.filter(r => checked.has(r.id));
+                          setBulkDeleteConfirm({
+                            student: studentName,
+                            ids: selectedRows.map(r => r.id),
+                            labels: selectedRows.map(r => passageFullLabel(r)),
+                          });
+                          setBulkConfirmInput('');
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 transition-all"
+                      >
+                        <Trash2 size={12} /> 삭제 ({checkedCount})
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="divide-y divide-foreground/5">
+                  {rows.map(row => (
+                    <div key={row.id} className={`flex items-start gap-3 px-5 py-4 hover:bg-accent-light/20 transition-colors ${row.status === 'completed' ? 'opacity-60' : row.status === 'expired' ? 'opacity-50' : ''} ${checked.has(row.id) ? 'bg-red-50/30' : ''}`}>
+                      {/* 체크박스 */}
+                      <button
+                        onClick={() => toggleCheck(studentName, row.id)}
+                        className={`shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+                          checked.has(row.id) ? 'bg-red-500 border-red-500 text-white' : 'border-foreground/20 hover:border-red-400'
+                        }`}
+                      >
+                        {checked.has(row.id) && <span className="text-[9px] font-black">✓</span>}
+                      </button>
+                      <BookOpen size={14} className="text-accent shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[12px] font-bold text-foreground">{passageFullLabel(row)}</span>
+                          {statusBadge(row.status)}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {passBadge(studentName, row.set_id, 'vocab', '뜻고르기')}
+                          {passBadge(studentName, row.set_id, 'synonym', '유반의어')}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] text-accent/50">배당: {new Date(row.created_at).toLocaleDateString('ko-KR', {month:'short',day:'numeric'})}</span>
+                          {row.due_date && <span className="text-[10px] text-amber-600 font-bold">마감: {row.due_date}</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {(!row.status || row.status === 'active') && (<>
+                          <button onClick={() => handleStatusUpdate(row.id, 'completed')} disabled={updatingId === row.id}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black text-success border border-success/30 bg-success/5 hover:bg-success/10 transition-all disabled:opacity-30">
+                            <Check size={10} strokeWidth={3} /> 완료
+                          </button>
+                          <button onClick={() => handleStatusUpdate(row.id, 'expired')} disabled={updatingId === row.id}
+                            className="px-2.5 py-1.5 rounded-xl text-[10px] font-black text-amber-600 border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-all disabled:opacity-30">
+                            만료
+                          </button>
+                        </>)}
+                        <button onClick={() => setDeleteConfirm({id:row.id, student:studentName, label:passageFullLabel(row)})}
+                          className="p-1.5 text-red-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="divide-y divide-foreground/5">
-                {rows.map(row => (
-                  <div key={row.id} className={`flex items-start gap-3 px-5 py-4 hover:bg-accent-light/20 transition-colors ${row.status === 'completed' ? 'opacity-60' : row.status === 'expired' ? 'opacity-50' : ''}`}>
-                    <BookOpen size={14} className="text-accent shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[12px] font-bold text-foreground">{passageFullLabel(row)}</span>
-                        {statusBadge(row.status)}
-                      </div>
-                      <div className="flex flex-wrap gap-1.5 mt-1.5">
-                        {passBadge(studentName, row.set_id, 'vocab', '뜻고르기')}
-                        {passBadge(studentName, row.set_id, 'synonym', '유반의어')}
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-accent/50">배당: {new Date(row.created_at).toLocaleDateString('ko-KR', {month:'short',day:'numeric'})}</span>
-                        {row.due_date && <span className="text-[10px] text-amber-600 font-bold">마감: {row.due_date}</span>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {(!row.status || row.status === 'active') && (<>
-                        <button onClick={() => handleStatusUpdate(row.id, 'completed')} disabled={updatingId === row.id}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black text-success border border-success/30 bg-success/5 hover:bg-success/10 transition-all disabled:opacity-30">
-                          <Check size={10} strokeWidth={3} /> 완료
-                        </button>
-                        <button onClick={() => handleStatusUpdate(row.id, 'expired')} disabled={updatingId === row.id}
-                          className="px-2.5 py-1.5 rounded-xl text-[10px] font-black text-amber-600 border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-all disabled:opacity-30">
-                          만료
-                        </button>
-                      </>)}
-                      <button onClick={() => setDeleteConfirm({id:row.id, student:studentName, label:passageFullLabel(row)})}
-                        className="p-1.5 text-red-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* 삭제 확인 모달 */}
+      {/* 단건 삭제 확인 모달 */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
           <div className="glass w-full max-w-sm rounded-[2rem] border border-red-100 shadow-2xl overflow-hidden">
@@ -419,6 +522,51 @@ function AssignmentTab() {
               <button onClick={() => setDeleteConfirm(null)} className="flex-1 h-11 rounded-xl border border-foreground/10 text-[13px] font-black text-accent hover:text-foreground transition-all">취소</button>
               <button onClick={handleRemoveConfirm} disabled={deleting} className="flex-1 h-11 rounded-xl bg-red-500 text-white text-[13px] font-black hover:bg-red-600 transition-all disabled:opacity-40">
                 {deleting ? '제거 중...' : '제거 확인'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 일괄 삭제 더블체킹 모달 */}
+      {bulkDeleteConfirm && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="glass w-full max-w-md rounded-[2rem] border border-red-200 shadow-2xl overflow-hidden">
+            <div className="p-7 border-b border-red-50">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
+                <Trash2 size={20} className="text-red-500" />
+              </div>
+              <h3 className="text-[16px] font-black text-foreground">배당 일괄 삭제</h3>
+              <p className="text-[12px] text-accent font-medium mt-1.5">{bulkDeleteConfirm.student} 학생 · {bulkDeleteConfirm.ids.length}개 세트</p>
+              <div className="mt-3 bg-red-50 px-4 py-3 rounded-xl space-y-1 max-h-40 overflow-y-auto">
+                {bulkDeleteConfirm.labels.map((label, i) => (
+                  <div key={i} className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                    <span className="text-red-400">✕</span> {label}
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-accent/70 mt-3">위 배당들이 모두 제거됩니다. 라이브러리 지문은 유지됩니다.</p>
+              <div className="mt-4">
+                <label className="text-[10px] font-black text-red-500 uppercase tracking-widest block mb-1.5">확인을 위해 학생 이름을 입력하세요</label>
+                <input
+                  value={bulkConfirmInput}
+                  onChange={e => setBulkConfirmInput(e.target.value)}
+                  placeholder={bulkDeleteConfirm.student}
+                  className="w-full h-10 px-4 rounded-xl border-2 border-red-200 bg-transparent text-[13px] font-bold outline-none focus:border-red-400 transition-colors"
+                />
+              </div>
+            </div>
+            <div className="p-5 flex gap-3">
+              <button
+                onClick={() => { setBulkDeleteConfirm(null); setBulkConfirmInput(''); }}
+                className="flex-1 h-11 rounded-xl border border-foreground/10 text-[13px] font-black text-accent hover:text-foreground transition-all"
+              >취소</button>
+              <button
+                onClick={handleBulkDeleteConfirm}
+                disabled={bulkDeleting || bulkConfirmInput.trim() !== bulkDeleteConfirm.student}
+                className="flex-1 h-11 rounded-xl bg-red-500 text-white text-[13px] font-black hover:bg-red-600 transition-all disabled:opacity-40"
+              >
+                {bulkDeleting ? '삭제 중...' : `${bulkDeleteConfirm.ids.length}개 삭제 확인`}
               </button>
             </div>
           </div>
@@ -1514,6 +1662,8 @@ function FolderTab({ wordSets, students }: {
   const [expandedFolderId, setExpandedFolderId] = useState<string | null>(null);
   const [addingSetId, setAddingSetId] = useState<string>('');
   const [removingPassageKey, setRemovingPassageKey] = useState<string | null>(null);
+  // 폴더 정렬: 최신순 | 이름순
+  const [folderSortOrder, setFolderSortOrder] = useState<'newest' | 'name'>('newest');
 
   // Partial-passage assign
   const [partialAssignFolder, setPartialAssignFolder] = useState<FolderType | null>(null);
@@ -1672,7 +1822,30 @@ function FolderTab({ wordSets, students }: {
         </div>
       ) : (
         <div className="space-y-4">
-          {folders.map(folder => {
+          {/* 정렬 필터 */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-black text-accent uppercase tracking-widest">정렬</span>
+            {(['newest', 'name'] as const).map(order => (
+              <button
+                key={order}
+                onClick={() => setFolderSortOrder(order)}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all border ${
+                  folderSortOrder === order
+                    ? 'bg-foreground text-background border-foreground'
+                    : 'bg-white border-foreground/10 text-accent hover:text-foreground'
+                }`}
+              >
+                {order === 'newest' ? '🕒 최신순' : '🔤 이름순'}
+              </button>
+            ))}
+          </div>
+          {[...folders]
+            .sort((a, b) => {
+              if (folderSortOrder === 'name') return a.name.localeCompare(b.name, 'ko');
+              // 최신순: 배열 역순 (DB에서 created_at 기준 asc로 왔다고 가정)
+              return folders.indexOf(b) - folders.indexOf(a);
+            })
+            .map(folder => {
             const isExpanded = expandedFolderId === folder.id;
             const passages = folder.folder_passages || [];
             return (
@@ -2805,7 +2978,7 @@ export default function AdminContentPage() {
       <div className="space-y-8">
         {activeTab === "ingest" && <SmartAIIngest onComplete={() => { setActiveTab("explorer"); loadData(); }} />}
         {activeTab === "folders" && <FolderTab wordSets={wordSets} students={students} />}
-        {activeTab === "assignments" && <AssignmentTab />}
+        {activeTab === "assignments" && <AssignmentTab students={students} />}
 
         {activeTab === "explorer" && (
           <div className="animate-in fade-in duration-700">

@@ -333,7 +333,6 @@ export default function QnAPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 mb-1">
-                              {ans.isTeacher && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full" style={{ background: "rgba(245,158,11,0.2)", color: "#fbbf24" }}>⭐ 선생님</span>}
                               <span className="text-[11px] font-bold" style={{ color: ans.isTeacher ? "#fbbf24" : "rgba(255,255,255,0.65)" }}>
                                 {ans.isTeacher ? '선생님' : isMe ? `${ans.author} (나)` : '익명'}
                               </span>

@@ -8,68 +8,80 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// ── 정밀 고등영어 오답 프롬프트 v3 ──────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are an English vocabulary test designer for Korean high school students (수능/내신).
+// ── 정밀 고등영어 오답 프롬프트 v5 ──────────────────────────────────────────────
+const SYSTEM_PROMPT = `You are an expert English vocabulary test designer for Korean high school students (수능/내신).
 
-TASK: For each English word + its ONE correct Korean meaning, generate exactly 5 WRONG Korean distractor choices.
+TASK: For each English word + its ONE correct Korean meaning, generate exactly 5 WRONG Korean distractor choices that are clearly incorrect yet tempting.
 
 ══════════════════════════════════════
 🚫 HARD PROHIBITIONS — any violation invalidates the entire response
 ══════════════════════════════════════
-1. NEVER include ANY valid Korean meaning of the target word as a distractor.
-   Many English words have multiple valid Korean translations — ALL of them are forbidden.
-   THINK: "Could a native Korean speaker ever translate this English word as this distractor?"
-   If YES → BANNED unconditionally.
+1. THE BANNED LIST IS ABSOLUTE — zero exceptions.
+   Every word/phrase listed after "banned:" is PERMANENTLY FORBIDDEN as a distractor, even if modified.
 
-   Each input line may include a "banned:" field listing ALL valid Korean meanings (comma-separated).
-   Every meaning in the banned: field is equally FORBIDDEN as a distractor — not just the correct: one.
-   Example: "suggest | correct:제안하다 | banned:제안하다, 암시하다, 내비치다"
-   → "제안하다", "암시하다", "내비치다" are ALL banned as distractors.
+   MANY ENGLISH WORDS HAVE MULTIPLE VALID KOREAN TRANSLATIONS.
+   The "banned:" field lists ALL valid translations. Every single one is forbidden.
 
-   Concrete examples of banned patterns:
-   • variety → correct: 다양성  ❌BANNED: 종류, 가지, 유형, 각종  (all mean variety)
-   • location → correct: 위치  ❌BANNED: 장소, 곳, 지점  (all mean location)
-   • cause → correct: 원인  ❌BANNED: 이유, 까닭, 사유  (all mean cause)
-   • combine → correct: 결합하다  ❌BANNED: 혼합하다, 합치다, 합하다  (all mean combine)
-   • exploration → correct: 탐구  ❌BANNED: 탐험, 탐색  (all mean exploration)
-   • gatekeeper → correct: 문지기  ❌BANNED: 경비원, 문을 지키는 사람  (all mean gatekeeper)
-   • narrowing → correct: 좁아지는  ❌BANNED: 축소되는, 줄어드는  (all mean narrowing)
-   • absorbed → correct: 몰두한  ❌BANNED: 흡수된  (also valid for absorbed)
+   Example: presentation | correct:표현 | banned:표현, 발표, 설명, 제시
+   → FORBIDDEN distractors: 표현, 발표, 설명, 제시, 발표하다, 발표 행위, 표현하다, 발표물 (any form)
+   → ALLOWED distractors: 논쟁, 검토, 비교, 입장, 개요 (clearly different meanings)
 
-2. NEVER show English words or romanized forms in distractors — Korean only.
+   STEP-BY-STEP CHECK before using any distractor D:
+   ① List all items in banned: [B1, B2, B3, ...]
+   ② For each Bi: Does D contain Bi? Does Bi contain D? Are D and Bi synonymous in Korean?
+   ③ If ANY answer is YES → discard D immediately and pick a different word
+   ④ Only proceed with D if ALL answers are NO
+
+   ⚠️ NEAR-SYNONYM TRAP (most common failure):
+   Words that overlap in meaning even partially are BANNED:
+   • instruction → correct:교육  BANNED:지도, 가르침, 훈련, 안내, 교습
+   • variety → correct:다양성  BANNED:종류, 유형, 각종
+   • presentation → correct:표현  BANNED:발표, 설명, 제시, 제출 (all valid translations)
+   • combine → correct:결합하다  BANNED:혼합하다, 합치다
+   • exploration → correct:탐구  BANNED:탐험, 탐색
+
+2. NEVER show English words, romanized Korean, or transliterations as distractors.
 
 3. NEVER repeat the same distractor within one word's set.
 
-4. NEVER use vague/abstract fillers like "그것", "어떤 것", "방식" unless it is a specific, clearly wrong meaning.
+4. NEVER use vague/abstract fillers: 그것, 어떤 것, 방식 (unless specifically and clearly wrong).
 
-5. NORMALIZE the headword mentally: if the English word is an inflected form (narrowing, absorbed, etc.), treat it as its base form (narrow, absorb) and ban all valid translations of that base form.
+5. NORMALIZE inflected forms: treat "narrowing" as "narrow", "absorbed" as "absorb".
+   Ban ALL valid translations of the base form AND their verb/noun forms.
+
+6. Each distractor must be max 10 Korean characters. No long explanations.
 
 ══════════════════════════════════════
-✅ HOW TO BUILD GOOD DISTRACTORS
+✅ HOW TO BUILD EXCELLENT DISTRACTORS
 ══════════════════════════════════════
-Each set of 5 distractors should use these 5 distinct approaches:
+For each word, pick 5 from these strategies (vary the mix):
 
-1. ADJACENT DOMAIN: a Korean word from a related but clearly different field
-   (e.g., for "absorb=흡수하다" → use "전달하다" which is adjacent but wrong)
+A. OPPOSITE: a word meaning the direct opposite
+   (expand=확장하다 → 축소하다)
 
-2. OPPOSITE ACTION: a Korean word meaning roughly the opposite
-   (e.g., for "expand=확장하다" → use "축소하다")
+B. ADJACENT DOMAIN: related field but clearly wrong meaning
+   (absorb=흡수하다 → 전달하다)
 
-3. VISUAL CONFUSION: exploit similar English spelling or pronunciation
-   (e.g., adapt→adopt confusion → use translation of "adopt")
+C. PHONETIC/SPELLING TRAP: exploit similar English word confusion
+   (adapt vs adopt; effect vs affect)
 
-4. SAME POS, DIFFERENT DOMAIN: a word of the same part of speech but totally different field
-   (e.g., for noun: different noun meaning; for verb: different verb meaning)
+D. SAME PART OF SPEECH, DIFFERENT MEANING: plausibly grammatical but wrong
+   (noun→different noun; verb→different verb)
 
-5. PLAUSIBLE TRAP: a distractor that seems related to the context but is clearly wrong
-   (use the context sentence if provided as a clue for what might seem tempting)
+E. CONTEXT LURE: looks related to the sentence context but is factually wrong
+   (use context sentence hint if provided)
+
+F. COMMON STUDENT MISTAKE: a translation Korean students often confuse with the correct one
 
 ══════════════════════════════════════
 FORMAT
 ══════════════════════════════════════
-- All distractors in Korean (한국어), max 10 characters each
-- Output ONLY this JSON (no extra text, no markdown):
+- All distractors in Korean (한국어 only), max 10 characters each
+- Output ONLY valid JSON, no markdown, no extra text:
 {"results":[{"id":"<id>","distractors":["오답1","오답2","오답3","오답4","오답5"]}]}`;
+
+
+
 
 type InputWord = { id: string; word: string; pos_abbr: string; korean: string; context?: string; all_korean?: string; synonyms?: string; antonyms?: string };
 
@@ -89,6 +101,29 @@ export async function POST(req: NextRequest) {
       (cached || []).map((r: { word_id: string; distractors: string[] }) => [r.word_id, r.distractors])
     );
 
+    // ── 캐시 유효성 검증: banned 항목이 포함된 캐시는 제거 ────────────────────
+    const invalidCacheWordIds: string[] = [];
+    for (const w of words) {
+      const cachedDistr = cachedMap.get(w.id);
+      if (!cachedDistr) continue;
+      const allValid = (w.all_korean || w.korean)
+        .split(/[,，、\/]/).map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+      const hasBannedInCache = cachedDistr.some(d =>
+        allValid.some(banned =>
+          d.trim().toLowerCase().includes(banned) || banned.includes(d.trim().toLowerCase())
+        )
+      );
+      if (hasBannedInCache) {
+        invalidCacheWordIds.push(w.id);
+        cachedMap.delete(w.id);
+      }
+    }
+    // 무효 캐시 DB에서 삭제 (백그라운드)
+    if (invalidCacheWordIds.length > 0) {
+      supabase.from('word_distractors').delete().in('word_id', invalidCacheWordIds)
+        .then(({ error }) => { if (error) console.error('[cache invalidate]', error); });
+    }
+
     // 캐시 없는 단어만 AI 생성
     const uncached = words.filter(w => !cachedMap.has(w.id));
 
@@ -98,11 +133,12 @@ export async function POST(req: NextRequest) {
       // ── Step 2: AI 생성 (캐시 미스 단어만) ───────────────────────────────────
       const wordList = uncached
         .map(w => {
-          // korean = 첫 번째 뜻 (정답지에 표시됨)
-          // all_korean = 모든 유효 뜻 (banned 목록)
           const correctDisplay = w.korean; // already first-only from client
           const allValid = w.all_korean || w.korean; // comma-separated all meanings
-          let line = `ID:${w.id} | ${w.word}(${w.pos_abbr}) | correct:${correctDisplay} | banned:${allValid}`;
+          // banned 항목을 개별 나열하여 AI가 각각 인식하도록
+          const bannedItems = allValid.split(/[,，、\/]/).map((s: string) => s.trim()).filter(Boolean);
+          const bannedStr = bannedItems.join(' | ');
+          let line = `ID:${w.id} | word:${w.word}(${w.pos_abbr}) | correct:${correctDisplay} | banned:[${bannedStr}]`;
           if (w.context) line += ` | ctx:${w.context.slice(0, 80)}`;
           return line;
         })
