@@ -76,46 +76,46 @@ export default function Home() {
         }
       `}</style>
 
-      {/* 베이스: 거의 블랙 */}
-      <div className="absolute inset-0" style={{background:'#030f16'}}/>
+      {/* 베이스: 투명 청량한 딥 오션 테일 */}
+      <div className="absolute inset-0" style={{background:'#021622'}}/>
 
-      {/* 그라디언트 ambient 오브들 — 딥 오션 & 선셋 코랄 */}
-      {/* 좌상단 — 에메랄드/민트 */}
+      {/* 그라디언트 ambient 오브들 — 청량 에메랄드 & 아쿠아 시안 */}
+      {/* 좌상단 — 에메랄드 */}
       <div style={{
         position:'absolute', top:'-10%', left:'-15%',
         width:'500px', height:'500px',
-        background:'radial-gradient(ellipse, rgba(20,184,166,0.35) 0%, rgba(13,148,136,0.15) 40%, transparent 70%)',
+        background:'radial-gradient(ellipse, rgba(6,182,212,0.45) 0%, rgba(20,184,166,0.2) 40%, transparent 70%)',
         borderRadius:'50%', filter:'blur(60px)',
         animation:'igOrb1 12s ease-in-out infinite',
       }}/>
-      {/* 우하단 — 핑크/오렌지 */}
+      {/* 우하단 — 아쿠아 시안 */}
       <div style={{
         position:'absolute', bottom:'-15%', right:'-10%',
         width:'450px', height:'450px',
-        background:'radial-gradient(ellipse, rgba(251,146,60,0.25) 0%, rgba(244,63,94,0.12) 50%, transparent 70%)',
+        background:'radial-gradient(ellipse, rgba(34,211,238,0.35) 0%, rgba(20,184,166,0.15) 50%, transparent 70%)',
         borderRadius:'50%', filter:'blur(65px)',
         animation:'igOrb2 15s ease-in-out infinite',
       }}/>
-      {/* 중앙 위 — 스카이 블루 */}
+      {/* 중앙 위 — 민트 시안 */}
       <div style={{
         position:'absolute', top:'10%', left:'30%',
         width:'320px', height:'280px',
-        background:'radial-gradient(ellipse, rgba(56,189,248,0.22) 0%, transparent 65%)',
+        background:'radial-gradient(ellipse, rgba(22,224,208,0.25) 0%, transparent 65%)',
         borderRadius:'50%', filter:'blur(50px)',
         animation:'igOrb3 18s ease-in-out infinite',
       }}/>
-      {/* 좌하단 — 에메랄드 */}
+      {/* 좌하단 — 밝은 테일 */}
       <div style={{
         position:'absolute', bottom:'15%', left:'-5%',
         width:'280px', height:'280px',
-        background:'radial-gradient(ellipse, rgba(20,184,166,0.20) 0%, transparent 65%)',
+        background:'radial-gradient(ellipse, rgba(6,182,212,0.22) 0%, transparent 65%)',
         borderRadius:'50%', filter:'blur(55px)',
         animation:'igOrb1 20s ease-in-out infinite reverse',
       }}/>
       {/* 전체 그라디언트 미세 틴트 */}
       <div style={{
         position:'absolute', inset:0,
-        background:'linear-gradient(135deg,rgba(20,184,166,0.06) 0%,rgba(56,189,248,0.04) 35%,rgba(251,146,60,0.05) 65%,rgba(244,63,94,0.03) 100%)',
+        background:'linear-gradient(135deg,rgba(20,184,166,0.08) 0%,rgba(6,182,212,0.06) 35%,rgba(34,211,238,0.06) 65%,rgba(56,189,248,0.05) 100%)',
       }}/>
       {/* 하단 페이드 */}
       <div style={{
@@ -137,7 +137,7 @@ export default function Home() {
               boxShadow:'0 0 0 1px rgba(80,200,240,0.35), 0 0 12px rgba(80,200,240,0.15)',
               color:'rgba(160,230,255,0.9)',
             }}>
-            <span style={{background:'linear-gradient(90deg,#14b8a6,#fb923c)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',fontWeight:800}}>D-{dday}</span>
+            <span style={{background:'linear-gradient(90deg,#14b8a6,#38bdf8)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',fontWeight:800}}>D-{dday}</span>
             <span style={{color:'rgba(160,210,255,0.7)'}}>·&nbsp;수능까지</span>
           </div>
         )}
@@ -146,7 +146,7 @@ export default function Home() {
         <div className="text-center space-y-6 py-2">
           {/* 앱 아이콘 로고 */}
           <div className="w-16 h-16 rounded-[1.4rem] mx-auto hover:scale-110 transition-transform duration-500 cursor-default overflow-hidden shadow-2xl"
-            style={{ boxShadow:'0 0 0 2px rgba(20,184,166,0.5), 0 8px 30px rgba(251,146,60,0.4)' }}>
+            style={{ boxShadow:'0 0 0 2px rgba(20,184,166,0.5), 0 8px 30px rgba(6,182,212,0.4)' }}>
             <img src="/app-icon.jpg" alt="Deep Learning" className="w-full h-full object-cover" />
           </div>
           <div className="space-y-2">
@@ -201,17 +201,17 @@ export default function Home() {
               50%{opacity:1;transform:translateX(4px)}
             }
             @keyframes igPulseRing {
-              0%{box-shadow:0 0 0 0 rgba(251,146,60,0.45)}
-              70%{box-shadow:0 0 0 8px rgba(251,146,60,0)}
-              100%{box-shadow:0 0 0 0 rgba(251,146,60,0)}
+              0%{box-shadow:0 0 0 0 rgba(6,182,212,0.45)}
+              70%{box-shadow:0 0 0 8px rgba(6,182,212,0)}
+              100%{box-shadow:0 0 0 0 rgba(6,182,212,0)}
             }
           `}</style>
           <Link
             href="/login?role=student"
             className="group relative flex flex-col items-start w-full p-4 rounded-[2rem] overflow-hidden hover:-translate-y-1 transition-all duration-500"
             style={{
-              background:'linear-gradient(145deg,#03121b 0%,#052335 45%,#031824 100%)',
-              boxShadow:'0 8px 32px rgba(20,184,166,0.30), 0 2px 8px rgba(0,0,0,0.5)',
+              background:'linear-gradient(145deg,#021a26 0%,#053c5a 45%,#031d2b 100%)',
+              boxShadow:'0 8px 32px rgba(20,184,166,0.35), 0 2px 8px rgba(0,0,0,0.5)',
               border:'1.5px solid transparent',
               backgroundClip:'padding-box',
               outline:'1.5px solid transparent',
@@ -221,14 +221,14 @@ export default function Home() {
             {/* 그라디언트 보더 */}
             <div style={{
               position:'absolute', inset:0, borderRadius:'2rem', padding:'1.5px', zIndex:0,
-              background:'linear-gradient(135deg,#14b8a6,#38bdf8,#fb923c,#f43f5e)',
+              background:'linear-gradient(135deg,#14b8a6,#38bdf8,#06b6d4,#14b8a6)',
               WebkitMask:'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
               WebkitMaskComposite:'xor',
               maskComposite:'exclude',
             }}/>
             {/* 수중 발광 */}
             <div className="absolute inset-0 pointer-events-none" style={{
-              background:'linear-gradient(135deg,rgba(20,184,166,0.20) 0%,rgba(56,189,248,0.12) 50%,rgba(251,146,60,0.15) 100%)',
+              background:'linear-gradient(135deg,rgba(20,184,166,0.25) 0%,rgba(6,182,212,0.18) 50%,rgba(34,211,238,0.15) 100%)',
             }}/>
             <div className="absolute pointer-events-none" style={{
               top:'-20%', left:'20%', width:'200px', height:'100px',
@@ -237,12 +237,12 @@ export default function Home() {
             }}/>
             <div className="flex items-center gap-2 font-semibold text-[15px] mb-1 relative z-10">
               <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest text-white"
-                style={{background:'linear-gradient(90deg,#14b8a6,#fb923c)', boxShadow:'0 2px 8px rgba(251,146,60,0.35)'}}>STUDENT</span>
+                style={{background:'linear-gradient(90deg,#14b8a6,#38bdf8)', boxShadow:'0 2px 8px rgba(6,182,212,0.35)'}}>STUDENT</span>
               <span className="text-[13px] font-black" style={{color:'rgba(210,245,255,0.97)'}}>학습 공간 입장</span>
             </div>
             <p className="text-[11px] font-semibold relative z-10 leading-relaxed" style={{color:'rgba(160,210,255,0.65)'}}>지문 · 어휘 · AI 튜터 · 테스트</p>
             <div className="absolute bottom-4 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center"
-              style={{background:'linear-gradient(135deg,#14b8a6,#fb923c)', boxShadow:'0 0 12px rgba(251,146,60,0.5)', animation:'igPulseRing 2s ease-in-out infinite'}}>
+              style={{background:'linear-gradient(135deg,#14b8a6,#38bdf8)', boxShadow:'0 0 12px rgba(6,182,212,0.5)', animation:'igPulseRing 2s ease-in-out infinite'}}>
               <ArrowRight strokeWidth={2.5} size={14} className="group-hover:translate-x-0.5 transition-all text-white" />
             </div>
           </Link>
@@ -253,21 +253,21 @@ export default function Home() {
             onClick={() => setShowGuide(true)}
             className="group relative flex items-center justify-between w-full h-[56px] px-5 rounded-[2rem] overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
             style={{
-              background:'linear-gradient(135deg,rgba(20,184,166,0.15) 0%,rgba(56,189,248,0.12) 50%,rgba(251,146,60,0.10) 100%)',
+              background:'linear-gradient(135deg,rgba(20,184,166,0.18) 0%,rgba(6,182,212,0.15) 50%,rgba(34,211,238,0.12) 100%)',
               border:'1px solid transparent',
-              boxShadow:'0 0 0 1px rgba(56,189,248,0.30), 0 4px 20px rgba(20,184,166,0.20)',
+              boxShadow:'0 0 0 1px rgba(6,182,212,0.30), 0 4px 20px rgba(20,184,166,0.20)',
             }}
           >
             <div className="flex items-center gap-3 relative z-10">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300"
-                style={{background:'linear-gradient(135deg,#14b8a6,#38bdf8,#fb923c)'}}>
+                style={{background:'linear-gradient(135deg,#14b8a6,#38bdf8,#06b6d4)'}}>
                 <Sparkles size={14} className="text-white" strokeWidth={2.5} />
               </div>
               <div className="text-left">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[12px] font-black text-white leading-tight">기능 안내 &amp; 체험 계정</span>
                   <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md tracking-wider text-white"
-                    style={{background:'linear-gradient(90deg,#14b8a6,#fb923c)'}}>CHECK</span>
+                    style={{background:'linear-gradient(90deg,#14b8a6,#38bdf8)'}}>CHECK</span>
                 </div>
                 <span className="text-[9px] font-bold" style={{color:'rgba(160,180,255,0.55)'}}>사용법 · 장학 혜택 · 홈화면 설치</span>
               </div>
@@ -454,7 +454,7 @@ export default function Home() {
                     <p className="text-[10px] text-gray-400 font-medium">탭하면 플립 · 어원까지 한번에</p>
                   </div>
                   <span className="text-[9px] font-black px-2 py-0.5 rounded-full text-white"
-                    style={{background:'linear-gradient(90deg,#14b8a6,#fb923c)'}}>홈 탭</span>
+                    style={{background:'linear-gradient(90deg,#14b8a6,#38bdf8)'}}>홈 탭</span>
                 </div>
                 <div className="px-4 py-2.5 text-[11px] text-gray-500 leading-relaxed" style={{borderTop:'1px solid #f3f3f3'}}>
                   단어 탭 → <strong className="text-gray-800">앞뒤 플립</strong> 뜻·예문 확인! <strong className="text-gray-800">어근 카드</strong>로 단어 구조까지.
@@ -465,7 +465,7 @@ export default function Home() {
               <div className="rounded-[1.3rem] overflow-hidden" style={{border:'1px solid #efefef'}}>
                 <div className="px-4 py-3 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-                    style={{background:'linear-gradient(135deg,#fb923c,#f43f5e)'}}>
+                    style={{background:'linear-gradient(135deg,#14b8a6,#38bdf8)'}}>
                     <BookOpen size={16} color="white"/>
                   </div>
                   <div className="flex-1">
@@ -473,12 +473,12 @@ export default function Home() {
                     <p className="text-[10px] text-gray-400 font-medium">90% 넘으면 PASS 인장 🔖</p>
                   </div>
                   <span className="text-[9px] font-black px-2 py-0.5 rounded-full text-white"
-                    style={{background:'linear-gradient(90deg,#fb923c,#f43f5e)'}}>TEST 탭</span>
+                    style={{background:'linear-gradient(90deg,#14b8a6,#38bdf8)'}}>TEST 탭</span>
                 </div>
                 <div className="px-4 py-2.5 flex gap-1.5" style={{borderTop:'1px solid #f3f3f3'}}>
                   <span className="px-2.5 py-1 rounded-lg text-[10px] font-black text-white" style={{background:'#20C997'}}>뜻고르기</span>
                   <span className="px-2.5 py-1 rounded-lg text-[10px] font-black text-white" style={{background:'#14b8a6'}}>유반의어 객관식</span>
-                  <span className="px-2.5 py-1 rounded-lg text-[10px] font-black text-white" style={{background:'#F77737'}}>카드게임</span>
+                  <span className="px-2.5 py-1 rounded-lg text-[10px] font-black text-white" style={{background:'#38bdf8'}}>카드게임</span>
                 </div>
               </div>
 
@@ -501,7 +501,7 @@ export default function Home() {
 
               {/* Streak & 리더보드 — 강조 (IG 오렌지-레드) */}
               <div className="rounded-[1.3rem] overflow-hidden"
-                style={{background:'linear-gradient(135deg,#FD1D1D,#F77737)'}}>
+                style={{background:'linear-gradient(135deg,#14b8a6,#38bdf8)'}}>
                 <div className="px-4 py-3 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
                     <Flame size={16} color="white"/>
@@ -539,7 +539,7 @@ export default function Home() {
 
               {/* 체험 계정 — 신청 CTA */}
               <div className="rounded-[1.3rem] overflow-hidden"
-                style={{background:'linear-gradient(135deg,#14b8a6,#38bdf8,#fb923c)'}}>
+                style={{background:'linear-gradient(135deg,#14b8a6,#38bdf8,#06b6d4)'}}>
                 <div className="px-4 pt-4 pb-4">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-[20px]">🔑</span>
@@ -578,7 +578,7 @@ export default function Home() {
                 href="/login?role=student"
                 onClick={() => setShowGuide(false)}
                 className="flex w-full h-12 rounded-2xl text-[13px] font-black items-center justify-center gap-2 hover:-translate-y-0.5 transition-all active:scale-95 text-white"
-                style={{background:'linear-gradient(90deg,#14b8a6,#38bdf8,#fb923c,#f43f5e)'}}
+                style={{background:'linear-gradient(90deg,#14b8a6,#38bdf8,#06b6d4,#14b8a6)'}}
               >
                 학습 공간 입장하기 <ArrowRight size={15} />
               </Link>

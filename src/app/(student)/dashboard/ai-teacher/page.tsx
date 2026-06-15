@@ -452,7 +452,7 @@ export default function AITeacherPage() {
               <div className={`flex ${msg.sender === 'ai' ? 'justify-start' : 'justify-end'}`}>
                 {msg.sender === 'ai' && (
                   <div className="p-[2px] rounded-full shrink-0 mr-2 mt-1 self-end"
-                    style={{ background: 'linear-gradient(135deg,#14b8a6,#fb923c)' }}>
+                    style={{ background: 'linear-gradient(135deg,#14b8a6,#38bdf8)' }}>
                     <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#09090f' }}>
                       <Sparkles size={11} strokeWidth={1.5} className="text-white" />
                     </div>
@@ -517,7 +517,7 @@ export default function AITeacherPage() {
             />
             <button type="submit" disabled={!input.trim() || isLoading}
               className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
-              style={{ background: 'linear-gradient(135deg,#14b8a6,#fb923c)', boxShadow: '0 4px 14px rgba(20,184,166,0.4)' }}>
+              style={{ background: 'linear-gradient(135deg,#14b8a6,#38bdf8)', boxShadow: '0 4px 14px rgba(6,182,212,0.4)' }}>
               {isLoading ? <Loader2 size={15} className="animate-spin text-white" /> : <Send size={15} strokeWidth={2.5} className="text-white" />}
             </button>
           </form>

@@ -109,7 +109,7 @@ export default function ClinicPage() {
           {/* IG 스토리 링 아바타 */}
           <div className="relative shrink-0">
             <div className="p-[2.5px] rounded-full" style={{
-              background: 'linear-gradient(135deg,#14b8a6,#38bdf8,#fb923c,#f43f5e)',
+              background: 'linear-gradient(135deg,#14b8a6,#38bdf8,#06b6d4,#14b8a6)',
               animation: 'igRingPulse 3s ease-in-out infinite',
             }}>
               <div className="w-16 h-16 rounded-full flex items-center justify-center text-[18px] font-black"
@@ -153,22 +153,22 @@ export default function ClinicPage() {
             {/* IG 포스트 스타일 카드 */}
             <div className="rounded-[1.6rem] overflow-hidden"
               style={{
-                background: 'rgba(10,25,35,0.85)',
-                border: '1px solid rgba(20,184,166,0.15)',
+                background: 'rgba(8,38,55,0.82)',
+                border: '1px solid rgba(34,211,238,0.20)',
                 backdropFilter: 'blur(16px)',
               }}>
               {/* 카드 상단 — 포스팅 헤더 */}
               <div className="flex items-center gap-3 px-4 py-3.5"
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-black text-white"
-                  style={{ background: 'linear-gradient(135deg,#14b8a6,#fb923c)' }}>
+                  style={{ background: 'linear-gradient(135deg,#14b8a6,#38bdf8)' }}>
                   {initial}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-black text-white leading-none">{studentName}</p>
                   <p className="text-[10px] mt-0.5" style={{ color: 'rgba(160,210,255,0.55)' }}>클리닉 신청서 작성 중</p>
                 </div>
-                <Sparkles size={14} style={{ color: 'rgba(251,146,60,0.7)' }} />
+                <Sparkles size={14} style={{ color: 'rgba(34,211,238,0.8)' }} />
               </div>
 
               {/* 입력 영역 */}
@@ -206,9 +206,9 @@ export default function ClinicPage() {
                   style={{
                     background: isSubmitting
                       ? 'rgba(20,150,150,0.4)'
-                      : 'linear-gradient(135deg,#14b8a6,#38bdf8,#fb923c)',
+                      : 'linear-gradient(135deg,#14b8a6,#38bdf8,#06b6d4)',
                     color: '#fff',
-                    boxShadow: '0 4px 20px rgba(251,146,60,0.35)',
+                    boxShadow: '0 4px 20px rgba(6,182,212,0.35)',
                   }}>
                   {isSubmitting ? (
                     <span className="animate-pulse">접수 중...</span>
@@ -275,10 +275,10 @@ export default function ClinicPage() {
                     className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all"
                     style={{
                       background: isMe
-                        ? 'linear-gradient(135deg,rgba(20,184,166,0.18),rgba(251,146,60,0.12))'
+                        ? 'linear-gradient(135deg,rgba(20,184,166,0.22),rgba(6,182,212,0.14))'
                         : 'rgba(255,255,255,0.04)',
                       border: isMe
-                        ? '1px solid rgba(20,184,166,0.35)'
+                        ? '1px solid rgba(34,211,238,0.25)'
                         : '1px solid rgba(255,255,255,0.07)',
                     }}>
                     {/* 순서 + 아바타 */}
@@ -286,7 +286,7 @@ export default function ClinicPage() {
                       <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-black text-white"
                         style={{
                           background: isMe
-                            ? 'linear-gradient(135deg,#14b8a6,#fb923c)'
+                            ? 'linear-gradient(135deg,#14b8a6,#38bdf8)'
                             : 'rgba(255,255,255,0.10)',
                         }}>
                         {stuInitial}

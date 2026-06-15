@@ -206,11 +206,11 @@ function LoginForm() {
                 className="w-full h-16 rounded-3xl font-black tracking-[0.2em] text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-25 disabled:pointer-events-none"
                 style={{
                   background: role === 'student'
-                    ? 'linear-gradient(135deg,#14b8a6 0%,#38bdf8 40%,#fb923c 75%,#f43f5e 100%)'
+                    ? 'linear-gradient(135deg,#14b8a6 0%,#38bdf8 40%,#06b6d4 75%,#0096c7 100%)'
                     : 'linear-gradient(135deg,rgba(15,160,210,0.9) 0%,rgba(10,130,185,0.95) 100%)',
                   color:'rgba(255,255,255,0.97)',
                   boxShadow: role === 'student'
-                    ? '0 4px 24px rgba(251,146,60,0.45), 0 2px 8px rgba(20,184,166,0.35)'
+                    ? '0 4px 24px rgba(6,182,212,0.45), 0 2px 8px rgba(20,184,166,0.35)'
                     : '0 4px 24px rgba(10,140,200,0.4)',
                 }}>
                 입장하기 <LogIn size={20} strokeWidth={2.5} />
@@ -237,13 +237,13 @@ function LoginPageInner() {
   return (
     <main className="flex justify-center items-center min-h-screen p-6 relative overflow-hidden"
       style={isStudent ? {
-        /* 학생: 힙 다크 ambient - 딥 오션 & 선셋 코랄 메인 */
+        /* 학생: 청량 시안 & 에메랄드 여름 바다 메인 */
         background: `
-          radial-gradient(ellipse 75% 65% at 20% 25%, rgba(20,184,166,0.35) 0%, transparent 58%),
-          radial-gradient(ellipse 65% 60% at 80% 75%, rgba(251,146,60,0.20) 0%, transparent 55%),
-          radial-gradient(ellipse 50% 50% at 60% 10%, rgba(244,63,94,0.18) 0%, transparent 58%),
-          radial-gradient(ellipse 45% 45% at 10% 80%, rgba(56,189,248,0.25) 0%, transparent 55%),
-          linear-gradient(145deg, #030f16 0%, #051b27 40%, #030f16 100%)
+          radial-gradient(ellipse 75% 65% at 20% 25%, rgba(6,182,212,0.38) 0%, transparent 58%),
+          radial-gradient(ellipse 65% 60% at 80% 75%, rgba(20,184,166,0.28) 0%, transparent 55%),
+          radial-gradient(ellipse 50% 50% at 60% 10%, rgba(34,211,238,0.25) 0%, transparent 58%),
+          radial-gradient(ellipse 45% 45% at 10% 80%, rgba(56,189,248,0.22) 0%, transparent 55%),
+          linear-gradient(145deg, #021622 0%, #053c5a 40%, #021622 100%)
         `,
       } : {
         /* 선생님: IG 다크 ambient 배경 */

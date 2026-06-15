@@ -539,11 +539,11 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     <div className="flex flex-col h-screen w-full max-w-md mx-auto relative overflow-hidden border-x border-white/5"
       style={{
         background:`
-          radial-gradient(ellipse 70% 60% at 10% 15%, rgba(20,184,166,0.32) 0%, transparent 55%),
-          radial-gradient(ellipse 60% 55% at 90% 85%, rgba(251,146,60,0.16) 0%, transparent 50%),
-          radial-gradient(ellipse 50% 45% at 85% 10%, rgba(244,63,94,0.15) 0%, transparent 55%),
-          radial-gradient(ellipse 40% 40% at 15% 85%, rgba(56,189,248,0.20) 0%, transparent 55%),
-          linear-gradient(145deg, #030f16 0%, #051b27 40%, #030f16 100%)
+          radial-gradient(ellipse 70% 60% at 10% 15%, rgba(6,182,212,0.35) 0%, transparent 55%),
+          radial-gradient(ellipse 60% 55% at 90% 85%, rgba(20,184,166,0.28) 0%, transparent 50%),
+          radial-gradient(ellipse 50% 45% at 85% 10%, rgba(34,211,238,0.25) 0%, transparent 55%),
+          radial-gradient(ellipse 40% 40% at 15% 85%, rgba(56,189,248,0.22) 0%, transparent 55%),
+          linear-gradient(145deg, #021622 0%, #053c5a 40%, #021622 100%)
         `
       }}>
 
@@ -1536,7 +1536,7 @@ function NavButton({ href, icon, label, isActive = false }: { href: string; icon
       </span>
       {isActive && (
         <div className="absolute inset-x-3 bottom-2 h-0.5 rounded-full animate-in zoom-in duration-500"
-          style={{background:'linear-gradient(90deg,#14b8a6,#fb923c)'}} />
+          style={{background:'linear-gradient(90deg,#14b8a6,#38bdf8)'}} />
       )}
     </Link>
   );
