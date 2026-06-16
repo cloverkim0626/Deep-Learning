@@ -738,8 +738,8 @@ export default function EssayPage() {
       {/* 헤더 */}
       <div className="px-5 pt-6 pb-3 shrink-0 border-b border-foreground/5">
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles size={14} className="text-indigo-400" />
-          <h1 className="text-[16px] font-black" style={{ color: '#ffffff' }}>서술형 연습</h1>
+          <Sparkles size={14} className="text-indigo-500" />
+          <h1 className="text-[16px] font-black text-slate-800">서술형 연습</h1>
           <label className="ml-auto flex items-center gap-1.5 cursor-pointer select-none group">
             <input
               type="checkbox"
@@ -754,7 +754,7 @@ export default function EssayPage() {
               }}
               className="w-3.5 h-3.5 rounded accent-indigo-500 cursor-pointer"
             />
-            <span className="text-[10px] font-bold text-white/40 group-hover:text-white/60 transition-colors">최근 경로 저장</span>
+            <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-600 transition-colors">최근 경로 저장</span>
           </label>
         </div>
         <div className="flex items-center gap-1">
@@ -763,7 +763,7 @@ export default function EssayPage() {
               <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full transition-all ${
                 i === stepNow ? "bg-indigo-500 text-white" :
                 i <  stepNow ? "bg-indigo-100 text-indigo-600" :
-                               "bg-white/10 text-white/40"
+                               "bg-slate-200/60 text-slate-500"
               }`}>{s}</span>
               {i < steps.length - 1 && <ChevronRight size={8} className="text-accent/20" />}
             </div>
@@ -779,8 +779,7 @@ export default function EssayPage() {
             {/* 필터 접기/펼치기 버튼 */}
             <button
               onClick={() => setFilterOpen(o => !o)}
-              className="flex items-center gap-1.5 text-[10px] font-black rounded-xl px-3 py-2 transition-all w-full"
-              style={{ background: 'rgba(255,255,255,0.06)', color: filterOpen ? 'rgba(200,180,255,0.9)' : 'rgba(255,255,255,0.50)' }}
+              className="flex items-center gap-1.5 text-[10px] font-black rounded-xl px-3 py-2 transition-all w-full border border-slate-200/60 bg-white/70 hover:bg-white text-slate-600 hover:text-slate-800 shadow-sm"
             >
               <BookOpen size={11} />
               {filterWorkbook !== '전체' || filterMid !== '전체' || filterSub !== '전체'
@@ -813,7 +812,7 @@ export default function EssayPage() {
                 <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-accent/35 pointer-events-none" />
               </div>
             ))}
-            <p className="text-[10px] font-black text-accent/35 uppercase tracking-widest pt-1">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-1">
               지문 선택 ({filtered.length}개)
             </p>
             {filtered.length === 0
@@ -821,29 +820,28 @@ export default function EssayPage() {
               : <div className="space-y-2">
                   {filtered.map(p => (
                     <button key={p.id} onClick={() => pickPassage(p)}
-                      className="w-full text-left px-4 py-3.5 rounded-2xl transition-all group"
-                      style={{ background: 'rgba(255,255,255,0.13)', border: '1px solid rgba(255,255,255,0.25)' }}>
+                      className="w-full text-left px-4 py-3.5 rounded-2xl transition-all group bg-white border border-slate-200/80 hover:border-indigo-300 hover:shadow-md hover:scale-[1.01] shadow-sm">
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-[10px] font-bold mb-0.5" style={{ color: 'rgba(200,180,255,0.95)' }}>
+                          <p className="text-[10px] font-bold mb-0.5 text-indigo-500/90">
                             {[p.workbook, p.chapter, p.sub_sub_category].filter(Boolean).join(" \u00b7 ")}
                           </p>
-                          <p className="text-[13px] font-bold truncate" style={{ color: '#ffffff' }}>
+                          <p className="text-[13px] font-bold truncate text-slate-800">
                             {p.passage_number ? `${p.passage_number}번 · ` : ""}{p.label || "지문"}
                           </p>
-                          <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                          <p className="text-[10px] mt-0.5 text-slate-500">
                             {p.essay_sentences?.length
                               ? `구조화 문장 ${p.essay_sentences.length}개`
                               : p.full_text
                               ? "본문 텍스트 있음"
-                              : <span className="text-amber-400 font-bold">⚠ 본문 없음 — AI 출제 불가</span>
+                              : <span className="text-amber-500 font-bold">⚠ 본문 없음 — AI 출제 불가</span>
                             }
                           </p>
                         </div>
                         <BookOpen size={14} className={`shrink-0 transition-colors ${
                           (!p.essay_sentences?.length && !p.full_text)
-                            ? "text-amber-300"
-                            : "text-white/40 group-hover:text-indigo-300"
+                            ? "text-amber-500"
+                            : "text-slate-400 group-hover:text-indigo-500"
                         }`} />
 
                       </div>
@@ -861,27 +859,26 @@ export default function EssayPage() {
               className="flex items-center gap-1.5 text-[11px] font-black text-accent/40 hover:text-foreground transition-colors">
               <ArrowLeft size={13} /> 지문 다시 선택
             </button>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)' }}>
-              <FileText size={14} className="text-indigo-300 shrink-0" />
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-indigo-50/80 border border-indigo-100/80">
+              <FileText size={14} className="text-indigo-500 shrink-0" />
               <div className="min-w-0">
-                <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">선택된 지문</p>
-                <p className="text-[13px] font-bold truncate text-white">{selectedPassage.label}</p>
+                <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">선택된 지문</p>
+                <p className="text-[13px] font-bold truncate text-slate-800">{selectedPassage.label}</p>
               </div>
             </div>
-            <p className="text-[10px] font-black text-accent/35 uppercase tracking-widest pt-1">서술형 유형</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-1">서술형 유형</p>
             {templates.length === 0
-              ? <div className="py-8 text-center text-[12px] text-accent/30 font-bold">활성된 유형 없음</div>
+              ? <div className="py-8 text-center text-[12px] text-slate-400 font-bold">활성된 유형 없음</div>
               : <div className="space-y-2">
                   {templates.map(t => (
                     <button key={t.type_key} onClick={() => pickTemplate(t)}
-                      className="w-full text-left px-5 py-4 rounded-2xl transition-all group"
-                      style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)' }}>
+                      className="w-full text-left px-5 py-4 rounded-2xl transition-all group bg-white border border-slate-200/80 hover:border-indigo-300 hover:shadow-md hover:scale-[1.01] shadow-sm">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[14px] font-black text-white group-hover:text-indigo-300 transition-colors">{t.display_name}</p>
-                          <p className="text-[10px] text-white/50 font-mono mt-0.5">{t.type_key}</p>
+                          <p className="text-[14px] font-black text-slate-800 group-hover:text-indigo-600 transition-colors">{t.display_name}</p>
+                          <p className="text-[9px] text-slate-400 font-mono mt-0.5">{t.type_key}</p>
                         </div>
-                        <Sparkles size={14} className="text-white/30 group-hover:text-indigo-400 transition-colors" />
+                        <Sparkles size={14} className="text-slate-400 group-hover:text-indigo-500 transition-colors" />
                       </div>
                     </button>
                   ))}
@@ -918,7 +915,7 @@ export default function EssayPage() {
               </p>
             </div>
 
-            <p className="text-[10px] font-black text-accent/35 uppercase tracking-widest">문제 개수 선택</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">문제 개수 선택</p>
 
             <div className="grid grid-cols-3 gap-3">
               {([1, 2, 3] as const).map(n => (
